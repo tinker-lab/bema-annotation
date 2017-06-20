@@ -7,7 +7,7 @@ TagManager:
   - FxTemporaire
   - projectile
   - uiButton
-  - LeftPageButton
+  - resource
   layers:
   - Default
   - TransparentFX

@@ -5,12 +5,14 @@ using UnityEngine.UI;
 
 public class PageButtonController : MonoBehaviour {
 
+    public static readonly string BUTTON_TAG = "uiButton";
+
     public GameObject panels;
     public GameObject panelText;
 
     private bool isLeftButton;
     private int currentPanel;
-    private int numPanels;
+    private int numPanels = 0;
 
 	// Use this for initialization
 	void Start () {
@@ -18,16 +20,20 @@ public class PageButtonController : MonoBehaviour {
         isLeftButton = (this.gameObject.name == "LeftPageButton") ?  true : false;  // Determine which button this is
 
         this.GetComponent<Button>().onClick.AddListener(() => switchPage());    // Add event listener
-        this.tag = LoadImages.BUTTON_TAG;
+        this.tag = BUTTON_TAG;
 
-        numPanels = panels.transform.childCount;
-        print("Num panels: " + numPanels);
-        panelText.GetComponent<TextMesh>().text = "Page 1/" + numPanels;
-	}
+    }
 	
 	// Update is called once per frame
 	void Update () {
-		
+        
+        if (numPanels == 0)
+        {
+            numPanels = panels.transform.childCount;
+            print("Num panels: " + numPanels);
+            panelText.GetComponent<TextMesh>().text = "Page 1/" + numPanels;
+        }
+        
 	}
 
     void switchPage()

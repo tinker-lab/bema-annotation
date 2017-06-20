@@ -7,12 +7,12 @@ using System.Linq;
 
 public class LoadImages : MonoBehaviour
 {
-    public static string BUTTON_TAG = "uiButton";
+    public static readonly string RESOURCE_TAG = "resource"; 
 
     public int rowsPerPanel;
     public int columnsPerPanel;
-    public int spacing;
-    public int padding;
+    public float spacing;
+    public float padding;
     public GameObject panels;
     public GameObject uiPanel;
     public GameObject buttonPrefab;
@@ -20,8 +20,8 @@ public class LoadImages : MonoBehaviour
 
     private FileInfo[] imageFiles;
     private int panelCount;
-    private int cellWidth;
-    private int cellHeight;
+    private float cellWidth;
+    private float cellHeight;
 
     void Start()
     {
@@ -34,8 +34,8 @@ public class LoadImages : MonoBehaviour
         float mainPanelHeight = uiPanel.GetComponent<RectTransform>().rect.height;
         float cellPanelWidth = mainPanelWidth - (padding * 2);                          // Dimensions for actual space occupied by cells in each panel
         float cellPanelHeight = mainPanelHeight - (padding * 2);                        //
-        cellWidth = (int)(cellPanelWidth - (spacing * (columnsPerPanel - 1))) / columnsPerPanel;
-        cellHeight = (int)(cellPanelHeight - (spacing * (rowsPerPanel - 1))) / rowsPerPanel;
+        cellWidth = (cellPanelWidth - (spacing * (columnsPerPanel - 1))) / columnsPerPanel;
+        cellHeight = (cellPanelHeight - (spacing * (rowsPerPanel - 1))) / rowsPerPanel;
 
         panelCount = 0;
         int resourcesOnCurrentPanel = 0;
@@ -58,7 +58,7 @@ public class LoadImages : MonoBehaviour
 
             // Make button clickable
             image2DButton.onClick.AddListener(() => onResourceClicked(image2DButton));
-            image2D.tag = BUTTON_TAG;
+            image2D.tag = RESOURCE_TAG;
             image2D.layer = uiPanel.layer;
 
             BoxCollider boxCollider = image2D.gameObject.AddComponent<BoxCollider>();
@@ -69,6 +69,7 @@ public class LoadImages : MonoBehaviour
             // Make button highlightable
             Outline buttonOutline = image2DButton.image.gameObject.AddComponent<Outline>();
             buttonOutline.enabled = false;
+            buttonOutline.effectDistance = new Vector2(0.01f, 0.01f);
 
             // Give button descriptive name
             image2DButton.name = image.Name + " button";
@@ -90,6 +91,7 @@ public class LoadImages : MonoBehaviour
         {
             currentPanel.transform.SetParent(panels.transform);
             resetTransform(currentPanel);
+            //panels.GetComponent<DataPanelState>().SetNumPanels(panelCount);
         }
     }
 
@@ -124,7 +126,9 @@ public class LoadImages : MonoBehaviour
         {
             panel.SetActive(false);
         }
+
         panelCount++;
+        //panels.GetComponent<DataPanelState>().SetNumPanels(panelCount);
 
         panel.AddComponent<CanvasRenderer>();
 

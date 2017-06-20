@@ -129,6 +129,7 @@ public class ViveCustomController : MonoBehaviour {
                         shouldTeleport = false;
                     }
                     // If hitting a UI element, and it's a button, highlight it
+                    /*
                     if (hitLayer == worldUILayer && hitObject.CompareTag(LoadImages.BUTTON_TAG))
                     {
                         if (lastObjectHighlighted != null && !lastObjectHighlighted.Equals(hitObject))
@@ -139,6 +140,7 @@ public class ViveCustomController : MonoBehaviour {
                         hitObject.GetComponent<Button>().image.GetComponent<Outline>().enabled = true;
                         lastObjectHighlighted = hitObject;
                     }
+                    */
 
                     //print(hitObject.name);        // For dealing with rogue mesh colliders in the model
                 }
@@ -161,12 +163,14 @@ public class ViveCustomController : MonoBehaviour {
                 {
                     Teleport();
                 }
-                // If hitting a UI element, and it's a button, invoke its onClick method
+                // If hitting a UI element, and it's a button, invoke its onClick method\
+                /*
                 else if (hitLayer == worldUILayer && hitObject.CompareTag(LoadImages.BUTTON_TAG))
                 {
                     hitObject.GetComponent<Button>().onClick.Invoke();
 
                 }
+                */
             }
         }
 

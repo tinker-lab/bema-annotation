@@ -12,7 +12,6 @@ public class NavigationState : InteractionState {
     private Transform laserTransform;
     private Vector3 laserStartPos;
     private Vector3 hitPoint;
-    private GameObject hitObject;
     private int hitLayer;
 
     // Teleport stuff
@@ -26,12 +25,14 @@ public class NavigationState : InteractionState {
 
     public NavigationState()
     {
+        desc = "NavigationState";
+
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
 
         teleportReticleOffset = new Vector3(0, 0.005f, 0);
-        doNotTeleportLayer = 9;
-        worldUILayer = 10;
+        doNotTeleportLayer = LayerMask.NameToLayer("Do not teleport");
+        worldUILayer = LayerMask.NameToLayer("WorldUI");
 
         laser = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
         laserTransform = laser.transform;
@@ -76,7 +77,6 @@ public class NavigationState : InteractionState {
         {
             // No matter what object is hit, show the laser pointing to it
             hitPoint = hit.point;
-            hitObject = hit.collider.gameObject;
             hitLayer = hit.collider.gameObject.layer;
             ShowLaser(hit);
 

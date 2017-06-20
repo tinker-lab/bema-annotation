@@ -4,12 +4,19 @@ using UnityEngine;
 
 public class InteractionState : MonoBehaviour
 {
-    private string name
+    protected string desc
     {
         get;
         set;
     }
 
+    /* Called by UIController if this state is currently active and another state is about to become active. This can be used to handle deactivating widgets etc.
+     */
+    public virtual void deactivate() { }
+
+    /*
+     * Called every frame from the UIController update method if this interaction state is currently active. This should interpret the events and update any visual feedback.
+     */
     public virtual void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info) { }
 
 }
@@ -26,8 +33,8 @@ public class ControllerInfo
         this.controller = controller;
         isLeft = false;
         trackedObj = controller.GetComponent<SteamVR_TrackedObject>();
-        Debug.Log((int)trackedObj.index + " trackedObj");
         device = SteamVR_Controller.Input((int)trackedObj.index);
+        
         
     }
 }
@@ -40,25 +47,31 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller0Info;
     private ControllerInfo controller1Info;
 
+    bool firstUpdate = true;
+
 	// Use this for initialization
-	void Start () {
-        //TODO initialized current state
-
-        SteamVR_TrackedObject trackedObj = controller0.GetComponent<SteamVR_TrackedObject>();
-        //print("Tracked Obj index: " + trackedObj.index);
-
+	void Init () {
 
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
 
-        currentState = new NavigationState();
+        //currentState = new PickResourceState(controller0Info);
+        currentState = new PickResourceState(controller0Info);
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
-        controller0Info = new ControllerInfo(controller0);
-        controller1Info = new ControllerInfo(controller1);
+        if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
+        {
+            return;
+        }
+
+        if (firstUpdate)
+        {
+            Init();
+            firstUpdate = false;
+        }
 
         determineLeftRightControllers();
         currentState.HandleEvents(controller0Info, controller1Info);
@@ -66,6 +79,7 @@ public class UIController : MonoBehaviour {
 
     public void changeState(InteractionState newState)
     {
+        currentState.deactivate();
         currentState = newState;
     }
 
