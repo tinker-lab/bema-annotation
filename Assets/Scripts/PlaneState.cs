@@ -18,11 +18,12 @@ public class PlaneState : InteractionState {
         
         planeCounter = 0; //TODO: is this reset every time the state is entered? 
         snapH = snapV = false;
-        InitPlane();
+        
 
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        m = Resources.Load("Plane Material", typeof(Material)) as Material;
+        m = Resources.Load("Plane Material") as Material;
+        InitPlane();
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
