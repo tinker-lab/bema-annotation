@@ -34,14 +34,11 @@ public class PickResourceState : InteractionState
         laserTransform = laser.transform;
 
         canvas = GameObject.Find("FileSelector").transform.GetChild(0).gameObject;
-        //canvas.SetActive(true);
-
         mainPanel = canvas.transform.Find("MainPanel").gameObject;
 
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
-
-        //TODO change the canvas transform so that it appears right in front of you
-
+        PositionCanvas();
+        canvas.SetActive(true);
     }
 
     public override void deactivate()
@@ -57,21 +54,19 @@ public class PickResourceState : InteractionState
 
         if (activeController.device.GetHairTriggerUp())
         {
-            //TODO: Make images have their own resources tag. Then change the line below to only swap state if you have selected one
-
             if (hitLayer == worldUILayer && hitObject.CompareTag(PageButtonController.BUTTON_TAG))
             { 
                 hitObject.GetComponent<Button>().onClick.Invoke(); 
             }
             else if (hitLayer == worldUILayer && hitObject.CompareTag(LoadImages.RESOURCE_TAG))
             {
-                // Carry resource over to next state. Maybe reconfirm with user about their choice?
-                GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+                // Carry user and resource to next state. Maybe reconfirm with user about their choice?
+                GameObject.Find("UIController").GetComponent<UIController>().changeState(new ResourceEditState(activeController, hitObject));
             }
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // NOTE: the rest of this method is temporary. Used to test appropriate distance for UI menu
-        ////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        // NOTE: the rest of this method is temporary. Used to test appropriate distance for UI menu //
+        ///////////////////////////////////////////////////////////////////////////////////////////////
         else if (activeController.device.GetPressDown(SteamVR_Controller.ButtonMask.Touchpad))
         {
             bool activeCanvas = canvas.activeSelf ? false : true;
@@ -88,10 +83,6 @@ public class PickResourceState : InteractionState
     
         Vector3 newCanvasPosition = headTransform.position + (new Vector3(headTransform.forward.x, 0, headTransform.forward.z)).normalized * SCALE;
 
-        //canvas.transform.position = newCanvasPosition;
-   
-     //   canvas.transform.rotation = Quaternion.LookRotation(headTransform.forward, canvas.transform.up);
-
         Vector3 xAxis = headTransform.right.normalized;
         Vector3 yAxis = new Vector3(0, 1);
         Vector3 zAxis = Vector3.Cross(xAxis, yAxis);
@@ -101,7 +92,7 @@ public class PickResourceState : InteractionState
 
         if (Physics.Raycast(newCanvasPosition, new Vector3(0, -1, 0), out hit, 100))     // Send a raycast straight down to see if canvas hits anything
         {
-            hitPoint = hit.point;
+            //hitPoint = hit.point;
             float heightOffset = 0.5f;
             canvas.transform.position = hit.point + new Vector3(0, mainPanel.GetComponent<RectTransform>().rect.height / 2 + heightOffset , 0);      // Move canvas to make sure it's no longer hitting geometry
         }
@@ -121,7 +112,7 @@ public class PickResourceState : InteractionState
             hitLayer = hit.collider.gameObject.layer;
             ShowLaser(hit);
 
-            // If hitting a UI element, and it's a button, highlight it
+            // If hitting a UI element, and it's a button or resource, highlight it
             if (hitLayer == worldUILayer && (hitObject.CompareTag(PageButtonController.BUTTON_TAG) || hitObject.CompareTag(LoadImages.RESOURCE_TAG)))
             {
                 if (lastObjectHighlighted != null && !lastObjectHighlighted.Equals(hitObject))
@@ -131,12 +122,27 @@ public class PickResourceState : InteractionState
 
                 hitObject.GetComponent<Button>().image.GetComponent<Outline>().enabled = true;
                 lastObjectHighlighted = hitObject;
-            }
 
+                if (hitObject.CompareTag(LoadImages.RESOURCE_TAG))      // If it's a resource and not a page button, display its name;
+                {
+                    GameObject.Find("ResourceText").GetComponent<TextMesh>().text = hitObject.name;
+                }
+                else
+                {
+                    GameObject.Find("ResourceText").GetComponent<TextMesh>().text = "";
+                }
+            }
+            else
+            {
+                // Note: the long version will be unnecessary once we can properly switch states, as there will never be a scenario where user is in this state and menu won't be active
+                GameObject.Find("FileSelector").transform.GetChild(0).Find("ResourceText").GetComponent<TextMesh>().text = ""; 
+            }
         }
         else
         {
             laser.SetActive(false);
+            // Note: the long version will be unnecessary once we can properly switch states, as there will never be a scenario where user is in this state and menu won't be active
+            GameObject.Find("FileSelector").transform.GetChild(0).Find("ResourceText").GetComponent<TextMesh>().text = "";
         }
     }
 

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using System.Linq;
+using ImageMagick;
 
 public class LoadImages : MonoBehaviour
 {
@@ -16,9 +17,10 @@ public class LoadImages : MonoBehaviour
     public GameObject panels;
     public GameObject uiPanel;
     public GameObject buttonPrefab;
-    public string imageFolderPath;
+    public string resourceFolderPath;
+    public string convertedFilesPath;
 
-    private FileInfo[] imageFiles;
+    private FileInfo[] resourceFiles;
     private int panelCount;
     private float cellWidth;
     private float cellHeight;
@@ -26,8 +28,8 @@ public class LoadImages : MonoBehaviour
     void Start()
     {
 
-        DirectoryInfo imageFolder = new DirectoryInfo(imageFolderPath);
-        var imageFiles = imageFolder.GetFiles().Where(name => !(name.Extension == ".meta"));        // Only retrieves files without the .meta extension, which is something that unity creates I believe
+        DirectoryInfo resourceFolder = new DirectoryInfo(resourceFolderPath);
+        var resourceFiles = resourceFolder.GetFiles().Where(name => !(name.Extension == ".meta"));        // Only retrieves files without the .meta extension, which is something that unity creates I believe
 
         // Calculate ideal cell width and height based on spacing/padding
         float mainPanelWidth = uiPanel.GetComponent<RectTransform>().rect.width;
@@ -41,20 +43,14 @@ public class LoadImages : MonoBehaviour
         int resourcesOnCurrentPanel = 0;
         GameObject currentPanel = makeNewPanel();
 
-        foreach (FileInfo image in imageFiles)
+        foreach (FileInfo resource in resourceFiles)
         {
-            // Load image into Texture2D
-            Texture2D texture = new Texture2D(1, 1);
-            string filePath = Path.GetFullPath(image.FullName);
-            texture.LoadImage(File.ReadAllBytes(filePath));
-
-            // Make a sprite version
-            Sprite tempSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
 
             // Make button and load sprite version onto it
             GameObject image2D = Instantiate(buttonPrefab, uiPanel.transform);
             Button image2DButton = image2D.GetComponent<Button>();
-            image2DButton.image.sprite = tempSprite;
+            image2DButton.image.preserveAspect = true;
+            image2DButton.image.sprite = LoadResource(resource);
 
             // Make button clickable
             image2DButton.onClick.AddListener(() => onResourceClicked(image2DButton));
@@ -69,10 +65,10 @@ public class LoadImages : MonoBehaviour
             // Make button highlightable
             Outline buttonOutline = image2DButton.image.gameObject.AddComponent<Outline>();
             buttonOutline.enabled = false;
-            buttonOutline.effectDistance = new Vector2(0.01f, 0.01f);
+            buttonOutline.effectDistance = new Vector2(0.05f, 0.05f);
 
             // Give button descriptive name
-            image2DButton.name = image.Name + " button";
+            image2DButton.name = Path.GetFileNameWithoutExtension(resource.FullName);
 
             if (resourcesOnCurrentPanel >= (columnsPerPanel * rowsPerPanel))
             {
@@ -159,9 +155,73 @@ public class LoadImages : MonoBehaviour
         obj.transform.localScale = Vector3.one;            
     }
 
-    int getPanelCount()
+
+    /*
+     * Takes a resource file, and loads it differently depending on what its file type is
+     */
+    Sprite LoadResource(FileInfo resource)
     {
-        return panelCount;
+        if (resource.Extension == ".pdf")
+        {
+            Debug.Log("Pdf was found");
+            return LoadPDF(resource);
+        }
+        else    // Load as JPG if no other file type can be found
+        {
+            return LoadJPG(resource);
+        }
     }
 
+    /*
+     * Returns a sprite version of the first page of a pdf, which can be placed on a button
+     */ 
+    Sprite LoadPDF(FileInfo pdf)
+    {
+        string fileWithNewExtension = Path.GetFileNameWithoutExtension(pdf.FullName) + ".jpg";   // Make a path for the converted version
+        string newFilePath = Path.Combine(convertedFilesPath, fileWithNewExtension);             //
+
+        byte[] data;    // Data of new file
+        using (MagickImageCollection collection = new MagickImageCollection())
+        {
+            MagickReadSettings settings = new MagickReadSettings();
+            settings.FrameIndex = 0; // Start at first page
+            settings.FrameCount = 1; // Number of pages to read
+            settings.Density = new Density(600, 600);
+;
+            // Read only the first page of the pdf file
+            collection.Read(pdf, settings);
+
+            // Read image from file
+            MagickImage image = (MagickImage)collection.ElementAt(0);
+            
+            // Sets the output format to jpeg
+            image.Format = MagickFormat.Jpeg;
+            //image.Density = 
+            // Create byte array that contains a jpeg file
+            data = image.ToByteArray();
+        }
+
+        if (!File.Exists(newFilePath))   // If a converted version doesn't already exist, make a new file
+        {
+            File.WriteAllBytes(newFilePath, data);
+        }
+
+        return LoadJPG(new FileInfo(newFilePath));
+    }
+
+    /*
+     * Returns a sprite version of a jpg, which can be placed on a unity button
+     */
+    Sprite LoadJPG(FileInfo jpg)
+    {
+        // Load image into Texture2D
+        Texture2D texture = new Texture2D(1, 1);
+        string filePath = Path.GetFullPath(jpg.FullName);
+        texture.LoadImage(File.ReadAllBytes(filePath));
+
+        // Make a sprite version
+        Sprite tempSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+
+        return tempSprite;
+    }
 }

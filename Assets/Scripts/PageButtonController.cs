@@ -41,8 +41,6 @@ public class PageButtonController : MonoBehaviour {
         currentPanel = panels.GetComponent<DataPanelState>().GetCurrentPanel();
         numPanels = panels.transform.childCount;
 
-        print("num panels" + numPanels);
-
         if (isLeftButton)
         {
             if (currentPanel == 0)
@@ -55,6 +53,7 @@ public class PageButtonController : MonoBehaviour {
                 currentPanel--;
                 panels.transform.Find("Panel " + currentPanel).gameObject.SetActive(true);
                 panelText.GetComponent<TextMesh>().text = "Page " + (currentPanel + 1) + "/" + numPanels;
+                GameObject.Find("ResourceText").GetComponent<TextMesh>().text = "";
             }
         }
         else
@@ -69,12 +68,12 @@ public class PageButtonController : MonoBehaviour {
                 currentPanel++;
                 panels.transform.Find("Panel " + currentPanel).gameObject.SetActive(true);
                 panelText.GetComponent<TextMesh>().text = "Page " + (currentPanel + 1) + "/" + numPanels;
+                GameObject.Find("ResourceText").GetComponent<TextMesh>().text = "";
             }
         }
 
         panels.GetComponent<DataPanelState>().SetCurrentPanel(currentPanel);
 
         this.GetComponent<Outline>().enabled = false;
-        print("num panels" + numPanels);
     }
 }

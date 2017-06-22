@@ -1,0 +1,59 @@
+%!
+% cidfmap generated automatically by mkcidfm.ps from fonts found in
+%   C:/Windows/Fonts
+
+% Substitutions
+/BatangChe << /SubfontID 1 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/batang.ttc) >> ;
+/Dotum << /SubfontID 2 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/gulim.ttc) >> ;
+/ArialUnicodeMS-JP << /SubfontID 0 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/arialuni.ttf) >> ;
+/Meiryo-Italic << /SubfontID 1 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/meiryo.ttc) >> ;
+/MS-PGothic << /SubfontID 1 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/msgothic.ttc) >> ;
+/MS-UI-Gothic << /SubfontID 2 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/msgothic.ttc) >> ;
+/ArialUnicodeMS-GB << /SubfontID 0 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/arialuni.ttf) >> ;
+/SimSun << /SubfontID 0 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/simsun.ttc) >> ;
+/ArialUnicodeMS-CNS << /SubfontID 0 /FileType /TrueType /CSI [(CNS1) 2] /Path (C:/Windows/Fonts/arialuni.ttf) >> ;
+/MalgunGothicBold << /SubfontID 0 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/malgunbd.ttf) >> ;
+/GungsuhChe << /SubfontID 3 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/batang.ttc) >> ;
+/Meiryo << /SubfontID 0 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/meiryo.ttc) >> ;
+/PMingLiU << /SubfontID 1 /FileType /TrueType /CSI [(CNS1) 2] /Path (C:/Windows/Fonts/mingliu.ttc) >> ;
+/Meiryo-BoldItalic << /SubfontID 1 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/meiryob.ttc) >> ;
+/ArialUnicodeMS-KR << /SubfontID 0 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/arialuni.ttf) >> ;
+/Gulim << /SubfontID 0 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/gulim.ttc) >> ;
+/GulimChe << /SubfontID 1 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/gulim.ttc) >> ;
+/DotumChe << /SubfontID 3 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/gulim.ttc) >> ;
+/SimHei << /SubfontID 0 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/simhei.ttf) >> ;
+/Gungsuh << /SubfontID 2 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/batang.ttc) >> ;
+/MalgunGothicRegular << /SubfontID 0 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/malgun.ttf) >> ;
+/MS-Gothic << /SubfontID 0 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/msgothic.ttc) >> ;
+/Meiryo-Bold << /SubfontID 0 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/meiryob.ttc) >> ;
+/MS-PMincho << /SubfontID 1 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/msmincho.ttc) >> ;
+/NSimSun << /SubfontID 1 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/simsun.ttc) >> ;
+/MS-Mincho << /SubfontID 0 /FileType /TrueType /CSI [(Japan1) 3] /Path (C:/Windows/Fonts/msmincho.ttc) >> ;
+/KaiTi << /SubfontID 0 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/simkai.ttf) >> ;
+/Batang << /SubfontID 0 /FileType /TrueType /CSI [(Korea1) 3] /Path (C:/Windows/Fonts/batang.ttc) >> ;
+/DFKaiShu-SB-Estd-BF << /SubfontID 0 /FileType /TrueType /CSI [(CNS1) 2] /Path (C:/Windows/Fonts/kaiu.ttf) >> ;
+/FangSong << /SubfontID 0 /FileType /TrueType /CSI [(GB1) 2] /Path (C:/Windows/Fonts/simfang.ttf) >> ;
+/MingLiU << /SubfontID 0 /FileType /TrueType /CSI [(CNS1) 2] /Path (C:/Windows/Fonts/mingliu.ttc) >> ;
+
+% Aliases
+/AdobeMyungjoStd-Medium /Batang ;
+/MKai-Medium /DFKaiShu-SB-Estd-BF ;
+/AdobeSongStd-Light /SimSun ;
+/STSong-Light /SimSun ;
+/Ryumin-Medium /MS-Mincho ;
+/MHei-Medium /ArialUnicodeMS-CNS ;
+/KozMinPr6N-Regular /MS-Mincho ;
+/MSung-Light /MingLiU ;
+/HeiseiKakuGo-W5 /MS-Gothic ;
+/GothicBBB-Medium /MS-Gothic ;
+/HYSMyeongJo-Medium /Batang ;
+/AdobeMingStd-Light /MingLiU ;
+/Ryumin-Light /MS-Mincho ;
+/HYRGoThic-Medium /Gulim ;
+/MSung-Medium /MingLiU ;
+/STHeiti-Regular /SimHei ;
+/STFangsong-Light /FangSong ;
+/HeiseiMin-W3 /MS-Mincho ;
+/STKaiti-Regular /KaiTi ;
+/HYGoThic-Medium /Dotum ;
+/AdobeHeitiStd-Regular /SimHei ;

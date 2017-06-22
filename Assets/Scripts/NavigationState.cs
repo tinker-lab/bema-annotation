@@ -46,13 +46,13 @@ public class NavigationState : InteractionState {
     {
         // Teleport
         if (controller0Info.device.GetHairTrigger()) {
-            print("controller0 trigger down in update");
+    
             DoRayCast(controller0Info);
         }
         else if (controller1Info.device.GetHairTrigger())
         {
             DoRayCast(controller1Info);
-            print("controller0 trigger down in update");
+           
         }
         else if (controller0Info.device.GetHairTriggerUp() || controller1Info.device.GetHairTriggerUp())
         {
