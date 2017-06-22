@@ -16,14 +16,13 @@ public class PlaneState : InteractionState {
     {
         desc = "PlaneState";
         
-        planeCounter = 0;
+        planeCounter = 0; //TODO: is this reset every time the state is entered? 
         snapH = snapV = false;
         InitPlane();
 
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        //TODO move plane material to resources using GIT
-        m = Resources.Load<Material>("Plane Material");
+        m = Resources.Load("Plane Material", typeof(Material)) as Material;
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -33,7 +32,12 @@ public class PlaneState : InteractionState {
             
         if (controller0Info.device.GetHairTriggerUp() || controller1Info.device.GetHairTriggerUp())
         {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+            GameObject.Find("PlaneCameraParent").transform.GetChild(0).gameObject.SetActive(false);
+            //TODO: set viewing plane inactive as well
+
+
+            // GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
         }
         
     }
@@ -50,6 +54,11 @@ public class PlaneState : InteractionState {
 
         newPlane.GetComponent<Renderer>().material = m;
         snapH = snapV = false;
+
+        Camera camera = GameObject.Find("PlaneCameraParent").transform.GetChild(0).GetComponent<Camera>();
+        camera.gameObject.SetActive(true);
+        
+        camera.GetComponent<PlaneCameraController>().setPlane(newPlane);
     }
 
     private void ChangePlane(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -84,7 +93,7 @@ public class PlaneState : InteractionState {
         Vector3 groundY = new Vector3(0, 1);
 
         float controllerToGroundY = Vector3.Angle(yAxis, groundY);
-        print(snapH);
+       // print(snapH);
 
         if (controllerToGroundY < 25 || controllerToGroundY > 155)
         {

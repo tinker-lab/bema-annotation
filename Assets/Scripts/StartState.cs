@@ -51,6 +51,8 @@ public class StartState : InteractionState {
 
         canvas.SetActive(true);
         PositionCanvas();
+
+        GameObject.Find("PlaneCameraParent").transform.GetChild(0).gameObject.SetActive(false);
     }
 
     public override void deactivate()
