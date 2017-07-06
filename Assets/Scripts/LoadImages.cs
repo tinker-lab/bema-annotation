@@ -5,10 +5,15 @@ using UnityEngine.UI;
 using System.IO;
 using System.Linq;
 using ImageMagick;
+using GhostscriptSharp;
+using System.Text.RegularExpressions;
+using System;
 
 public class LoadImages : MonoBehaviour
 {
-    public static readonly string RESOURCE_TAG = "resource"; 
+    public static readonly string RESOURCE_TAG = "resource";
+    public static string resourceFolderPath;
+    public static string convertedFilesPath; 
 
     public int rowsPerPanel;
     public int columnsPerPanel;
@@ -17,8 +22,6 @@ public class LoadImages : MonoBehaviour
     public GameObject panels;
     public GameObject uiPanel;
     public GameObject buttonPrefab;
-    public string resourceFolderPath;
-    public string convertedFilesPath;
 
     private FileInfo[] resourceFiles;
     private int panelCount;
@@ -27,6 +30,8 @@ public class LoadImages : MonoBehaviour
 
     void Start()
     {
+        resourceFolderPath = Application.dataPath + "/Photos/original_photos";
+        convertedFilesPath = Application.dataPath + "/Photos/converted_photos";
 
         DirectoryInfo resourceFolder = new DirectoryInfo(resourceFolderPath);
         var resourceFiles = resourceFolder.GetFiles().Where(name => !(name.Extension == ".meta"));        // Only retrieves files without the .meta extension, which is something that unity creates I believe
@@ -50,7 +55,13 @@ public class LoadImages : MonoBehaviour
             GameObject image2D = Instantiate(buttonPrefab, uiPanel.transform);
             Button image2DButton = image2D.GetComponent<Button>();
             image2DButton.image.preserveAspect = true;
-            image2DButton.image.sprite = LoadResource(resource);
+
+            Sprite tempImageSprite = LoadResource(resource, convertedFilesPath);
+            image2DButton.image.sprite = tempImageSprite;
+
+            // Give button a reference to image file path
+            image2DButton.gameObject.AddComponent<ImageInfo>();
+            image2DButton.GetComponent<ImageInfo>().SetImageSprite(tempImageSprite);
 
             // Make button clickable
             image2DButton.onClick.AddListener(() => onResourceClicked(image2DButton));
@@ -159,60 +170,60 @@ public class LoadImages : MonoBehaviour
     /*
      * Takes a resource file, and loads it differently depending on what its file type is
      */
-    Sprite LoadResource(FileInfo resource)
+    public static Sprite LoadResource(FileInfo resource, string convertedFilesPath)
     {
         if (resource.Extension == ".pdf")
         {
             Debug.Log("Pdf was found");
-            return LoadPDF(resource);
+            return LoadPDF(resource, convertedFilesPath);
         }
         else    // Load as JPG if no other file type can be found
         {
-            return LoadJPG(resource);
+            return LoadImage(resource);
         }
     }
 
     /*
      * Returns a sprite version of the first page of a pdf, which can be placed on a button
      */ 
-    Sprite LoadPDF(FileInfo pdf)
+    public static Sprite LoadPDF(FileInfo pdf, string convertedFilesPath)
     {
-        string fileWithNewExtension = Path.GetFileNameWithoutExtension(pdf.FullName) + ".jpg";   // Make a path for the converted version
-        string newFilePath = Path.Combine(convertedFilesPath, fileWithNewExtension);             //
+        string fileWithoutExtension = Path.GetFileNameWithoutExtension(pdf.FullName);
+        string fileWithNewExtension = fileWithoutExtension + ".png";                 // Make a version of the filename with a new extension
 
-        byte[] data;    // Data of new file
-        using (MagickImageCollection collection = new MagickImageCollection())
+        string pathToFolder = Path.Combine(convertedFilesPath, fileWithoutExtension + " pages");    // Path to folder holding all the different pages of a pdf
+
+        if (!Directory.Exists(pathToFolder))
         {
-            MagickReadSettings settings = new MagickReadSettings();
-            settings.FrameIndex = 0; // Start at first page
-            settings.FrameCount = 1; // Number of pages to read
-            settings.Density = new Density(600, 600);
-;
-            // Read only the first page of the pdf file
-            collection.Read(pdf, settings);
-
-            // Read image from file
-            MagickImage image = (MagickImage)collection.ElementAt(0);
-            
-            // Sets the output format to jpeg
-            image.Format = MagickFormat.Jpeg;
-            //image.Density = 
-            // Create byte array that contains a jpeg file
-            data = image.ToByteArray();
+            Directory.CreateDirectory(pathToFolder);
         }
 
-        if (!File.Exists(newFilePath))   // If a converted version doesn't already exist, make a new file
+        string newFilePath = Path.Combine(pathToFolder, fileWithNewExtension);  // Final path for the new files
+
+        Debug.Log("New file path: " + newFilePath);
+
+        GhostscriptSettings settings = new GhostscriptSettings();
+        settings.Page.AllPages = true;
+        settings.Page.Start = 1;
+        settings.Device = GhostscriptSharp.Settings.GhostscriptDevices.png16m;
+        settings.Size.Native = GhostscriptSharp.Settings.GhostscriptPageSizes.letter;
+        settings.Resolution = new DrawingSize(300, 300);
+
+        if (!File.Exists(newFilePath))  // TODO: make sure this just checks first page
         {
-            File.WriteAllBytes(newFilePath, data);
+            GhostscriptWrapper.GenerateOutput(pdf.FullName, newFilePath, settings);
+            //GhostscriptWrapper.GeneratePageThumb(pdf.FullName, newFilePath, 0, 700, 700);
+            //GhostscriptWrapper.GeneratePageThumb(pdf.FullName, newFilePath, 1, 300, 300);
         }
 
-        return LoadJPG(new FileInfo(newFilePath));
+
+        return LoadImage(new FileInfo(newFilePath)); // Make sure this just loads first page
     }
 
     /*
      * Returns a sprite version of a jpg, which can be placed on a unity button
      */
-    Sprite LoadJPG(FileInfo jpg)
+    public static Sprite LoadImage(FileInfo jpg)
     {
         // Load image into Texture2D
         Texture2D texture = new Texture2D(1, 1);
@@ -223,5 +234,30 @@ public class LoadImages : MonoBehaviour
         Sprite tempSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
 
         return tempSprite;
+    }
+
+    /**
+     * Returns the number of pages in a pdf
+     */ 
+    public static int GetNumPages(string path)
+    {
+        if (path != null)
+        {
+            try
+            {
+                using (var stream = new StreamReader(File.OpenRead(path)))
+                {
+                    var regex = new Regex(@"/Type\s*/Page[^s]");
+                    var matches = regex.Matches(stream.ReadToEnd());
+
+                    return matches.Count;
+                }
+            }
+            catch (Exception e)
+            {
+                return 0;
+            }
+        }
+        return 0;
     }
 }

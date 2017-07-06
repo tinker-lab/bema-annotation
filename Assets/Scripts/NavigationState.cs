@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class NavigationState : InteractionState {
 
+    private readonly float MIN_DISTANCE = 0.3f;    // How close controllers need to be to plane
+
     private int doNotTeleportLayer;
     private int worldUILayer;
 
@@ -44,6 +46,13 @@ public class NavigationState : InteractionState {
     // Update is called once per frame
     override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        // Check if controllers are close to plane
+        if(ControllerNearPlane(controller0Info) || ControllerNearPlane(controller1Info))
+        {
+            Debug.Log("Switching from NavigationState to EdgeSelection state");
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(new EdgeSelectionState(controller0Info, controller1Info));
+        }
+
         // Teleport
         if (controller0Info.device.GetHairTrigger()) {
     
@@ -60,6 +69,10 @@ public class NavigationState : InteractionState {
             {
                 Teleport();
             }
+        }
+        else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
+        {
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
         }
         else
         {
@@ -125,5 +138,23 @@ public class NavigationState : InteractionState {
         // 4
         laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y,
             hit.distance);
+    }
+
+    private bool ControllerNearPlane(ControllerInfo controllerInfo)
+    {
+        GameObject viewPlane = GameObject.Find("ViewPlane");
+        if (viewPlane == null)
+        {
+            return false;
+        }
+        else
+        {
+            Vector3 controllerPos = controllerInfo.trackedObj.transform.position;
+            Vector3 planePos = viewPlane.transform.position;
+
+            float distance = Vector3.Distance(controllerPos, planePos);
+
+            return (distance <= MIN_DISTANCE);
+        }
     }
 }

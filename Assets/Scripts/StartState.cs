@@ -150,6 +150,7 @@ public class StartState : InteractionState {
         RaycastHit hit1;
 
         laser0StartPos = controller0Info.trackedObj.transform.position;
+        laser1StartPos = controller1Info.trackedObj.transform.position;
         if (Physics.Raycast(laser0StartPos, controller0Info.trackedObj.transform.forward, out hit0, 1000))
         {
             // No matter what object is hit, show the laser pointing to it
@@ -171,13 +172,7 @@ public class StartState : InteractionState {
 
             }
         }
-        else
-        {
-            laser0.SetActive(false);
-        }
-        
-        laser1StartPos = controller1Info.trackedObj.transform.position;
-        if (Physics.Raycast(laser1StartPos, controller1Info.trackedObj.transform.forward, out hit1, 1000))
+        else if (Physics.Raycast(laser1StartPos, controller1Info.trackedObj.transform.forward, out hit1, 1000))
         {
             // No matter what object is hit, show the laser pointing to it
             hitPoint1 = hit1.point;
@@ -197,11 +192,12 @@ public class StartState : InteractionState {
                 lastObjectHighlighted = hitObject1;
 
             }
-            }
-            else
-            {
-                laser1.SetActive(false);
-            }
+        }
+        else
+        {
+           laser0.SetActive(false);
+           laser1.SetActive(false);
+        }
     }
 
     private void ShowLaser(RaycastHit hit, bool isController0)

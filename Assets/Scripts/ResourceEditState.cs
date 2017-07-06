@@ -38,9 +38,14 @@ public class ResourceEditState : InteractionState {
 
         canvas = GameObject.Find("ResourceEditMenu").transform.GetChild(0).gameObject;
         mainPanel = canvas.transform.Find("MainPanel").gameObject;
-        canvas.transform.Find("CurrentPage").GetComponent<Image>().preserveAspect = true;
-        canvas.transform.Find("CurrentPage").GetComponent<Image>().sprite = selectedResource.GetComponent<Image>().sprite; // Displays the thumbnail of the passed in resource
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+
+        Image image = canvas.transform.Find("CurrentPage").GetComponent<Image>();
+        image.preserveAspect = true;
+        image.sprite = currentResource.GetComponent<ImageInfo>().GetImageSprite();
+        //canvas.transform.Find("CurrentPage").GetComponent<Image>().sprite = 
+        // TODO: right now this upscales the downscaled version of image on buttons. Give buttons access to original image.
+        // Displays the thumbnail of the passed in resource
 
         canvas.SetActive(true);
         PositionCanvas();
