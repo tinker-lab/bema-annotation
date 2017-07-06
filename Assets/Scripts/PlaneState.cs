@@ -13,6 +13,7 @@ public class PlaneState : InteractionState {
     private Material m;
 
     private int worldUILayer;
+    private int everythingExceptWorldUI;
     private Vector3 idealPosition;
 
     public PlaneState()
@@ -22,6 +23,8 @@ public class PlaneState : InteractionState {
         planeCounter = 0; //TODO: this is reset every time the state is entered
        
         worldUILayer = LayerMask.NameToLayer("WorldUI");
+        everythingExceptWorldUI = worldUILayer << 8;
+        everythingExceptWorldUI = ~everythingExceptWorldUI;
 
         m = Resources.Load("Plane Material") as Material;
         InitPlane();
@@ -121,7 +124,7 @@ public class PlaneState : InteractionState {
         
         camera.GetComponent<PlaneCameraController>().setPlane(newPlane);
 
-        //TODO: initialize the viewplane position and idealposition
+        newPlane.GetComponent<MeshCollider>().enabled = false;
     }
 
     private void ChangePlane(ControllerInfo controller0Info, ControllerInfo controller1Info)

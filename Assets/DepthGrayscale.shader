@@ -60,8 +60,8 @@ Shader "Custom/EdgeDetector" {
 			rightD = Linear01Depth(rightD);
 
 			if (((abs(topD - bottomD) > 0.1) || (abs(rightD - leftD) > 0.1)) || ((abs(dot(topN, bottomN)) < 0.9) || (abs(dot(rightN, leftN)) < 0.9))) {
-				//return float4(0,0,0,1);
-				return float4(normalValue, 1);
+				return float4(0,0,0,1);
+				//return float4(normalValue, 1);
 			}
 			else {
 				return float4(1, 1, 1, 1);

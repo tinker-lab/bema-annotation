@@ -65,17 +65,15 @@ public class EdgeSelectionState : InteractionState {
         if (firstTime)
         {
             PreProcess();
-            firstTime = false;
         }
 
-        if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
+        if (AwayFromPlane(controller0Info) || AwayFromPlane(controller1Info))
         {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
         }
 
         planeProjection0 = ClosestPointToPlane(controller0Info.trackedObj.transform.position);
         planeProjection1 = ClosestPointToPlane(controller1Info.trackedObj.transform.position);
-
 
         Quaternion delta0 = controller0Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation0);
         Quaternion delta1 = controller1Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation1);
@@ -99,7 +97,15 @@ public class EdgeSelectionState : InteractionState {
             points.Add(ClosestPointToPlane(curve.Evaluate(i /(float) numSegments)));
         }
 
+        points = SnapToContour(viewPlane, points);
+
         CreateMesh(points);
+
+        if (firstTime)
+        {
+            GameObject.Find("BezierParent").transform.GetChild(0).gameObject.SetActive(true);
+            firstTime = false;
+        }
 
         /*
         Texture2D bezierTexture = Resources.Load("Textures/GRASS2") as Texture2D;
@@ -129,18 +135,51 @@ public class EdgeSelectionState : InteractionState {
     {
         viewPlane.GetComponent<BoxCollider>().enabled = false;
         viewPlane.transform.localScale = new Vector3(0.02f, 1f, 0.02f);
+        GameObject.Find("BezierParent").transform.GetChild(0).gameObject.SetActive(false);
+    }
+
+    private bool AwayFromPlane(ControllerInfo controllerInfo)
+    {
+        GameObject viewPlane = GameObject.Find("ViewPlane");
+        if (viewPlane == null)
+        {
+            return false;
+        }
+        else
+        {
+            Vector3 controllerPos = controllerInfo.trackedObj.transform.position;
+            Vector3 planePos = viewPlane.transform.position;
+
+            float distance = Vector3.Distance(controllerPos, planePos);
+
+            return (distance > NavigationState.MIN_DISTANCE * 1.5);
+        }
     }
 
     void PreProcess()
     {
         // Get corners from plane
         Vector3 centerOfPlane = viewPlane.transform.position;
-        float sideLength = 10 * viewPlane.transform.localScale.x;
+        float sideLength = (10*viewPlane.transform.localScale.x) / 2;
 
-        corner0 = centerOfPlane - sideLength * viewPlane.transform.right - sideLength * viewPlane.transform.forward;
-        corner1 = centerOfPlane + sideLength * viewPlane.transform.right - sideLength * viewPlane.transform.forward;
-        corner2 = centerOfPlane - sideLength * viewPlane.transform.right + sideLength * viewPlane.transform.forward;
-        corner3 = centerOfPlane + sideLength * viewPlane.transform.right + sideLength * viewPlane.transform.forward;
+        corner0 = centerOfPlane - sideLength * viewPlane.transform.right.normalized - sideLength * viewPlane.transform.forward.normalized;
+        corner1 = centerOfPlane + sideLength * viewPlane.transform.right.normalized - sideLength * viewPlane.transform.forward.normalized;
+        corner2 = centerOfPlane - sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
+        corner3 = centerOfPlane + sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
+
+        GameObject sp0 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sp0.transform.position = corner0;
+        sp0.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+        GameObject sp1 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sp1.transform.position = corner1;
+        sp1.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+        GameObject sp2 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sp2.transform.position = corner2;
+        sp2.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+        GameObject sp3 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sp3.transform.position = corner3;
+        sp3.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+
 
         // Get texture from plane
         Material material = viewPlane.GetComponent<Renderer>().material;
@@ -186,11 +225,17 @@ public class EdgeSelectionState : InteractionState {
 
     void UpdateGradient(double threshold)
     {
+        Cv2.ImShow("gray", gray);
+
         double currentThreshold = threshold;
         Mat binary = new Mat();
         Cv2.Threshold(gray, binary, threshold, 255.0, ThresholdTypes.BinaryInv);
 
-        Cv2.MorphologyEx(binary, binary, MorphTypes.Open, element, new Point(-1, -1), 1);
+        Cv2.ImShow("binary", binary);
+
+       // Cv2.MorphologyEx(binary, binary, MorphTypes.Open, element, new Point(-1, -1), 1);
+
+       // Cv2.ImShow("binaryafter morph", binary);
 
         Mat invertBinary = 255 - binary;
         Debug.Log(binary.Type());
@@ -199,6 +244,8 @@ public class EdgeSelectionState : InteractionState {
 
         distanceMap = distPos - distNeg;
 
+        Cv2.ImShow("distmap", distanceMap);
+
         Cv2.Sobel(distanceMap, grad_x, MatType.CV_32FC1, 1, 0, 3);
         Cv2.Sobel(distanceMap, grad_y, MatType.CV_32FC1, 0, 1, 3);
 
@@ -206,6 +253,8 @@ public class EdgeSelectionState : InteractionState {
         Cv2.Normalize(grad_y, grad_y_normalized, 0.0, 1.0, NormTypes.MinMax);
         Mat tmp1, tmp2;
         Cv2.AddWeighted(grad_x_normalized, 0.5, grad_y_normalized, 0.5, 0, gradient);
+
+        Cv2.ImShow("gradient", gradient);
     }
 
     List<Vector3> SnapToContour(GameObject viewPlane, List<Vector3> line)
@@ -253,8 +302,8 @@ public class EdgeSelectionState : InteractionState {
 
         float uLength = uVec.magnitude;
         float vLength = vVec.magnitude;
-        Vector3.Normalize(uVec);
-        Vector3.Normalize(vVec);
+        uVec = Vector3.Normalize(uVec);
+        vVec = Vector3.Normalize(vVec);
 
         uv.x = Vector3.Dot(point - corner0, uVec);
         uv.y = Vector3.Dot(point - corner2, vVec);
@@ -383,7 +432,7 @@ public class EdgeSelectionState : InteractionState {
             }
         }
 
-        GameObject bezierObject = GameObject.Find("BezierCurve");
+        GameObject bezierObject = GameObject.Find("BezierParent").transform.GetChild(0).gameObject;
 
         Mesh selectorMesh = new Mesh();
         selectorMesh.vertices = vertices.ToArray();

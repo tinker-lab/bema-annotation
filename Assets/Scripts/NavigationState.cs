@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class NavigationState : InteractionState {
 
-    private readonly float MIN_DISTANCE = 0.3f;    // How close controllers need to be to plane
+    public static readonly float MIN_DISTANCE = 0.3f;    // How close controllers need to be to plane
 
     private int doNotTeleportLayer;
     private int worldUILayer;
@@ -47,8 +47,9 @@ public class NavigationState : InteractionState {
     override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         // Check if controllers are close to plane
-        if(ControllerNearPlane(controller0Info) || ControllerNearPlane(controller1Info))
+        if(ControllerNearPlane(controller0Info) && ControllerNearPlane(controller1Info))
         {
+            
             Debug.Log("Switching from NavigationState to EdgeSelection state");
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new EdgeSelectionState(controller0Info, controller1Info));
         }
