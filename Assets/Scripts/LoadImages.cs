@@ -174,7 +174,7 @@ public class LoadImages : MonoBehaviour
     {
         if (resource.Extension == ".pdf")
         {
-            Debug.Log("Pdf was found");
+            //Debug.Log("Pdf was found");
             return LoadPDF(resource, convertedFilesPath);
         }
         else    // Load as JPG if no other file type can be found
@@ -200,7 +200,7 @@ public class LoadImages : MonoBehaviour
 
         string newFilePath = Path.Combine(pathToFolder, fileWithNewExtension);  // Final path for the new files
 
-        Debug.Log("New file path: " + newFilePath);
+        //Debug.Log("New file path: " + newFilePath);
 
         GhostscriptSettings settings = new GhostscriptSettings();
         settings.Page.AllPages = true;

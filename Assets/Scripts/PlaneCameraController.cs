@@ -19,6 +19,7 @@ public class PlaneCameraController : MonoBehaviour {
         if (plane != null) { // only run if setPlane has been called
             transform.rotation = plane.transform.rotation; 
             transform.localRotation = Quaternion.LookRotation(-transform.up, -transform.forward); // camera follows plane, is always looking straight at it
+
             transform.position = plane.transform.position - transform.forward.normalized;
 
             GetComponent<Camera>().orthographicSize = plane.transform.localScale.x * 5; // camera view should be exactly the same size as the plane

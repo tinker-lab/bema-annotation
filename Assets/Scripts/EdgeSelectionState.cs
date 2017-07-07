@@ -8,15 +8,13 @@ using OpenCvSharp;
 
 public class EdgeSelectionState : InteractionState {
 
-    private readonly float OFFSET = 0f;
+    private readonly float OFFSET = 0.1f;
+    private readonly float SEGMENT_SCALE = 130f;
     private readonly float VIEWPLANE_SCALE = 2f;
 
     private Quaternion initialRotation0;
     private Quaternion initialRotation1;
     private Vector3 initialController1to0;
-
-    private Vector3 planeProjection0;   // Projection of controller0 onto plane
-    private Vector3 planeProjection1;   // Projection of controller 1 onto plane
 
     private GameObject viewPlane;
     private Texture2D planeTexture;
@@ -57,7 +55,7 @@ public class EdgeSelectionState : InteractionState {
         initialRotation1 = controller1Info.trackedObj.transform.rotation;
         initialController1to0 = (controller0Info.trackedObj.transform.position - controller1Info.trackedObj.transform.position).normalized; //TODO: account for left and right
 
-        viewPlane.GetComponent<BoxCollider>().enabled = true;   // Allows 
+        //viewPlane.GetComponent<BoxCollider>().enabled = true;   
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -72,8 +70,8 @@ public class EdgeSelectionState : InteractionState {
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
         }
 
-        planeProjection0 = ClosestPointToPlane(controller0Info.trackedObj.transform.position);
-        planeProjection1 = ClosestPointToPlane(controller1Info.trackedObj.transform.position);
+        Vector3 planeProjection0 = ClosestPointToPlane(controller0Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller0 onto plane
+        Vector3 planeProjection1 = ClosestPointToPlane(controller1Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller 1 onto plane
 
         Quaternion delta0 = controller0Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation0);
         Quaternion delta1 = controller1Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation1);
@@ -85,45 +83,29 @@ public class EdgeSelectionState : InteractionState {
         Vector3 controller0OffsetPoint = controller0Info.trackedObj.transform.position + offsetDistance * controller0Direction;
         Vector3 controller1OffsetPoint = controller1Info.trackedObj.transform.position + offsetDistance * controller1Direction;
         // Call closest point method to get control points
-        Vector3 closestPoint0 = ClosestPointToPlane(controller0OffsetPoint);
-        Vector3 closestPoint1 = ClosestPointToPlane(controller1OffsetPoint);
+        Vector3 closestPoint0 = ClosestPointToPlane(controller0OffsetPoint) - viewPlane.transform.forward * OFFSET;
+        Vector3 closestPoint1 = ClosestPointToPlane(controller1OffsetPoint) - viewPlane.transform.forward * OFFSET;
 
         BezierCurve curve = new BezierCurve(planeProjection0, closestPoint0, closestPoint1, planeProjection1);
 
         List<Vector3> points = new List<Vector3>();
-        int numSegments = 20;
+        int numSegments = (int)(Vector3.Distance(planeProjection0, planeProjection1) * SEGMENT_SCALE);
+
         for (int i = 0; i <= numSegments; i++)
         {
             points.Add(ClosestPointToPlane(curve.Evaluate(i /(float) numSegments)));
         }
 
+        GameObject.Find("BezierParent").transform.Find("GuideCurve").GetComponent<MeshFilter>().mesh = CreateMesh(points);
         points = SnapToContour(viewPlane, points);
-
-        CreateMesh(points);
+        GameObject.Find("BezierParent").transform.Find("BezierCurve").GetComponent<MeshFilter>().mesh = CreateMesh(points);
 
         if (firstTime)
         {
             GameObject.Find("BezierParent").transform.GetChild(0).gameObject.SetActive(true);
+            GameObject.Find("BezierParent").transform.GetChild(1).gameObject.SetActive(true);
             firstTime = false;
         }
-
-        /*
-        Texture2D bezierTexture = Resources.Load("Textures/GRASS2") as Texture2D;
-        try
-        {
-            Handles.DrawBezier(controller0Info.trackedObj.transform.position, controller1Info.trackedObj.transform.position, initialRotation0, initialRotation1, Color.cyan, null, 2f);
-        }
-        catch (System.NullReferenceException n)
-        {
-            Debug.Log("controller0 pos is null: " + (controller0Info.trackedObj.transform.position == null));
-            Debug.Log("controller1 pos is null: " + (controller1Info.trackedObj.transform.position == null));
-            Debug.Log("intitialrotation0 is null: " + (initialRotation0 == null));
-            Debug.Log("intitialrotation1 is null: " + (initialRotation0 == null));
-            Debug.Log("Bezier texture is null: " + (bezierTexture == null));
-            Debug.Log(n);
-        }
-        */
-
     }
 
     Vector3 ClosestPointToPlane(Vector3 pt)
@@ -133,9 +115,10 @@ public class EdgeSelectionState : InteractionState {
 
     public override void deactivate()
     {
-        viewPlane.GetComponent<BoxCollider>().enabled = false;
+        //viewPlane.GetComponent<BoxCollider>().enabled = false;
         viewPlane.transform.localScale = new Vector3(0.02f, 1f, 0.02f);
         GameObject.Find("BezierParent").transform.GetChild(0).gameObject.SetActive(false);
+        GameObject.Find("BezierParent").transform.GetChild(1).gameObject.SetActive(false);
     }
 
     private bool AwayFromPlane(ControllerInfo controllerInfo)
@@ -152,7 +135,7 @@ public class EdgeSelectionState : InteractionState {
 
             float distance = Vector3.Distance(controllerPos, planePos);
 
-            return (distance > NavigationState.MIN_DISTANCE * 1.5);
+            return (distance > NavigationState.MIN_DISTANCE * 2);
         }
     }
 
@@ -167,20 +150,6 @@ public class EdgeSelectionState : InteractionState {
         corner2 = centerOfPlane - sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
         corner3 = centerOfPlane + sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
 
-        GameObject sp0 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sp0.transform.position = corner0;
-        sp0.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-        GameObject sp1 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sp1.transform.position = corner1;
-        sp1.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-        GameObject sp2 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sp2.transform.position = corner2;
-        sp2.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-        GameObject sp3 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sp3.transform.position = corner3;
-        sp3.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-
-
         // Get texture from plane
         Material material = viewPlane.GetComponent<Renderer>().material;
         RenderTexture tex = material.mainTexture as RenderTexture;
@@ -191,8 +160,6 @@ public class EdgeSelectionState : InteractionState {
         planeTexture.Apply();
 
         byte[] textureData = planeTexture.GetRawTextureData();
-
-        //Debug.Log("Texture format: " + texture.format);
 
         Mat raw = new Mat(planeTexture.width, planeTexture.height, MatType.CV_8UC4, textureData);
 
@@ -208,7 +175,6 @@ public class EdgeSelectionState : InteractionState {
         element = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(2 * morph_size + 1, 2 * morph_size + 1));
         width = gray.Size().Width;
         height = gray.Size().Height;
-        //Mat binary = Mat.Zeros(height, width, MatType.CV_32FC1);
         distPos = new Mat(height, width, MatType.CV_32FC1);
         distNeg = new Mat(height, width, MatType.CV_32FC1);
         distanceMap = new Mat(height, width, MatType.CV_32FC1);
@@ -217,21 +183,20 @@ public class EdgeSelectionState : InteractionState {
         grad_x_normalized = Mat.Zeros(height, width, MatType.CV_32FC1);
         grad_y_normalized = Mat.Zeros(height, width, MatType.CV_32FC1);
         gradient = Mat.Zeros(height, width, MatType.CV_32FC1);
-        //float[] buffer = new float[height * width];
-        double defaultThreshold = 180.0;
 
+        double defaultThreshold = 180.0;
         UpdateGradient(defaultThreshold);
     }
 
     void UpdateGradient(double threshold)
     {
-        Cv2.ImShow("gray", gray);
+        //Cv2.ImShow("gray", gray);
 
         double currentThreshold = threshold;
         Mat binary = new Mat();
         Cv2.Threshold(gray, binary, threshold, 255.0, ThresholdTypes.BinaryInv);
 
-        Cv2.ImShow("binary", binary);
+        //Cv2.ImShow("binary", binary);
 
        // Cv2.MorphologyEx(binary, binary, MorphTypes.Open, element, new Point(-1, -1), 1);
 
@@ -244,17 +209,16 @@ public class EdgeSelectionState : InteractionState {
 
         distanceMap = distPos - distNeg;
 
-        Cv2.ImShow("distmap", distanceMap);
+        //Cv2.ImShow("distmap", distanceMap);
 
         Cv2.Sobel(distanceMap, grad_x, MatType.CV_32FC1, 1, 0, 3);
         Cv2.Sobel(distanceMap, grad_y, MatType.CV_32FC1, 0, 1, 3);
 
         Cv2.Normalize(grad_x, grad_x_normalized, 0.0, 1.0, NormTypes.MinMax);
         Cv2.Normalize(grad_y, grad_y_normalized, 0.0, 1.0, NormTypes.MinMax);
-        Mat tmp1, tmp2;
         Cv2.AddWeighted(grad_x_normalized, 0.5, grad_y_normalized, 0.5, 0, gradient);
 
-        Cv2.ImShow("gradient", gradient);
+        //Cv2.ImShow("gradient", gradient);
     }
 
     List<Vector3> SnapToContour(GameObject viewPlane, List<Vector3> line)
@@ -277,7 +241,7 @@ public class EdgeSelectionState : InteractionState {
         {
             Vector2 uv = GetUVFromPoint(line.ElementAt(i));
 
-            uv.y = 1f - uv.y;   // Comment out if things are flipped around wrong
+            //uv.y = 1f - uv.y;   // Comment out if things are flipped around wrong
             Vector2 pixelSpacePoint = new Vector2(uv.x * slideSize.x, uv.y * slideSize.y);
 
             pixelSpacePoint = RefinePoint(pixelSpacePoint);
@@ -285,7 +249,7 @@ public class EdgeSelectionState : InteractionState {
             uv = new Vector2(pixelSpacePoint.x/slideSize.x, pixelSpacePoint.y/slideSize.y);
 
             // Flip V back
-            uv.y = 1f - uv.y;
+            //uv.y = 1f - uv.y;
             snappedLine.Insert(i, GetPointFromUV(uv));
         }
 
@@ -320,7 +284,7 @@ public class EdgeSelectionState : InteractionState {
 
     Vector3 GetPointFromUV(Vector2 uv)
     {
-        Vector3 uVec = corner1 - corner0;
+        Vector3 uVec = corner1 - corner0; 
         Vector3 vVec = corner0 - corner2;
 
         Vector3 multiplied_uVec = new Vector3(uv.x * uVec.x, uv.x * uVec.y, uv.x * uVec.z);
@@ -364,7 +328,7 @@ public class EdgeSelectionState : InteractionState {
         return newPoint;
     }
 
-    public void CreateMesh (List<Vector3> points)
+    private Mesh CreateMesh (List<Vector3> points)
         // take list of vectors, center of one to next
         // sample points along curve, pass to list
     {
@@ -382,7 +346,7 @@ public class EdgeSelectionState : InteractionState {
             Vector3 direction;
             if (i == points.Count - 1)
             {
-                direction = points.ElementAt(i) - points.ElementAt(i - 1);
+                direction = points.ElementAt(i) - points.ElementAt(i - 1);  //NOTE: Threw exception when I made the curve incredibly small
             }
             else {
                direction = points.ElementAt(i + 1) - points.ElementAt(i);
@@ -441,9 +405,8 @@ public class EdgeSelectionState : InteractionState {
 
         selectorMesh.RecalculateBounds();
         selectorMesh.RecalculateNormals();
-
-        bezierObject.GetComponent<MeshFilter>().mesh = selectorMesh; 
-        
+        //bezierObject.GetComponent<MeshFilter>().mesh = selectorMesh; 
+        return selectorMesh;
     }
 
 

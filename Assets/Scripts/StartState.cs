@@ -120,7 +120,7 @@ public class StartState : InteractionState {
     void PositionCanvas()
     {
 
-        Debug.Log("Repositioning canvas");
+        //Debug.Log("Repositioning canvas");
 
         Vector3 newCanvasPosition = headTransform.position + (new Vector3(headTransform.forward.x, 0, headTransform.forward.z)).normalized * SCALE;
 

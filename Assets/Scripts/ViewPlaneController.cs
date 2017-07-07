@@ -4,22 +4,8 @@ using UnityEngine;
 
 public class ViewPlaneController : MonoBehaviour {
 
-    public bool hasCollided = false;
-	
-	void OnTriggerEnter(Collider col)
+    void Start()
     {
-        hasCollided = true;
-        Debug.Log("Collided with " + col.gameObject.name);
-    }
-
-    void OnTriggerExit(Collider col)
-    {
-        hasCollided = false;
-        Debug.Log("No longer colliding with " + col.gameObject.name);
-    }
-
-    void OnTriggerStay()
-    {
-        hasCollided = true;
+        GetComponent<Renderer>().material.SetTextureScale("_MainTex", new Vector2(-1, 1));
     }
 }

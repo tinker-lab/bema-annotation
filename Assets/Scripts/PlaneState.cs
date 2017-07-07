@@ -58,8 +58,8 @@ public class PlaneState : InteractionState {
 
         Vector3 prevIdealPosition = idealPosition;
         idealPosition = headset.position - (viewPlane.transform.up.normalized * 0.5f);
-       // viewPlane.transform.Rotate(headset.right, -90f);
-        //viewPlane.transform.Rotate(90, 0, 0);
+      
+        //viewPlane.transform.Rotate(0, -90, 0);
 
 
         RaycastHit hit;
@@ -119,12 +119,22 @@ public class PlaneState : InteractionState {
 
         newPlane.GetComponent<Renderer>().material = m;
 
+        newPlane.GetComponent<MeshCollider>().convex = true;
+        newPlane.GetComponent<MeshCollider>().isTrigger = true;
+        newPlane.AddComponent<Rigidbody>();
+        newPlane.GetComponent<Rigidbody>().isKinematic = true;
+
+        newPlane.AddComponent<PlaneCollision>();
+        
+
+        // match camera
+
         Camera camera = GameObject.Find("PlaneCameraParent").transform.GetChild(0).GetComponent<Camera>();
         camera.gameObject.SetActive(true);
         
         camera.GetComponent<PlaneCameraController>().setPlane(newPlane);
 
-        newPlane.GetComponent<MeshCollider>().enabled = false;
+       // newPlane.GetComponent<MeshCollider>().enabled = false;
     }
 
     private void ChangePlane(ControllerInfo controller0Info, ControllerInfo controller1Info)
