@@ -10,9 +10,10 @@ public class NavigationState : InteractionState {
     private int worldUILayer;
 
     // Laser Pointer stuff
-    private GameObject laser;
-    private Transform laserTransform;
-    private Vector3 laserStartPos;
+    private GameObject laser0;
+    private GameObject laser1;
+    //private Transform laserTransform;
+    //private Vector3 laserStartPos;
     private Vector3 hitPoint;
     private int hitLayer;
 
@@ -36,10 +37,12 @@ public class NavigationState : InteractionState {
         doNotTeleportLayer = LayerMask.NameToLayer("Do not teleport");
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        laser = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
-        laserTransform = laser.transform;
+        //laser =  Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
+        //laserTransform = laser.transform;
+        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
 
-        reticle = Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
+        reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
         teleportReticleTransform = reticle.transform;
     }
 
@@ -49,19 +52,21 @@ public class NavigationState : InteractionState {
         // Check if controllers are close to plane
         if(ControllerNearPlane(controller0Info) && ControllerNearPlane(controller1Info))
         {
-            
+          //  GameObject.Destroy(laser);
             Debug.Log("Switching from NavigationState to EdgeSelection state");
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new EdgeSelectionState(controller0Info, controller1Info));
         }
 
         // Teleport
         if (controller0Info.device.GetHairTrigger()) {
-    
-            DoRayCast(controller0Info);
+
+            laser1.SetActive(false);
+            DoRayCast(controller0Info, laser0);
         }
         else if (controller1Info.device.GetHairTrigger())
         {
-            DoRayCast(controller1Info);
+            laser0.SetActive(false);
+            DoRayCast(controller1Info, laser1);
            
         }
         else if (controller0Info.device.GetHairTriggerUp() || controller1Info.device.GetHairTriggerUp())
@@ -77,22 +82,23 @@ public class NavigationState : InteractionState {
         }
         else
         {
-            laser.SetActive(false);
+            laser0.SetActive(false);
+            laser1.SetActive(false);
             reticle.SetActive(false);
         }
     }
 
-    void DoRayCast(ControllerInfo controllerInfo)
+    void DoRayCast(ControllerInfo controllerInfo, GameObject laser)
     {
         RaycastHit hit;
+        Vector3 laserStartPos = controllerInfo.trackedObj.transform.position;
 
-        laserStartPos = controllerInfo.trackedObj.transform.position;
         if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000))
         {
             // No matter what object is hit, show the laser pointing to it
             hitPoint = hit.point;
             hitLayer = hit.collider.gameObject.layer;
-            ShowLaser(hit);
+            ShowLaser(hit, laser, laserStartPos);
 
             if (hitLayer != doNotTeleportLayer && hitLayer != worldUILayer)
             {
@@ -128,17 +134,14 @@ public class NavigationState : InteractionState {
         cameraRigTransform.position = hitPoint + difference;
     }
 
-    private void ShowLaser(RaycastHit hit)
+    private void ShowLaser(RaycastHit hit, GameObject laser, Vector3 laserStartPos)
     {
-        // 1
         laser.SetActive(true);
-        // 2
+        Transform laserTransform = laser.transform;
+
         laserTransform.position = Vector3.Lerp(laserStartPos, hitPoint, .5f);
-        // 3
         laserTransform.LookAt(hitPoint);
-        // 4
-        laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y,
-            hit.distance);
+        laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
     }
 
     private bool ControllerNearPlane(ControllerInfo controllerInfo)

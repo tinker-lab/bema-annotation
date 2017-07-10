@@ -30,7 +30,7 @@ public class PickResourceState : InteractionState
         desc = "PickResourceState";
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        laser = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
+        laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
         laserTransform = laser.transform;
 
         canvas = GameObject.Find("FileSelector").transform.GetChild(0).gameObject;

@@ -40,9 +40,9 @@ public class StartState : InteractionState {
         desc = "StartState";
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        laser0 = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
+        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject; ;
         laser0Transform = laser0.transform;
-        laser1 = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
+        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject; ;
         laser1Transform = laser0.transform;
 
         canvas = GameObject.Find("StartMenu").transform.GetChild(0).gameObject;
@@ -226,5 +226,15 @@ public class StartState : InteractionState {
             laser1Transform.localScale = new Vector3(laser1Transform.localScale.x, laser1Transform.localScale.y,
                 hit.distance);
         }
+    }
+
+    public GameObject getLaser0()
+    {
+        return laser0;
+    }
+
+    public GameObject getLaser1()
+    {
+        return laser1;
     }
 }

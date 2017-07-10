@@ -203,7 +203,6 @@ public class EdgeSelectionState : InteractionState {
        // Cv2.ImShow("binaryafter morph", binary);
 
         Mat invertBinary = 255 - binary;
-        Debug.Log(binary.Type());
         Cv2.DistanceTransform(binary, distPos, DistanceTypes.L2, DistanceMaskSize.Precise);
         Cv2.DistanceTransform(invertBinary, distNeg, DistanceTypes.L2, DistanceMaskSize.Precise);
 
@@ -354,24 +353,11 @@ public class EdgeSelectionState : InteractionState {
 
             Vector3 right = Vector3.Cross(viewPlane.transform.up, direction);
 
-            /*
-            Vector3 right = Vector3.Cross(new Vector3(0, 1, 0), direction);
-
-            if (i > 0)
-            {
-                if (Vector3.Dot(right.normalized, previousRight) < 0)
-                {
-                    right *= -1;
-                }
-            }
-            previousRight = right.normalized;
-            */
-
             Vector3 up = Vector3.Cross(direction, right);
             up = up.normalized * radius; 
             right = right.normalized * radius;
 
-             int numSections = 10; // added and arbitrary (testing purposes)
+             int numSections = 10; 
 
             for (int slice = 0; slice <= numSections; slice++)
             {
