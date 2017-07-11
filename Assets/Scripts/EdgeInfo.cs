@@ -36,6 +36,11 @@ public class EdgeInfo {
         parentTriangles.Add(parent);
     }
 
+    public bool HasCommonIndexWith(EdgeInfo edge)
+    {
+        return this.index0 == edge.Index0 || this.index0 == edge.Index1 || this.index1 == edge.Index0 || this.index1 == edge.Index1;
+    }
+
     public override bool Equals(object obj)
     {
         EdgeInfo otherObj = (EdgeInfo)obj;

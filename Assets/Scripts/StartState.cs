@@ -13,19 +13,12 @@ public class StartState : InteractionState {
     private int worldUILayer;
 
     // Laser Pointer stuff
-    private GameObject laser0;
-    private Transform laser0Transform;
-    private Vector3 laser0StartPos;
-    private Vector3 hitPoint0;
-    private GameObject hitObject0;
-    private int hitLayer0;
-
-    private GameObject laser1;
-    private Transform laser1Transform;
-    private Vector3 laser1StartPos;
-    private Vector3 hitPoint1;
-    private GameObject hitObject1;
-    private int hitLayer1;
+    private GameObject laser;
+    private Transform laserTransform;
+    private Vector3 laserStartPos;
+    private Vector3 hitPoint;
+    private GameObject hitObject;
+    private int hitLayer;
 
     private GameObject lastObjectHighlighted;
 
@@ -40,10 +33,8 @@ public class StartState : InteractionState {
         desc = "StartState";
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject; ;
-        laser0Transform = laser0.transform;
-        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject; ;
-        laser1Transform = laser0.transform;
+        laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject; ;
+        laserTransform = laser.transform;
 
         canvas = GameObject.Find("StartMenu").transform.GetChild(0).gameObject;
         mainPanel = canvas.transform.Find("MainPanel").gameObject;
@@ -58,31 +49,27 @@ public class StartState : InteractionState {
     public override void deactivate()
     {
         base.deactivate();
-        laser0.SetActive(false);
-        laser1.SetActive(false);
+        laser.SetActive(false);
         canvas.SetActive(false);
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         DoRayCast(controller0Info, controller1Info);
-        //DoRayCast(controller1Info, false);
-
 
         if (controller0Info.device.GetHairTriggerUp())
         {
-
-            if (hitLayer0 == worldUILayer && hitObject0.CompareTag(PageButtonController.BUTTON_TAG))
+            if (hitLayer == worldUILayer && hitObject.CompareTag(PageButtonController.BUTTON_TAG))
             {
-                if (hitObject0.name == "NavigationState")
+                if (hitObject.name == "NavigationState")
                 {
                     GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
                 }
-                else if (hitObject0.name == "PickResourceState")
+                else if (hitObject.name == "PickResourceState")
                 {
                     GameObject.Find("UIController").GetComponent<UIController>().changeState(new PickResourceState(controller1Info));
                 }
-                else if (hitObject0.name == "PlaneState")
+                else if (hitObject.name == "PlaneState")
                 {
                     GameObject.Find("UIController").GetComponent<UIController>().changeState(new PlaneState());
                 }
@@ -91,42 +78,14 @@ public class StartState : InteractionState {
                     Debug.Log("Couldn't find state button");
                 }
             }
-        }
-        else if (controller1Info.device.GetHairTriggerUp())
-        { 
-
-            if (hitLayer1 == worldUILayer && hitObject1.CompareTag(PageButtonController.BUTTON_TAG))
-            {
-                if (hitObject1.name == "NavigationState")
-                {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
-                }
-                else if (hitObject1.name == "PickResourceState")
-                {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new PickResourceState(controller1Info));
-                }
-                else if (hitObject1.name == "PlaneState")
-                {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new PlaneState());
-                }
-                else
-                {
-                    Debug.Log("Couldn't find state button");
-                }
-            }
+            Debug.Log(hitObject.name);
+            Debug.Log("Trigger pulled");
         }
     }
 
     void PositionCanvas()
     {
-
-        //Debug.Log("Repositioning canvas");
-
         Vector3 newCanvasPosition = headTransform.position + (new Vector3(headTransform.forward.x, 0, headTransform.forward.z)).normalized * SCALE;
-
-        //canvas.transform.position = newCanvasPosition;
-
-        //   canvas.transform.rotation = Quaternion.LookRotation(headTransform.forward, canvas.transform.up);
 
         Vector3 xAxis = headTransform.right.normalized;
         Vector3 yAxis = new Vector3(0, 1);
@@ -135,7 +94,7 @@ public class StartState : InteractionState {
 
         RaycastHit hit;
 
-        if (Physics.Raycast(newCanvasPosition, new Vector3(0, -1, 0), out hit, 100))     // Send a raycast straight down to see if canvas hits anything
+        if (Physics.Raycast(newCanvasPosition, new Vector3(0, -1, 0), out hit, 2))     // Send a raycast straight down to see if canvas hits anything
         {
             //hitPoint0 = hit.point;
             float heightOffset = 0.5f;
@@ -146,95 +105,50 @@ public class StartState : InteractionState {
 
     void DoRayCast(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
-        RaycastHit hit0;
-        RaycastHit hit1;
+        RaycastHit hit;
 
-        laser0StartPos = controller0Info.trackedObj.transform.position;
-        laser1StartPos = controller1Info.trackedObj.transform.position;
-        if (Physics.Raycast(laser0StartPos, controller0Info.trackedObj.transform.forward, out hit0, 1000))
+        laserStartPos = controller0Info.trackedObj.transform.position;
+        if (Physics.Raycast(laserStartPos, controller0Info.trackedObj.transform.forward, out hit, 1000))
         {
             // No matter what object is hit, show the laser pointing to it
-            hitPoint0 = hit0.point;
-            hitObject0 = hit0.collider.gameObject;
-            hitLayer0 = hit0.collider.gameObject.layer;
-            ShowLaser(hit0, true);
+            hitPoint = hit.point;
+            hitObject = hit.collider.gameObject;
+            hitLayer = hit.collider.gameObject.layer;
+            ShowLaser(hit);
 
             // If hitting a UI element, and it's a button or resource, highlight it
-            if (hitLayer0 == worldUILayer && (hitObject0.CompareTag(PageButtonController.BUTTON_TAG) || hitObject0.CompareTag(LoadImages.RESOURCE_TAG)))
+            if (hitLayer == worldUILayer && (hitObject.CompareTag(PageButtonController.BUTTON_TAG) || hitObject.CompareTag(LoadImages.RESOURCE_TAG)))
             {
-                if (lastObjectHighlighted != null && !lastObjectHighlighted.Equals(hitObject0))
+                if (lastObjectHighlighted != null && !lastObjectHighlighted.Equals(hitObject))
                 {
                     lastObjectHighlighted.GetComponent<Button>().image.GetComponent<Outline>().enabled = false;
                 }
 
-                hitObject0.GetComponent<Button>().image.GetComponent<Outline>().enabled = true;
-                lastObjectHighlighted = hitObject0;
-
-            }
-        }
-        else if (Physics.Raycast(laser1StartPos, controller1Info.trackedObj.transform.forward, out hit1, 1000))
-        {
-            // No matter what object is hit, show the laser pointing to it
-            hitPoint1 = hit1.point;
-            hitObject1 = hit1.collider.gameObject;
-            hitLayer1 = hit1.collider.gameObject.layer;
-            ShowLaser(hit1, false);
-
-            // If hitting a UI element, and it's a button or resource, highlight it
-            if (hitLayer1 == worldUILayer && (hitObject1.CompareTag(PageButtonController.BUTTON_TAG) || hitObject1.CompareTag(LoadImages.RESOURCE_TAG)))
-            {
-                if (lastObjectHighlighted != null && !lastObjectHighlighted.Equals(hitObject1))
-                {
-                    lastObjectHighlighted.GetComponent<Button>().image.GetComponent<Outline>().enabled = false;
-                }
-
-                hitObject1.GetComponent<Button>().image.GetComponent<Outline>().enabled = true;
-                lastObjectHighlighted = hitObject1;
+                hitObject.GetComponent<Button>().image.GetComponent<Outline>().enabled = true;
+                lastObjectHighlighted = hitObject;
 
             }
         }
         else
         {
-           laser0.SetActive(false);
-           laser1.SetActive(false);
+            laser.SetActive(false);
         }
     }
 
-    private void ShowLaser(RaycastHit hit, bool isController0)
+    private void ShowLaser(RaycastHit hit)
     {
-        if (isController0)
-        {
-            // 1
-            laser0.SetActive(true);
-            // 2
-            laser0Transform.position = Vector3.Lerp(laser0StartPos, hitPoint0, .5f);
-            // 3
-            laser0Transform.LookAt(hitPoint0);
-            // 4
-            laser0Transform.localScale = new Vector3(laser0Transform.localScale.x, laser0Transform.localScale.y,
-                hit.distance);
-        }
-        else
-        {
-            // 1
-            laser1.SetActive(true);
-            // 2
-            laser1Transform.position = Vector3.Lerp(laser1StartPos, hitPoint1, .5f);
-            // 3
-            laser1Transform.LookAt(hitPoint1);
-            // 4
-            laser1Transform.localScale = new Vector3(laser1Transform.localScale.x, laser1Transform.localScale.y,
-                hit.distance);
-        }
+        // 1
+        laser.SetActive(true);
+        // 2
+        laserTransform.position = Vector3.Lerp(laserStartPos, hitPoint, .5f);
+        // 3
+        laserTransform.LookAt(hitPoint);
+        // 4
+        laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
     }
 
     public GameObject getLaser0()
     {
-        return laser0;
-    }
-
-    public GameObject getLaser1()
-    {
-        return laser1;
+        return laser;
     }
 }
