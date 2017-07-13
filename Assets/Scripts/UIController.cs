@@ -10,6 +10,11 @@ public class InteractionState : MonoBehaviour
         set;
     }
 
+    public string Desc
+    {
+        get { return desc; }
+    }
+
     /* Called by UIController if this state is currently active and another state is about to become active. This can be used to handle deactivating widgets etc.
      */
     public virtual void deactivate() { }
@@ -48,6 +53,11 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller1Info;
 
     bool firstUpdate = true;
+
+    public InteractionState CurrentState
+    {
+        get { return currentState; }
+    }
 
 	// Use this for initialization
 	void Init () {

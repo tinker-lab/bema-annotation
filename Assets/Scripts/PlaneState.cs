@@ -9,22 +9,26 @@ public class PlaneState : InteractionState {
 
     //planes
     private GameObject newPlane;
-    private int planeCounter;
+    private Transform planeParent;
     private Material m;
 
     private int worldUILayer;
+    private int viewPlaneIgnore;
     private int everythingExceptWorldUI;
     private Vector3 idealPosition;
 
     public PlaneState()
     {
         desc = "PlaneState";
-        
-        planeCounter = 0; //TODO: this is reset every time the state is entered
-       
+
+        //planeCounter = 0; //TODO: this is reset every time the state is entered
+        planeParent = GameObject.Find("TestPlanes").transform;
+
         worldUILayer = LayerMask.NameToLayer("WorldUI");
         everythingExceptWorldUI = worldUILayer << 8;
-        everythingExceptWorldUI = ~everythingExceptWorldUI;
+        everythingExceptWorldUI = ~everythingExceptWorldUI; // what is this for?
+
+        viewPlaneIgnore = LayerMask.NameToLayer("ViewPlaneIgnore");
 
         m = Resources.Load("Plane Material") as Material;
         InitPlane();
@@ -41,6 +45,7 @@ public class PlaneState : InteractionState {
         {
             GameObject.Find("PlaneCameraParent").transform.GetChild(0).gameObject.SetActive(false);
             //TODO: set viewing plane inactive as well
+            planeParent.Find("Plane " + planeParent.childCount).GetComponent<PlaneCollision>().enabled = false;
 
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
         }
@@ -59,9 +64,6 @@ public class PlaneState : InteractionState {
         Vector3 prevIdealPosition = idealPosition;
         idealPosition = headset.position - (viewPlane.transform.up.normalized * 0.5f);
       
-        //viewPlane.transform.Rotate(0, -90, 0);
-
-
         RaycastHit hit;
 
         List<Vector3> positions = new List<Vector3>();
@@ -77,7 +79,7 @@ public class PlaneState : InteractionState {
 
         for (int i = 0; i < positions.Count; i++)
         {
-            if (Physics.Raycast(positions.ElementAt(i), headset.forward, out hit, distanceToCast))
+            if (Physics.Raycast(positions.ElementAt(i), headset.forward, out hit, distanceToCast) && hit.collider.gameObject.layer != LayerMask.NameToLayer("ViewPlaneIgnore")) //ignore test plane - walls still seem to be an issue though
             {
                 Vector3 headsetToHit = hit.point - headset.position;
 
@@ -93,29 +95,17 @@ public class PlaneState : InteractionState {
         
         viewPlane.transform.position = closestPosition;
         
-
-
-        /*
-        if (Physics.Raycast(headset.position, headset.forward, out hit0, (idealPosition - headset.position).magnitude))
-        {
-            viewPlane.transform.position = hit0.point;
-        }
-        else
-        {
-            viewPlane.transform.position = idealPosition;
-        }
-        */
     }
 
     private void InitPlane()
     {
         // create plane
         newPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        newPlane.name = "Plane" + planeCounter;
-        planeCounter += 1;
+        newPlane.transform.parent = planeParent;
+        newPlane.name = "Plane " + planeParent.childCount;
 
         // cannot teleport to created plane
-        newPlane.layer = worldUILayer;
+        newPlane.layer = viewPlaneIgnore;
 
         newPlane.GetComponent<Renderer>().material = m;
 

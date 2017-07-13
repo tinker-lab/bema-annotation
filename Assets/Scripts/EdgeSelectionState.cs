@@ -65,13 +65,13 @@ public class EdgeSelectionState : InteractionState {
             PreProcess();
         }
 
-        if (AwayFromPlane(controller0Info) || AwayFromPlane(controller1Info))
+        Vector3 planeProjection0 = ClosestPointToPlane(controller0Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller0 onto plane
+        Vector3 planeProjection1 = ClosestPointToPlane(controller1Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller 1 onto plane
+
+        if (AwayFromPlane(controller0Info) || AwayFromPlane(controller1Info) || AwayFromPlane(planeProjection0) || AwayFromPlane(planeProjection1))
         {
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
         }
-
-        Vector3 planeProjection0 = ClosestPointToPlane(controller0Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller0 onto plane
-        Vector3 planeProjection1 = ClosestPointToPlane(controller1Info.trackedObj.transform.position) - viewPlane.transform.forward * OFFSET;       // Projection of controller 1 onto plane
 
         Quaternion delta0 = controller0Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation0);
         Quaternion delta1 = controller1Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation1);
@@ -108,8 +108,9 @@ public class EdgeSelectionState : InteractionState {
         }
     }
 
-    Vector3 ClosestPointToPlane(Vector3 pt)
+    public static Vector3 ClosestPointToPlane(Vector3 pt)
     {
+        GameObject viewPlane = GameObject.Find("ViewPlane");
         return pt + (viewPlane.transform.up * (-(Vector3.Dot(viewPlane.transform.up, pt) - Vector3.Dot(viewPlane.transform.up, viewPlane.transform.position))));
     }
 
@@ -121,6 +122,7 @@ public class EdgeSelectionState : InteractionState {
         GameObject.Find("BezierParent").transform.GetChild(1).gameObject.SetActive(false);
     }
 
+    // Returns true if controller is certain distance away from plane
     private bool AwayFromPlane(ControllerInfo controllerInfo)
     {
         GameObject viewPlane = GameObject.Find("ViewPlane");
@@ -136,6 +138,24 @@ public class EdgeSelectionState : InteractionState {
             float distance = Vector3.Distance(controllerPos, planePos);
 
             return (distance > NavigationState.MIN_DISTANCE * 2);
+        }
+    }
+
+    // Returns true if point is certain distance from plane
+    private bool AwayFromPlane(Vector3 projectedPoint)
+    {
+        GameObject viewPlane = GameObject.Find("ViewPlane");
+        if (viewPlane == null)
+        {
+            return false;
+        }
+        else
+        {
+            Vector3 planePos = viewPlane.transform.position;
+
+            float distance = Vector3.Distance(projectedPoint, planePos);
+
+            return (distance > viewPlane.transform.localScale.x * 5 + NavigationState.MIN_DISTANCE);
         }
     }
 

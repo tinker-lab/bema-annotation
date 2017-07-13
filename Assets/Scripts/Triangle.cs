@@ -31,9 +31,9 @@ public class Triangle {
     
     public Triangle(int index0, int index1, int index2)
     {
-        edge0 = new EdgeInfo(index0, index1, this);
-        edge1 = new EdgeInfo( index0, index2, this) ;
-        edge2 = new EdgeInfo (index1, index2, this);
+        //edge0 = new EdgeInfo(index0, index1, this);
+        //edge1 = new EdgeInfo( index0, index2, this) ;
+        //edge2 = new EdgeInfo (index1, index2, this);
         //orderedEdges.Add(orderedTuple(edge0));
         //orderedEdges.Add(orderedTuple(edge1));
         //orderedEdges.Add(orderedTuple(edge2));

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class NavigationState : InteractionState {
 
-    public static readonly float MIN_DISTANCE = 0.3f;    // How close controllers need to be to plane
+    public static readonly float MIN_DISTANCE = 0.25f;    // How close controllers need to be to plane
 
     private int doNotTeleportLayer;
     private int worldUILayer;
@@ -50,7 +50,7 @@ public class NavigationState : InteractionState {
     override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         // Check if controllers are close to plane
-        if(ControllerNearPlane(controller0Info) && ControllerNearPlane(controller1Info))
+        if(NearPlane(controller0Info) && NearPlane(controller1Info) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller0Info.trackedObj.transform.position)) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller1Info.trackedObj.transform.position)))
         {
           //  GameObject.Destroy(laser);
             Debug.Log("Switching from NavigationState to EdgeSelection state");
@@ -144,7 +144,7 @@ public class NavigationState : InteractionState {
         laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
     }
 
-    private bool ControllerNearPlane(ControllerInfo controllerInfo)
+    private bool NearPlane(ControllerInfo controllerInfo)
     {
         GameObject viewPlane = GameObject.Find("ViewPlane");
         if (viewPlane == null)
@@ -159,6 +159,24 @@ public class NavigationState : InteractionState {
             float distance = Vector3.Distance(controllerPos, planePos);
 
             return (distance <= MIN_DISTANCE);
+        }
+    }
+
+    // Returns true if point is certain distance from plane
+    private bool NearPlane(Vector3 projectedPoint)
+    {
+        GameObject viewPlane = GameObject.Find("ViewPlane");
+        if (viewPlane == null)
+        {
+            return false;
+        }
+        else
+        {
+            Vector3 planePos = viewPlane.transform.position;
+
+            float distance = Vector3.Distance(projectedPoint, planePos);
+
+            return (distance <= viewPlane.transform.localScale.x * 5 + NavigationState.MIN_DISTANCE);
         }
     }
 }
