@@ -36,3 +36,9 @@ sysinfo.txt
 .DS_STORE
 .DS_STORE?
 Thumbs.db
+
+
+Assets/Plugins/cublas32_50_35.dll
+Assets/Plugins/npp32_50_35.dll
+Assets/Plugins/opencv_gpu249.dll
+System.dll
