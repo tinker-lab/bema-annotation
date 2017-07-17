@@ -3,7 +3,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using UnityEngine;
+
+
+public class VectorComparer : EqualityComparer<Vector3>
+{
+    public override bool Equals(Vector3 x, Vector3 y)
+    {
+        return x == y;      // Using == should be an approximate comparison
+    }
+
+    public override int GetHashCode(Vector3 obj)
+    {
+        //throw new NotImplementedException();        // Best way to deal with this?
+        return obj.GetHashCode();
+    }
+}
 
 public class PlaneCollision : MonoBehaviour
 {
@@ -12,6 +28,7 @@ public class PlaneCollision : MonoBehaviour
     private HashSet<GameObject> crossSections;
     private Dictionary<List<Vector3>, GameObject> processedPoints;
 
+    private VectorComparer comparator;
     private Boolean firstTime;
 
     //private GameObject crossSection;
@@ -21,6 +38,7 @@ public class PlaneCollision : MonoBehaviour
     {
         meshObjects = new HashSet<Collider>();
         crossSections = new HashSet<GameObject>();
+        comparator = new VectorComparer();
 
         firstTime = false;
     }
@@ -45,7 +63,7 @@ public class PlaneCollision : MonoBehaviour
                 //{
                 //    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 //    sphere.transform.position = pt;
-                //    sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+                //    sphere.transform.localScale = new Vector3(0.04f, 0.04f, 0.04f);
                 //}
             }
         }
@@ -82,12 +100,12 @@ public class PlaneCollision : MonoBehaviour
     }
 
     // Orders the points of one mesh. NOTE: currently just uses alreadyVisited HashSet, nothing else;
-    List<Vector3> DFSOrderPoints(Dictionary<int, HashSet<int>> pointConnections, List<IntersectingPoint> actualPoints)
+    List<Vector3> DFSOrderPoints(Dictionary<Vector3, HashSet<Vector3>> pointConnections, List<IntersectingPoint> actualPoints)
     {
-        HashSet<int> alreadyVisited = new HashSet<int>();
+        HashSet<Vector3> alreadyVisited = new HashSet<Vector3>();
         List<Vector3> orderedPoints = new List<Vector3>();
 
-        foreach (int pt in pointConnections.Keys)
+        foreach (Vector3 pt in pointConnections.Keys)
         {
             if (!alreadyVisited.Contains(pt))
             {
@@ -100,17 +118,17 @@ public class PlaneCollision : MonoBehaviour
     }
 
     // Basic BFS, adds the intersection points of edges in the order it visits them
-    void DFSVisit(int pt, Dictionary<int, HashSet<int>> connectedEdges, ref HashSet<int> alreadyVisited, ref List<Vector3> orderedPoints, List<IntersectingPoint> actualPoints)
+    void DFSVisit(Vector3 pt, Dictionary<Vector3, HashSet<Vector3>> connectedEdges, ref HashSet<Vector3> alreadyVisited, ref List<Vector3> orderedPoints, List<IntersectingPoint> actualPoints)
     {
         alreadyVisited.Add(pt);
-        orderedPoints.Add(actualPoints.ElementAt(pt).Point);
+        orderedPoints.Add(pt);
         //Stack<int> nextUp = new Stack<int>();
 
         //nextUp.Push(pt);
         //while (nextUp.Count != 0)
         //{
             //int currentIndex = nextUp.Pop();
-        foreach (int otherIndex in connectedEdges[pt])//[currentIndex])
+        foreach (Vector3 otherIndex in connectedEdges[pt])//[currentIndex])
         {
             if (!alreadyVisited.Contains(otherIndex))
             {
@@ -131,8 +149,8 @@ public class PlaneCollision : MonoBehaviour
         {
             Mesh mesh = m.GetComponent<MeshFilter>().mesh;
             List<IntersectingPoint> points = new List<IntersectingPoint>();     // Information about each point in a mesh (including whether or not it has been seen)
-            Dictionary<int, HashSet<int>> pointConnections = new Dictionary<int, HashSet<int>>();  // Graph where each node/key is the index of a point in POINTS and the value associated with it is the indices of all the points it is connected to in POINTS
-            List<Vector3> vertices = new List<Vector3>();
+            Dictionary<Vector3, HashSet<Vector3>> pointConnections = new Dictionary<Vector3, HashSet<Vector3>>(comparator);  // Graph where each node/key is the index of a point in POINTS and the value associated with it is the indices of all the points it is connected to in POINTS
+            List<Vector3> vertices = new List<Vector3>();  // we might not want to use a HashSet for POINTCONNECTIONS
 
             mesh.GetVertices(vertices);
             int[] indices = mesh.GetTriangles(0); // 0 refers to first set of triangles (because there is only one material on the mesh)
@@ -157,6 +175,11 @@ public class PlaneCollision : MonoBehaviour
                 EdgeInfo edge1 = new EdgeInfo(indices[i+1], indices[i + 2]);
                 EdgeInfo edge2 = new EdgeInfo(indices[i], indices[i + 2]);
 
+                Thread thread0 = new Thread(new ThreadStart(ProcessEdge));
+                Thread thread1 = new Thread(new ThreadStart(ProcessEdge));
+                Thread thread2 = new Thread(new ThreadStart(ProcessEdge));
+
+                // TODO: do point transformation and preprocessing here
 
                 //TODO: check if you have already processed an edge. If so, get it's intersection point.
 
@@ -199,9 +222,9 @@ public class PlaneCollision : MonoBehaviour
                 }
 
 
-                if (side0) { intersectingEdges.Add(intersectPoint0); }
-                if (side1) { intersectingEdges.Add(intersectPoint1); }
-                if (side2) { intersectingEdges.Add(intersectPoint2); }
+                if (side0 && bound.Contains(intersectPoint0)) { intersectingEdges.Add(intersectPoint0); }
+                if (side1 && bound.Contains(intersectPoint1)) { intersectingEdges.Add(intersectPoint1); }
+                if (side2 && bound.Contains(intersectPoint0)) { intersectingEdges.Add(intersectPoint2); }
 
                 switch (intersectingEdges.Count)
                 {
@@ -246,6 +269,7 @@ public class PlaneCollision : MonoBehaviour
                 //Debug.Log(m.transform.TransformPoint(vertices.ElementAt(indices[i])) + "point at " + i);
 
             }
+            // TODO: wait until all other threads finish
             List<Vector3> orderedMeshPoints = DFSOrderPoints(pointConnections, points);
 
             StringBuilder builder = new StringBuilder();
@@ -261,62 +285,97 @@ public class PlaneCollision : MonoBehaviour
         return intersectionPoints;
     }
 
-    // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
-    private void AddToGraph(Vector3 point0, Vector3 point1, ref List<IntersectingPoint> points, ref Dictionary<int, HashSet<int>> pointConnections)
+    private void ProcessEdge()
     {
-        IntersectingPoint intersect0 = new IntersectingPoint(point0);
-        IntersectingPoint intersect1 = new IntersectingPoint(point1);
-        int index0 = points.IndexOf(intersect0);
-        int index1 = points.IndexOf(intersect1);
+        // TODO: put all thread safe edge processing code here
+    }
 
-        if (index0 == -1)   // IndexOf returns -1 if it can't find an index     //
-        {                                                                       //
-            index0 = points.Count;                                              //    
-            points.Add(intersect0);                                             //
-        } 
-        else
-        {
-            Debug.Log("p0 is already in the list");
-        }
-        // Check if each point is already in List of points
-                                                                                // If not, figure out what index it will be in then add it to list
-                                                                                // If so, simply find its index in the list
-        if (index1 == -1)                                                       //
-        {                                                                       //
-            index1 = points.Count;                                              //
-            points.Add(intersect1);                                             //
-        }
-        else
-        {
-            Debug.Log("p1 is already in the list");
-        }//
+    private void ThreadPoolCallback(EdgeInfo edge)
+    {
+        ProcessEdge(); 
+    }
 
-        if (!pointConnections.ContainsKey(index0))
-        {
-            HashSet<int> connections = new HashSet<int>();
-            connections.Add(index1);
-            pointConnections.Add(index0, connections);
+    // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
+    private void AddToGraph(Vector3 point0, Vector3 point1, ref List<IntersectingPoint> points, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    {
+        //IntersectingPoint intersect0 = new IntersectingPoint(point0);
+        //IntersectingPoint intersect1 = new IntersectingPoint(point1);
+        //int index0 = points.IndexOf(intersect0);
+        //int index1 = points.IndexOf(intersect1);
+
+        //if (index0 == -1)   // IndexOf returns -1 if it can't find an index     //
+        //{                                                                       //
+        //    index0 = points.Count;                                              //    
+        //    points.Add(intersect0);                                             //
+        //} 
+        //else
+        //{
+        //    Debug.Log("p0 is already in the list");
+        //}
+        //// Check if each point is already in List of points
+        //                                                                        // If not, figure out what index it will be in then add it to list
+        //                                                                        // If so, simply find its index in the list
+        //if (index1 == -1)                                                       //
+        //{                                                                       //
+        //    index1 = points.Count;                                              //
+        //    points.Add(intersect1);                                             //
+        //}
+        //else
+        //{
+        //    Debug.Log("p1 is already in the list");
+        //}//
+
+        //if (!pointConnections.ContainsKey(index0))
+        //{
+        //    HashSet<int> connections = new HashSet<int>();
+        //    connections.Add(index1);
+        //    pointConnections.Add(index0, connections);
+        //}
+        //else
+        //{
+        //    pointConnections[index0].Add(index1);
+        //}
+
+        //if (!pointConnections.ContainsKey(index1))
+        //{
+        //    HashSet<int> connections = new HashSet<int>();
+        //    connections.Add(index0);
+        //    pointConnections.Add(index1, connections);
+        //}
+        //else
+        //{
+        //    pointConnections[index1].Add(index0);
+        //}
+        ///////////////////////////////////////////////////////////////////////////////////
+        if (!pointConnections.ContainsKey(point0)){
+            HashSet<Vector3> connections = new HashSet<Vector3>();
+            connections.Add(point1);
+            pointConnections.Add(point0, connections);
         }
         else
         {
-            pointConnections[index0].Add(index1);
+            pointConnections[point0].Add(point1);
         }
 
-        if (!pointConnections.ContainsKey(index1))
+        if (!pointConnections.ContainsKey(point1))
         {
-            HashSet<int> connections = new HashSet<int>();
-            connections.Add(index0);
-            pointConnections.Add(index1, connections);
+            HashSet<Vector3> connections = new HashSet<Vector3>();
+            connections.Add(point0);
+            pointConnections.Add(point1, connections);
         }
         else
         {
-            pointConnections[index1].Add(index0);
+            pointConnections[point1].Add(point0);
         }
+
+
+        // if the Vector3 point is already in the graph, add the other point as a connection (do this once for each)
+        // if it is not already in the graph, add it as well as the other connection point
     }
 
     private bool intersectsWithPlane(Vector3 lineVertex0, Vector3 lineVertex1, GameObject meshGameObject, ref Vector3 intersectPoint) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     { // TODO: check xy of plane
-        Vector3 lineVertex0World = meshGameObject.transform.TransformPoint(lineVertex0);
+        Vector3 lineVertex0World = meshGameObject.transform.TransformPoint(lineVertex0);        // How to replace TransformPoint for multithreading?
         Vector3 lineSegmentLocal = lineVertex1 - lineVertex0;
         Vector3 lineSegmentWorld = meshGameObject.transform.TransformPoint(lineVertex1) - lineVertex0World;
         float dot = Vector3.Dot(transform.up, lineSegmentWorld);
