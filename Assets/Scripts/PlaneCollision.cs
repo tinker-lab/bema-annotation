@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Diagnostics;
-using System.Threading;
 using UnityEngine;
 
 
@@ -12,7 +9,7 @@ public class VectorComparer : EqualityComparer<Vector3>
 {
     public override bool Equals(Vector3 x, Vector3 y)
     {
-        return x == y;      // Using == should be an approximate comparison
+        return PlaneCollision.ApproximatelyEquals(x, y);      // Using == should be an approximate comparison
     }
 
     public override int GetHashCode(Vector3 obj)
@@ -33,6 +30,7 @@ public class PlaneCollision : MonoBehaviour
     private Boolean firstTime;
     private Stopwatch internalStopwatch;
     private Stopwatch externalStopwatch;
+    private Stopwatch timer;
 
     //private GameObject crossSection;
 
@@ -46,6 +44,7 @@ public class PlaneCollision : MonoBehaviour
         firstTime = false;
         internalStopwatch = new Stopwatch();
         externalStopwatch = new Stopwatch();
+        timer = new Stopwatch();
     }
 
     // Update is called once per frame
@@ -156,21 +155,24 @@ public class PlaneCollision : MonoBehaviour
  /*TS*/ Dictionary<List<Vector3>, GameObject> intersectionPoints = new Dictionary<List<Vector3>, GameObject>(); // dictionary: keys are all the points for each element, in the order they should be drawn, values are the scale
         Bounds bound = GetComponent<MeshCollider>().bounds;
 
+        Vector3 intersectPoint0 = new Vector3();
+        Vector3 intersectPoint1 = new Vector3();
+        Vector3 intersectPoint2 = new Vector3();
+
         foreach (Collider m in meshObjects)
         {
             Mesh mesh = m.GetComponent<MeshFilter>().mesh;
             Dictionary<Vector3, HashSet<Vector3>> pointConnections = new Dictionary<Vector3, HashSet<Vector3>>(comparator);  // Graph where each node/key is the index of a point in POINTS and the value associated with it is the indices of all the points it is connected to in POINTS
-            List<Vector3> vertices = new List<Vector3>();  // we might not want to use a HashSet for POINTCONNECTIONS
 
-            mesh.GetVertices(vertices);
-            int[] indices = mesh.GetTriangles(0); // 0 refers to first set of triangles (because there is only one material on the mesh)
+            Vector3[] vertices = mesh.vertices;
+            int[] indices = mesh.triangles; // 0 refers to first set of triangles (because there is only one material on the mesh)
 
-            Dictionary<EdgeInfo, Vector3> seenEdges = new Dictionary<EdgeInfo, Vector3>();
+            Dictionary<EdgeInfo, Vector3> seenEdges = new Dictionary<EdgeInfo, Vector3>(vertices.Length);
 
-            List<Vector3> transformedVertices = new List<Vector3>();
-            foreach (Vector3 v in vertices)
+            Vector3[] transformedVertices = new Vector3[vertices.Length];
+            for (int i =0; i < vertices.Length; i++)
             {
-                transformedVertices.Add(m.gameObject.transform.TransformPoint(v));
+                transformedVertices[i] = m.gameObject.transform.TransformPoint(vertices[i]);
             }
 
             externalStopwatch.Start();
@@ -179,204 +181,64 @@ public class PlaneCollision : MonoBehaviour
             // preprocess points so that TransformPoint isn't called in IntersectsWithPlane
             // 
 
+            long initTime = 0;
+            long intersectTime = 0;
+            long graphTime = 0;
+
+
+            int numTriangles = (int)(indices.Length / 3);
+            UnityEngine.Debug.Log("Num triangles: " + numTriangles);
             Parallel.SerialFor(0, (int)(indices.Length / 3), i =>
             {
-                List<Vector3> intersectingEdges = new List<Vector3>();
 
-                EdgeInfo edge0 = new EdgeInfo(indices[3 * i], indices[3 * i + 1]);
-                EdgeInfo edge1 = new EdgeInfo(indices[3 * i + 1], indices[3 * i + 2]);
-                EdgeInfo edge2 = new EdgeInfo(indices[3 * i], indices[3 * i + 2]);
+                timer.Start();
 
-                Vector3 intersectPoint0 = new Vector3();
-                Vector3 intersectPoint1 = new Vector3();
-                Vector3 intersectPoint2 = new Vector3();
 
-                bool side0;
-                if (seenEdges.TryGetValue(edge0, out intersectPoint0))
-                {
-                    side0 = true;
-                }
-                else
-                {
-                   // internalStopwatch.Start();
-                    side0 = intersectsWithPlane(transformedVertices.ElementAt(indices[3*i]), transformedVertices.ElementAt(indices[3*i + 1]), ref intersectPoint0, vertices.ElementAt(indices[3*i]), vertices.ElementAt(indices[3 * i + 1]));
-                    //  internalStopwatch.Stop();
-                    //  UnityEngine.Debug.Log("Time taken to run one instance of intersectWithPlane: " + internalStopwatch.ElapsedMilliseconds + " ms");
-                    // internalStopwatch.Reset();
-                    lock (seenEdges) { seenEdges.Add(edge0, intersectPoint0); }
-                }
-
-                bool side1;
-                if (seenEdges.TryGetValue(edge1, out intersectPoint1))
-                {
-                    side1 = true;
-                }
-                else
-                {
-                    side1 = intersectsWithPlane(transformedVertices.ElementAt(indices[3*i + 1]), transformedVertices.ElementAt(indices[3*i + 2]), ref intersectPoint1, vertices.ElementAt(indices[3 * i + 1]), vertices.ElementAt(indices[3 * i + 2]));
-                    lock (seenEdges) { seenEdges.Add(edge1, intersectPoint1); }
-                }
-
-                bool side2;
-                if (seenEdges.TryGetValue(edge2, out intersectPoint2))
-                {
-                    side2 = true;
-                }
-                else
-                {
-                    side2 = intersectsWithPlane(transformedVertices.ElementAt(indices[3*i]), transformedVertices.ElementAt(indices[3*i + 2]), ref intersectPoint2, vertices.ElementAt(indices[3 * i]), vertices.ElementAt(indices[3 * i + 2]));
-                    lock (seenEdges) { seenEdges.Add(edge2, intersectPoint2); }
-                }
-
+                bool side0 = intersectsWithPlane(transformedVertices[indices[3*i]], transformedVertices[indices[3*i + 1]], ref intersectPoint0, vertices[indices[3*i]], vertices[indices[3 * i + 1]], m.transform);
+                bool side1 = intersectsWithPlane(transformedVertices[indices[3*i + 1]], transformedVertices[indices[3*i + 2]], ref intersectPoint1, vertices[indices[3 * i + 1]], vertices[indices[3 * i + 2]], m.transform);
+                bool side2 = intersectsWithPlane(transformedVertices[indices[3*i]], transformedVertices[indices[3*i + 2]], ref intersectPoint2, vertices[indices[3 * i]], vertices[indices[3 * i + 2]], m.transform);
                 
-                if (side0) { intersectingEdges.Add(intersectPoint0); }
-                if (side1) { intersectingEdges.Add(intersectPoint1); }
-                if (side2) { intersectingEdges.Add(intersectPoint2); }
+                timer.Stop();
+                intersectTime += timer.ElapsedMilliseconds;
+
+                timer.Reset();
+                timer.Start();
                 
+                if (side0 && side1 && side2) {
+                    if (ApproximatelyEquals(intersectPoint0, intersectPoint1))
+                    {
+                        AddToGraph(intersectPoint0, intersectPoint2, ref pointConnections);
+                    }
+                    else if (ApproximatelyEquals(intersectPoint0, intersectPoint2))
+                    {
+                        AddToGraph(intersectPoint0, intersectPoint1, ref pointConnections);
 
-                switch (intersectingEdges.Count)
-                {
-                    case 0:
-                        UnityEngine.Debug.Log("0 edges hit");
-                        break;
-                    case 1:     // if 1 intersection then it goes through a vertex and we ignore it?
-                        UnityEngine.Debug.Log("1 edge hit");
-                        break;
-                    case 2:     // if 2 intersections then add the edge between them to the graph
-                        AddToGraph(intersectingEdges.ElementAt(0), intersectingEdges.ElementAt(1), ref pointConnections);
-                        UnityEngine.Debug.Log("2 edges hit");
-                        break;
-                    case 3:     // if 3 (potentially through a vertex) then check which two are the same. Add edge to graph
-                        if (ApproximatelyEquals(intersectPoint0, intersectPoint1))
-                        {
-                            AddToGraph(intersectPoint0, intersectPoint2, ref pointConnections);
-                        }
-                        else if (ApproximatelyEquals(intersectPoint0, intersectPoint2))
-                        {
-                            AddToGraph(intersectPoint0, intersectPoint1, ref pointConnections);
-
-                        }
-                        else  // Edge1Point == Edge2 point
-                        {
-                            AddToGraph(intersectPoint0, intersectPoint1, ref pointConnections);
-                        }
-                        UnityEngine.Debug.Log("3 edges hit");       // NOTE: we are always hitting this case
-                        break;
+                    }
+                    else  // Edge1Point == Edge2 point
+                    {
+                        AddToGraph(intersectPoint0, intersectPoint1, ref pointConnections);
+                    }
                 }
+                else if(side0 && side1) {
+                    AddToGraph(intersectPoint0, intersectPoint1, ref pointConnections);
+                }
+                else if(side0 && side2) {
+                    AddToGraph(intersectPoint0, intersectPoint2, ref pointConnections);
+                }
+                else if(side1 && side2)
+                {
+                    AddToGraph(intersectPoint1, intersectPoint2, ref pointConnections);
+                }
+
+               
+                timer.Stop();
+                graphTime += timer.ElapsedMilliseconds;
+                timer.Reset();
             });
 
-            //for (int i = 0; i < indices.Length; i += 3)
-            //{
-            //    // TODO: work on boundaries
+           
 
-            //    //if (bound.Contains(m.transform.TransformPoint(vertices.ElementAt(indices[i]))) || bound.Contains(m.transform.TransformPoint(vertices.ElementAt(indices[i+1])))  || bound.Contains(m.transform.TransformPoint(vertices.ElementAt(indices[i+2]) ))) //m.transform.transformpoint does not work
-            //    //{
-
-            //    Vector3 intersectPoint0 = new Vector3();
-            //    Vector3 intersectPoint1 = new Vector3();
-            //    Vector3 intersectPoint2 = new Vector3();
-
-            //    EdgeInfo edge0 = new EdgeInfo(indices[i], indices[i + 1]);
-            //    EdgeInfo edge1 = new EdgeInfo(indices[i+1], indices[i + 2]);
-            //    EdgeInfo edge2 = new EdgeInfo(indices[i], indices[i + 2]);
-
-            //    //Thread thread0 = new Thread(new ThreadStart(ProcessEdge));
-            //    //Thread thread1 = new Thread(new ThreadStart(ProcessEdge));
-            //    //Thread thread2 = new Thread(new ThreadStart(ProcessEdge));
-
-            //    // TODO: do point transformation and preprocessing here
-
-            //    //TODO: check if you have already processed an edge. If so, get it's intersection point.
-
-            //    // for each edge check if intersects with plane
-            //    // if 2 intersections then add the edge between them to the graph
-            //    // if 1 intersection then it goes through a vertex and we ignore it?
-            //    // if 3 (potentially through a vertex) then check which two are the same. Add edge to graph
-
-            //    bool side0;
-            //    if (seenEdges.TryGetValue(edge0, out intersectPoint0))
-            //    {
-            //        side0 = true;
-            //    }
-            //    else
-            //    {
-            //        internalStopwatch.Start();
-            //        side0 = intersectsWithPlane(vertices.ElementAt(indices[i]), vertices.ElementAt(indices[i + 1]), m.gameObject, ref intersectPoint0);
-            //        internalStopwatch.Stop();
-            //        UnityEngine.Debug.Log("Time taken to run one instance of intersectWithPlane: " + internalStopwatch.ElapsedMilliseconds + " ms");
-            //        internalStopwatch.Reset();
-            //        seenEdges.Add(edge0, intersectPoint0);
-            //    }
-
-            //    bool side1;
-            //    if (seenEdges.TryGetValue(edge1, out intersectPoint1))
-            //    {
-            //        side1 = true;
-            //    }
-            //    else
-            //    {
-            //        side1 = intersectsWithPlane(vertices.ElementAt(indices[i+1]), vertices.ElementAt(indices[i + 2]), m.gameObject, ref intersectPoint1);
-            //        seenEdges.Add(edge1, intersectPoint1);
-            //    }
-
-            //    bool side2;
-            //    if (seenEdges.TryGetValue(edge2, out intersectPoint2))
-            //    {
-            //        side2 = true;
-            //    }
-            //    else
-            //    {
-            //        side2 = intersectsWithPlane(vertices.ElementAt(indices[i]), vertices.ElementAt(indices[i + 2]), m.gameObject, ref intersectPoint2);
-            //        seenEdges.Add(edge2, intersectPoint2);
-            //    }
-
-
-            //    if (side0) { intersectingEdges.Add(intersectPoint0); }
-            //    if (side1) { intersectingEdges.Add(intersectPoint1); }
-            //    if (side2) { intersectingEdges.Add(intersectPoint2); }
-
-            //    switch (intersectingEdges.Count)
-            //    {
-            //        case 0:
-            //            UnityEngine.Debug.Log("0 edges hit");
-            //            break;
-            //        case 1:     // if 1 intersection then it goes through a vertex and we ignore it?
-            //            UnityEngine.Debug.Log("1 edge hit");
-            //            break;
-            //        case 2:     // if 2 intersections then add the edge between them to the graph
-
-            //            AddToGraph(intersectingEdges.ElementAt(0), intersectingEdges.ElementAt(1), ref points, ref pointConnections);
-            //            UnityEngine.Debug.Log("2 edges hit");
-            //            break;
-            //        case 3:     // if 3 (potentially through a vertex) then check which two are the same. Add edge to graph
-            //            if (ApproximatelyEquals(intersectPoint0, intersectPoint1))
-            //            {
-            //                AddToGraph(intersectPoint0, intersectPoint2, ref points, ref pointConnections);
-            //            }
-            //            else if (ApproximatelyEquals(intersectPoint0, intersectPoint2))
-            //            {
-            //                AddToGraph(intersectPoint0, intersectPoint1, ref points, ref pointConnections);
-
-            //            }
-            //            else  // Edge1Point == Edge2 point
-            //            {
-            //                AddToGraph(intersectPoint0, intersectPoint1, ref points, ref pointConnections);
-            //            }
-            //            UnityEngine.Debug.Log("3 edges hit");       // NOTE: we are always hitting this case
-            //            break;
-            //    }
-            //    //}
-
-              
-
-            //    //}
-            //    //else
-            //    //{
-            //    //    Debug.LogError("No vertex within bounds");
-            //    //    Debug.LogWarning(bound);
-            //    //}
-            //    //Debug.Log(m.transform.TransformPoint(vertices.ElementAt(indices[i])) + "point at " + i);
-
+            UnityEngine.Debug.Log("InitTime: " + initTime + " intersectTime: " + intersectTime + " graphTime: " + graphTime);
             
             externalStopwatch.Stop();
             UnityEngine.Debug.Log("Time taken to process one mesh: " + externalStopwatch.ElapsedMilliseconds + "ms");
@@ -386,6 +248,7 @@ public class PlaneCollision : MonoBehaviour
             // TODO: wait until all other threads finish
             internalStopwatch.Start();
             List<Vector3> orderedMeshPoints = DFSOrderPoints(pointConnections);
+            orderedMeshPoints = RemoveSequentialDuplicates(orderedMeshPoints);
             internalStopwatch.Stop();
             UnityEngine.Debug.Log("Time taken for DFS of one mesh: " + internalStopwatch.ElapsedMilliseconds + "ms");
             internalStopwatch.Reset();
@@ -399,8 +262,7 @@ public class PlaneCollision : MonoBehaviour
     // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
     private void AddToGraph(Vector3 point0, Vector3 point1, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
     {
-        lock (pointConnections)
-        {
+
             if (!pointConnections.ContainsKey(point0))
             {
                 HashSet<Vector3> connections = new HashSet<Vector3>();
@@ -422,10 +284,10 @@ public class PlaneCollision : MonoBehaviour
             {
                 pointConnections[point1].Add(point0);
             }
-        }
+        
     }
 
-    private bool intersectsWithPlane(Vector3 lineVertex0, Vector3 lineVertex1, ref Vector3 intersectPoint, Vector3 original0, Vector3 original1) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
+    private bool intersectsWithPlane(Vector3 lineVertex0, Vector3 lineVertex1, ref Vector3 intersectPoint, Vector3 original0, Vector3 original1, Transform meshTransform) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     { // TODO: check xy of plane
        // Vector3 lineVertex0World = meshGameObject.transform.TransformPoint(lineVertex0);        // How to replace TransformPoint for multithreading?
        Vector3 lineSegmentLocal = original1 - original0;
@@ -441,11 +303,27 @@ public class PlaneCollision : MonoBehaviour
             if (factor >= 0f && factor <= 1f)
             {
                 lineSegmentLocal = factor * lineSegmentLocal;
-                intersectPoint = lineVertex0 + lineSegmentLocal;
-                return true;
+                intersectPoint = original0 + lineSegmentLocal;
+                return GetComponent<MeshCollider>().bounds.Contains(meshTransform.TransformPoint(intersectPoint)); // If this works out, we probs want to pass it along to be reused later
             }
         }
         return false;
+    }
+
+    private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
+    {
+        List<Vector3> output = new List<Vector3>(points.Count);
+        List<Vector3>.Enumerator it = points.GetEnumerator();
+        it.MoveNext();
+        Vector3 prev = it.Current;
+        while (it.MoveNext())
+        {
+            if (!ApproximatelyEquals(it.Current, prev)) {
+                output.Add(it.Current);
+            }
+            prev = it.Current;
+        }
+        return output;
     }
 
     private Mesh CreateMesh(List<Vector3> points) // copied from EdgeSelectionState for testing purposes, not ideal for final version
