@@ -32,7 +32,15 @@ public class PlaneCollision : MonoBehaviour
     private Stopwatch externalStopwatch;
     private Stopwatch timer;
 
-    //private GameObject crossSection;
+    private Vector3 planeUVec;
+    private Vector3 planeVVec;
+    private float uLength;
+    private float vLength;
+
+    Vector3 corner0;
+    Vector3 corner1;
+    Vector3 corner2;
+    Vector3 corner3;
 
     // Use this for initialization
     void Start()
@@ -45,11 +53,27 @@ public class PlaneCollision : MonoBehaviour
         internalStopwatch = new Stopwatch();
         externalStopwatch = new Stopwatch();
         timer = new Stopwatch();
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        Vector3 centerOfPlane = transform.position;
+        float sideLength = (10 * transform.localScale.x) / 2;
+
+        corner0 = centerOfPlane - sideLength * transform.right.normalized - sideLength * transform.forward.normalized;
+        corner1 = centerOfPlane + sideLength * transform.right.normalized - sideLength * transform.forward.normalized;
+        corner2 = centerOfPlane - sideLength * transform.right.normalized + sideLength * transform.forward.normalized;
+        
+        planeUVec = corner1 - corner0;
+        planeVVec = corner0 - corner2;
+
+        uLength = planeUVec.magnitude;
+        vLength = planeVVec.magnitude;
+        planeUVec = Vector3.Normalize(planeUVec);
+        planeVVec = Vector3.Normalize(planeVVec);
+
         processedPoints = processMeshes();
         if (processedPoints.Count != 0)// && firstTime == false)
         {
@@ -304,7 +328,14 @@ public class PlaneCollision : MonoBehaviour
             {
                 lineSegmentLocal = factor * lineSegmentLocal;
                 intersectPoint = original0 + lineSegmentLocal;
-                return GetComponent<MeshCollider>().bounds.Contains(meshTransform.TransformPoint(intersectPoint)); // If this works out, we probs want to pass it along to be reused later
+
+                Vector3 worldIntersect = meshTransform.TransformPoint(intersectPoint);
+                float u = Vector3.Dot(worldIntersect - corner0, planeUVec)/uLength;
+                float v  = Vector3.Dot(worldIntersect - corner2, planeVVec)/vLength;
+
+               // UnityEngine.Debug.Log("U: " + u + " V: " + v);
+
+                return u >=0.0f && u <=1.0f && v >=0.0f && v <=1.0f; // If this works out, we probs want to pass it along to be reused later
             }
         }
         return false;

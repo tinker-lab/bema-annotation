@@ -168,7 +168,6 @@ public class EdgeSelectionState : InteractionState {
         corner0 = centerOfPlane - sideLength * viewPlane.transform.right.normalized - sideLength * viewPlane.transform.forward.normalized;
         corner1 = centerOfPlane + sideLength * viewPlane.transform.right.normalized - sideLength * viewPlane.transform.forward.normalized;
         corner2 = centerOfPlane - sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
-        corner3 = centerOfPlane + sideLength * viewPlane.transform.right.normalized + sideLength * viewPlane.transform.forward.normalized;
 
         // Get texture from plane
         Material material = viewPlane.GetComponent<Renderer>().material;
