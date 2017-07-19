@@ -81,24 +81,22 @@ public class PlaneCollision : MonoBehaviour
             // for each of the ordered lists of points (1 per intersected mesh), draw them in a new game object
             foreach (List<Vector3> meshPoints in processedPoints.Keys)
             {
-                GameObject crossSection = GameObject.Find(processedPoints[meshPoints].name + " crosssection");  // Find crossSection associated with the colliding mesh
+                if (meshPoints.Count > 1)
+                {
+                    GameObject crossSection = GameObject.Find(processedPoints[meshPoints].name + " crosssection");  // Find crossSection associated with the colliding mesh
+                    crossSection.GetComponent<MeshFilter>().mesh = CreateMesh(meshPoints);
 
-                //externalStopwatch.Start();
-                crossSection.GetComponent<MeshFilter>().mesh = CreateMesh(meshPoints);
-                //externalStopwatch.Stop();
-                //UnityEngine.Debug.Log("Time taken to create one mesh: " + externalStopwatch.ElapsedMilliseconds + " ms");
-                //externalStopwatch.Reset();
+                    crossSection.transform.position = processedPoints[meshPoints].transform.position;
+                    crossSection.transform.localScale = processedPoints[meshPoints].transform.localScale;
+                    crossSection.transform.rotation = processedPoints[meshPoints].transform.rotation;   // or localrotation?
 
-                crossSection.transform.position = processedPoints[meshPoints].transform.position;
-                crossSection.transform.localScale = processedPoints[meshPoints].transform.localScale;
-                crossSection.transform.rotation = processedPoints[meshPoints].transform.rotation;   // or localrotation?
-
-                //foreach (Vector3 pt in meshPoints)
-                //{
-                //    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                //    sphere.transform.position = pt;
-                //    sphere.transform.localScale = new Vector3(0.04f, 0.04f, 0.04f);
-                //}
+                    //foreach (Vector3 pt in meshPoints)
+                    //{
+                    //    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    //    sphere.transform.position = pt;
+                    //    sphere.transform.localScale = new Vector3(0.04f, 0.04f, 0.04f);
+                    //}
+                }
             }
         }
     }
@@ -361,7 +359,7 @@ public class PlaneCollision : MonoBehaviour
     {
         //TODO: This should actually take a list of lists. For each list you do the same thing we are doing below.
         // indicies will need to be updated for each additional list.
-
+        
         List<Vector3> vertices = new List<Vector3>();
         List<int> faces = new List<int>();
         List<Vector2> uvCoordinates = new List<Vector2>();
@@ -378,6 +376,17 @@ public class PlaneCollision : MonoBehaviour
             Vector3 direction;
             if (i == points.Count - 1)
             {
+                try
+                {
+                    Vector3 I = points.ElementAt(i);
+                    Vector3 iMinusOne = points.ElementAt(i - 1);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    UnityEngine.Debug.LogError("Argument out of range.");
+                    UnityEngine.Debug.LogError("Length of point list: " + points.Count + " i= " + i + ", " + (i - 1));
+                }
+
                 direction = points.ElementAt(i) - points.ElementAt(i - 1);  //NOTE: Threw exception when I made the curve incredibly small
             }
             else
