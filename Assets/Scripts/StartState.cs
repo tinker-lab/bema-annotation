@@ -69,17 +69,17 @@ public class StartState : InteractionState {
                 {
                     GameObject.Find("UIController").GetComponent<UIController>().changeState(new PickResourceState(controller1Info));
                 }
-                else if (hitObject.name == "PlaneState")
+                else if (hitObject.name == "PlaneState")  // TODO: change the name here to reflect the new state
                 {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new PlaneState());
+                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new HandSelectionState(controller0Info, controller1Info));
                 }
                 else
                 {
                     Debug.Log("Couldn't find state button");
                 }
             }
-            Debug.Log(hitObject.name);
-            Debug.Log("Trigger pulled");
+            //Debug.Log(hitObject.name);
+            //Debug.Log("Trigger pulled");
         }
     }
 
