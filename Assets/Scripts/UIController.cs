@@ -66,7 +66,7 @@ public class UIController : MonoBehaviour {
         controller1Info = new ControllerInfo(controller1);
 
         //currentState = new PickResourceState(controller0Info);
-        currentState = new StartState();
+        currentState = new NavigationState(controller0Info, controller1Info);
 	}
 	
 	// Update is called once per frame

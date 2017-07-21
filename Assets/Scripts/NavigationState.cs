@@ -25,10 +25,34 @@ public class NavigationState : InteractionState {
     private Vector3 teleportReticleOffset;
     private bool shouldTeleport;
 
+    private ControllerInfo controller0;
+    private ControllerInfo controller1;
 
-    public NavigationState()
+    private HandSelectionState handSelectionState;
+
+    //Plane stuff to determine whether to go to hand selection state
+    private GameObject leftPlane;
+    private GameObject rightPlane;
+    private GameObject centerCube;
+    CubeCollision leftComponent;
+    CubeCollision rightComponent;
+    CubeCollision centerComponent;
+
+
+    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         desc = "NavigationState";
+        controller0 = controller0Info;
+        controller1 = controller1Info;
+
+        handSelectionState = new HandSelectionState(controller0, controller1, this);
+        leftPlane = GameObject.Find("handSelectionLeftPlane");
+        rightPlane = GameObject.Find("handSelectionRightPlane");
+        centerCube = GameObject.Find("handSelectionCenterCube");
+        leftComponent = leftPlane.GetComponent<CubeCollision>();
+        rightComponent = rightPlane.GetComponent<CubeCollision>();
+        centerComponent = centerCube.GetComponent<CubeCollision>();
+
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
@@ -46,15 +70,78 @@ public class NavigationState : InteractionState {
         teleportReticleTransform = reticle.transform;
     }
 
+    public void UpdatePlanes()
+    {
+        leftPlane.transform.position = controller0.controller.transform.position;
+        rightPlane.transform.position = controller1.controller.transform.position;
+
+        leftPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
+        rightPlane.transform.up = (leftPlane.transform.position - rightPlane.transform.position).normalized;
+
+        CenterCubeBetweenControllers();
+    }
+
+    private void CenterCubeBetweenControllers()
+    {
+        // position plane at midpoint between controllers
+
+        Vector3 leftPosition = leftPlane.transform.position;
+        Vector3 rightPosition = rightPlane.transform.position;
+
+        Vector3 halfWayBtwHands = Vector3.Lerp(leftPosition, rightPosition, 0.5f);
+        centerCube.transform.position = halfWayBtwHands;
+
+        // rotate plane w/ respect to both controllers
+        RotatePlane(controller0, controller1, leftPosition, rightPosition, centerCube);
+
+        // scale plane
+        float distance = Vector3.Distance(rightPosition, leftPosition);
+
+        centerCube.transform.localScale = new Vector3(1f, 0, 0) * distance + new Vector3(0, 0.3f, 0.3f);
+
+
+    }
+
+    private void RotatePlane(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject nPlane)
+    {
+        Vector3 xAxis = (rightPos - leftPos).normalized;
+
+        Vector3 zAxis = controller0Info.isLeft ? controller1Info.trackedObj.transform.forward : controller0Info.trackedObj.transform.forward;
+        zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
+        Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
+
+        Vector3 groundY = new Vector3(0, 1);
+
+        float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+        nPlane.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
+
+    }
+
     // Update is called once per frame
     override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        /*
         // Check if controllers are close to plane
         if(NearPlane(controller0Info) && NearPlane(controller1Info) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller0Info.trackedObj.transform.position)) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller1Info.trackedObj.transform.position)))
         {
           //  GameObject.Destroy(laser);
             Debug.Log("Switching from NavigationState to EdgeSelection state");
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new EdgeSelectionState(controller0Info, controller1Info));
+        }
+        */
+
+        UpdatePlanes();
+
+        // Take input from cube and both handplanes about what they collide with
+        HashSet<Collider> cubeColliders = centerComponent.CollidedObjects;
+        HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
+        HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
+
+        // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
+        if ((leftColliders.Count > 0 && rightColliders.Count > 0) || (cubeColliders.Count > 0 && (leftColliders.Count == 0 || rightColliders.Count == 0)))
+        {
+            Debug.Log("Switching to handselectionstate");
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(handSelectionState);
         }
 
         // Teleport
@@ -76,10 +163,12 @@ public class NavigationState : InteractionState {
                 Teleport();
             }
         }
+        /*
         else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
         {
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
         }
+        */
         else
         {
             laser0.SetActive(false);

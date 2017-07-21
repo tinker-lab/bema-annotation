@@ -40,10 +40,12 @@ public class EdgeSelectionState : InteractionState {
     Vector3 corner2;
     Vector3 corner3;
 
+    InteractionState stateToReturnTo;
 
-    public EdgeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public EdgeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo)
     {
         desc = "EdgeSelectionState";
+        this.stateToReturnTo = stateToReturnTo;
 
         viewPlane = GameObject.Find("ViewPlane");
         headset = GameObject.FindGameObjectWithTag("MainCamera").transform;
@@ -70,7 +72,7 @@ public class EdgeSelectionState : InteractionState {
 
         if (AwayFromPlane(controller0Info) || AwayFromPlane(controller1Info) || AwayFromPlane(planeProjection0) || AwayFromPlane(planeProjection1))
         {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(stateToReturnTo);
         }
 
         Quaternion delta0 = controller0Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation0);

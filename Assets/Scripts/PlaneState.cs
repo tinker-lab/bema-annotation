@@ -17,9 +17,12 @@ public class PlaneState : InteractionState {
     private int everythingExceptWorldUI;
     private Vector3 idealPosition;
 
-    public PlaneState()
+    InteractionState stateToReturnTo;
+
+    public PlaneState(InteractionState stateToReturnTo)
     {
         desc = "PlaneState";
+        this.stateToReturnTo = stateToReturnTo;
 
         //planeCounter = 0; //TODO: this is reset every time the state is entered
         planeParent = GameObject.Find("TestPlanes").transform;
@@ -47,7 +50,7 @@ public class PlaneState : InteractionState {
             //TODO: set viewing plane inactive as well
             planeParent.Find("Plane " + planeParent.childCount).GetComponent<PlaneCollision>().enabled = false;
 
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+            GameObject.Find("UIController").GetComponent<UIController>().changeState(stateToReturnTo);
         }
     }
 

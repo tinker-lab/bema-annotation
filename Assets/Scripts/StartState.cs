@@ -26,7 +26,6 @@ public class StartState : InteractionState {
     private GameObject mainPanel;
     private Transform headTransform;
 
-
     public StartState()
     {
        
@@ -63,7 +62,7 @@ public class StartState : InteractionState {
             {
                 if (hitObject.name == "NavigationState")
                 {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
+                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState(controller0Info, controller1Info));
                 }
                 else if (hitObject.name == "PickResourceState")
                 {
@@ -71,7 +70,7 @@ public class StartState : InteractionState {
                 }
                 else if (hitObject.name == "PlaneState")  // TODO: change the name here to reflect the new state
                 {
-                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new HandSelectionState(controller0Info, controller1Info));
+                    GameObject.Find("UIController").GetComponent<UIController>().changeState(new HandSelectionState(controller0Info, controller1Info, new NavigationState(controller0Info, controller1Info)));
                 }
                 else
                 {
