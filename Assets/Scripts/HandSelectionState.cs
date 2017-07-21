@@ -15,7 +15,8 @@ public class HandSelectionState : InteractionState {
 
     private int planeLayer;
 
-    private Dictionary<string, List<Vector3>> seenMeshes;   // Key = name of object with mesh, Value = original set of vertices
+    private Dictionary<string, int> seenMeshes;   // Key = name of object with mesh, Value = original set of vertices
+    private Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object 
 
     private List<Collider> collidedMeshes;
     private HashSet<Collider> cubeColliders;
@@ -49,8 +50,6 @@ public class HandSelectionState : InteractionState {
     CubeCollision leftComponent;
     CubeCollision rightComponent;
     CubeCollision centerComponent;
-
-    List<Vector3> updatedVertices;
 
     public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
@@ -87,11 +86,15 @@ public class HandSelectionState : InteractionState {
 
         leftComponent = leftPlane.GetComponent<CubeCollision>();
         rightComponent = rightPlane.GetComponent<CubeCollision>();
+
+        //TODO: should these persist between states?
+        seenMeshes = new Dictionary<string, int>();
+        originalIndices = new Dictionary<string, int[]>();
     }
 
     public GameObject CreateHandPlane(ControllerInfo c)
     {
-        GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         handPlane.GetComponent<Renderer>().material = Resources.Load("Plane Material") as Material;
         handPlane.AddComponent<MeshCollider>();
         handPlane.GetComponent<MeshCollider>().convex = true;
@@ -102,7 +105,8 @@ public class HandSelectionState : InteractionState {
 
         handPlane.transform.position = c.controller.transform.position;
         handPlane.transform.rotation = c.controller.transform.rotation;
-        handPlane.transform.localScale = new Vector3(0.3f, 0.00000001f, 0.3f);
+        //  handPlane.transform.localScale = new Vector3(0.3f, 0.00000001f, 0.3f);
+        handPlane.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);
 
         handPlane.layer = planeLayer;
         return handPlane;
@@ -122,7 +126,8 @@ public class HandSelectionState : InteractionState {
 
         CenterPlane();
 
-        float sideLength = leftPlane.transform.localScale.x / 2; // should be the same for both planes
+        // float sideLength = leftPlane.transform.localScale.x / 2; // should be the same for both planes
+        float sideLength = leftPlane.transform.localScale.x * 5;
 
         corner0Left = leftPlane.transform.position - sideLength * leftPlane.transform.right.normalized - sideLength * leftPlane.transform.forward.normalized;
         corner1Left = leftPlane.transform.position + sideLength * leftPlane.transform.right.normalized - sideLength * leftPlane.transform.forward.normalized;
@@ -197,14 +202,37 @@ public class HandSelectionState : InteractionState {
             {
                 if (!seenMeshes.ContainsKey(m.name))
                 {
-                    seenMeshes.Add(m.name, m.GetComponent<MeshFilter>().mesh.vertices.ToList());        // Maybe want to store vertices as array instead?
+                    m.GetComponent<MeshFilter>().mesh.MarkDynamic();
+                    seenMeshes.Add(m.name, m.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
+
+
+                   originalIndices.Add(m.name, m.GetComponent<MeshFilter>().mesh.GetIndices(0));
                 }
                 ProcessMesh(m);
             }
+            //first time seen, record vertices
+            // next time, just update number
         }
 
         if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
         {
+            foreach (Collider m in collidedMeshes)
+            {
+                seenMeshes[m.name] = m.GetComponent<MeshFilter>().mesh.vertices.Length;
+
+                //The submesh to start
+                int submeshNum = 0;
+                Material[] origMaterials = m.GetComponent<Renderer>().materials;
+                for (int i = 0; i < origMaterials.Length; i++)
+                {
+                    if (origMaterials[i].name == "Selected")
+                    {
+                        submeshNum = i;
+                    }
+                }
+                originalIndices[m.name] = m.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
+            }
+
             GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
         }
 
@@ -298,21 +326,42 @@ public class HandSelectionState : InteractionState {
     private void ProcessMesh(Collider m)
     {
         Mesh mesh = m.GetComponent<MeshFilter>().mesh;
+        selectedIndices.Clear();
 
-        int[] indices = mesh.GetTriangles(0);
-        Vector3[] vertices = seenMeshes[m.name].ToArray();
-        updatedVertices = seenMeshes[m.name];
-        Vector3[] transformedVertices = new Vector3[updatedVertices.Count];       // Will this need to be a list since we're adding things to it?
+        //TODO: When we get to multiple refinement we will need to not clear this here. Instead the new unselected should just be added to it.
+        unselectedIndices.Clear();
+
+        int[] indices = originalIndices[m.name];
+        List<Vector3> vertices = new List<Vector3>();
+        mesh.GetVertices(vertices);
+
+        List<Vector2> UVs = new List<Vector2>();
+        mesh.GetUVs(0, UVs); //TODO: are there multiple channels?
+
+        Debug.Log("original vertices: " + vertices.Count + " original uvs: " + UVs.Count);
+
+        int numVertices = seenMeshes[m.name];
+        vertices.RemoveRange(numVertices, vertices.Count - numVertices);
+        UVs.RemoveRange(numVertices, UVs.Count - numVertices);
+
+        Debug.Log("removed vertices: " + vertices.Count + " removed uvs: " + UVs.Count);
+
+        Vector3[] transformedVertices = new Vector3[vertices.Count];       // Will this need to be a list since we're adding things to it?
         
 
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i < vertices.Count; i++)
         {
             transformedVertices[i] = m.gameObject.transform.TransformPoint(vertices[i]);
+
         }
 
         Vector3 intersectPoint0 = new Vector3();
         Vector3 intersectPoint1 = new Vector3();
         Vector3 intersectPoint2 = new Vector3();
+
+        Vector2 intersectUV0 = new Vector2();
+        Vector2 intersectUV1 = new Vector2();
+        Vector2 intersectUV2 = new Vector2();
 
         int triangleIndex0;
         int triangleIndex1;
@@ -322,6 +371,8 @@ public class HandSelectionState : InteractionState {
         int intersect1Index;
         int intersect2Index;
 
+        
+
         for (int i = 0; i < (int)(indices.Length / 3); i++)
         {
             triangleIndex0 = indices[3 * i];
@@ -329,93 +380,86 @@ public class HandSelectionState : InteractionState {
             triangleIndex2 = indices[3 * i + 2];
 
             //LEFT PLANE
-            bool side0 = intersectsWithPlane(transformedVertices[indices[3 * i]], transformedVertices[indices[3 * i + 1]], ref intersectPoint0, vertices[indices[3 * i]], vertices[indices[3 * i + 1]], m.transform, true, leftPlane);
-            bool side1 = intersectsWithPlane(transformedVertices[indices[3 * i + 1]], transformedVertices[indices[3 * i + 2]], ref intersectPoint1, vertices[indices[3 * i + 1]], vertices[indices[3 * i + 2]], m.transform, true, leftPlane);
-            bool side2 = intersectsWithPlane(transformedVertices[indices[3 * i]], transformedVertices[indices[3 * i + 2]], ref intersectPoint2, vertices[indices[3 * i]], vertices[indices[3 * i + 2]], m.transform, true, leftPlane);
+            bool side0 = intersectsWithPlane(transformedVertices[indices[3 * i]], transformedVertices[indices[3 * i + 1]], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[indices[3 * i]], vertices[indices[3 * i + 1]],  leftPlane);
+            bool side1 = intersectsWithPlane(transformedVertices[indices[3 * i + 1]], transformedVertices[indices[3 * i + 2]], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[indices[3 * i + 1]], vertices[indices[3 * i + 2]], leftPlane);
+            bool side2 = intersectsWithPlane(transformedVertices[indices[3 * i]], transformedVertices[indices[3 * i + 2]], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[indices[3 * i]], vertices[indices[3 * i + 2]], leftPlane);
 
 
             if (side0 && side1 && side2) // 3 intersections?
             {
                 Debug.Log("3 sides hit");
-                if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint1))
-                {
-                    
-                }
-                else if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint2))
-                {
-                   
-
-                }
-                else  // Edge1Point == Edge2 point
-                {
-                    
-                }
             }
             // determine which side of triangle has 1 vertex
             // add vertex and indices to appropriate mesh
             // for side with 2, add vertices, add 2 triangles
             else if (side0 && side1) // 2 intersections
             {
-                intersect0Index = updatedVertices.Count;
-                intersect1Index = intersect0Index + 1;
-                updatedVertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                updatedVertices.Add(intersectPoint1);
+                intersect0Index = numVertices++;
+                intersect1Index = numVertices++;
+                vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                vertices.Add(intersectPoint1);
+                UVs.Add(intersectUV0);
+                UVs.Add(intersectUV1);
 
-                if (OnNormalSideLeft(transformedVertices[indices[3 * i + 1]]))
+                if (OnNormalSideLeft(transformedVertices[triangleIndex1]))
                 {
 
                     // Add the indices for various triangles to selected and unselected
 
-                    AddNewIndices(selectedIndices, triangleIndex1, intersect0Index, intersect1Index);
-                    AddNewIndices(unselectedIndices, intersect1Index, intersect0Index, triangleIndex0);
-                    AddNewIndices(unselectedIndices, intersect1Index, triangleIndex0, triangleIndex2);
+                    AddNewIndices(selectedIndices, intersect1Index, intersect0Index, triangleIndex1);
+                    AddNewIndices(unselectedIndices, triangleIndex0, intersect0Index, intersect1Index);
+                    AddNewIndices(unselectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
 
                 }
                 else
                 {
-                    AddNewIndices(unselectedIndices, triangleIndex1, intersect0Index, intersect1Index);
-                    AddNewIndices(selectedIndices, intersect1Index, intersect0Index, triangleIndex0);
-                    AddNewIndices(selectedIndices, intersect1Index, triangleIndex0, triangleIndex2);
+                    AddNewIndices(unselectedIndices, intersect1Index, intersect0Index, triangleIndex1);
+                    AddNewIndices(selectedIndices, triangleIndex0, intersect0Index, intersect1Index);
+                    AddNewIndices(selectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
                 }
             }
             else if (side0 && side2)
             {
-                intersect0Index = updatedVertices.Count;
-                intersect2Index = intersect0Index + 1;
-                updatedVertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                updatedVertices.Add(intersectPoint2);
+                intersect0Index = numVertices++;
+                intersect2Index = numVertices++;
+                vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                vertices.Add(intersectPoint2);
+                UVs.Add(intersectUV0);
+                UVs.Add(intersectUV2);
 
                 if (OnNormalSideLeft(transformedVertices[indices[3 * i]]))
                 {
-                    AddNewIndices(selectedIndices, intersect0Index, triangleIndex0, intersect2Index);
-                    AddNewIndices(unselectedIndices, intersect0Index, intersect2Index, triangleIndex2);
-                    AddNewIndices(unselectedIndices, intersect0Index, triangleIndex2, triangleIndex1);
+                    AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect0Index);
+                    AddNewIndices(unselectedIndices, triangleIndex2, intersect2Index, intersect0Index);
+                    AddNewIndices(unselectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
                 }
                 else
                 {
-                    AddNewIndices(unselectedIndices, intersect0Index, triangleIndex0, intersect2Index);
-                    AddNewIndices(selectedIndices, intersect0Index, intersect2Index, triangleIndex2);
-                    AddNewIndices(selectedIndices, intersect0Index, triangleIndex2, triangleIndex1);
+                    AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect0Index);
+                    AddNewIndices(selectedIndices, triangleIndex2, intersect2Index, intersect0Index);
+                    AddNewIndices(selectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
                 }
             }
             else if (side1 && side2)
             {
-                intersect1Index = updatedVertices.Count;
-                intersect2Index = intersect1Index + 1;
-                updatedVertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                updatedVertices.Add(intersectPoint2);
+                intersect1Index = numVertices++;
+                intersect2Index = numVertices++;
+                vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                vertices.Add(intersectPoint2);
+                UVs.Add(intersectUV1);
+                UVs.Add(intersectUV2);
 
                 if (OnNormalSideLeft(transformedVertices[indices[3 * i + 2]]))
                 {
-                    AddNewIndices(selectedIndices, intersect2Index, triangleIndex2, intersect1Index);
-                    AddNewIndices(unselectedIndices, intersect1Index, triangleIndex0, intersect2Index);
-                    AddNewIndices(unselectedIndices, intersect1Index, triangleIndex1, triangleIndex0);
+                    AddNewIndices(selectedIndices, intersect1Index, triangleIndex2, intersect2Index);
+                    AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect1Index);
+                    AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
                 }
                 else
                 {
-                    AddNewIndices(unselectedIndices, intersect2Index, triangleIndex2, intersect1Index);
-                    AddNewIndices(selectedIndices, intersect1Index, triangleIndex0, intersect2Index);
-                    AddNewIndices(selectedIndices, intersect1Index, triangleIndex1, triangleIndex0);
+                    AddNewIndices(unselectedIndices, intersect1Index, triangleIndex2, intersect2Index);
+                    AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect1Index);
+                    AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
                 }
             }
             else // 0 intersections
@@ -444,29 +488,32 @@ public class HandSelectionState : InteractionState {
 
         // mesh.SetTriangles(selected.ToArray(), 1);
 
-        mesh.subMeshCount = 3;
-        mesh.SetVertices(updatedVertices);
-        try
-        {
-            mesh.SetTriangles(selectedIndices, 1);
-            mesh.SetTriangles(unselectedIndices, 2);
-        }
-        catch (Exception e)
-        {
-            Debug.Log("Number of vertices: " + updatedVertices.Count + "\nNumber of selected indices: " + selectedIndices.Count + "\nNumber of unselected indices: " + unselectedIndices.Count);
-            Debug.Log("Last value in selectedIndices: " + selectedIndices.ElementAt(selectedIndices.Count - 1)  +"\nLast val in unselected: " + unselectedIndices.ElementAt(unselectedIndices.Count - 1));
 
-        }
-       
+        //mesh.triangles = new List<int>().ToArray();
+        //mesh.vertices = new List<Vector3>().ToArray();
+        mesh.Clear();
+        mesh.subMeshCount = 2;
 
-        Material[] materials = new Material[3];
-        materials[0] = m.GetComponent<Renderer>().material;     // May need to specify which submesh we get this from?
-        materials[1] = Resources.Load("TestMaterial") as Material;
-        materials[2] = materials[0];
+        Debug.Log("vertex count: " + vertices.Count + " uv count: " + UVs.Count);
+
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, UVs);
+
+        //mesh.SetTriangles(indices, 0);
+        
+        mesh.SetTriangles(unselectedIndices, 0);
+        mesh.SetTriangles(selectedIndices, 1);
+
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
+
+        Material[] materials = new Material[2];
+        materials[0] = m.GetComponent<Renderer>().materials[0];     // May need to specify which submesh we get this from?
+        materials[1] = Resources.Load("Selected") as Material;
+       // materials[2] = Resources.Load("Unselected") as Material;
         m.GetComponent<Renderer>().materials = materials;
 
-        selectedIndices.Clear();
-        unselectedIndices.Clear();
+
         Debug.Log("Submesh count: " + mesh.subMeshCount);
     }
 
@@ -483,21 +530,23 @@ public class HandSelectionState : InteractionState {
     // Adds a triangle with predefined indices into a list of indices
     private void AddNewIndices(List<int> indices, int index0, int index1, int index2)
     {
-        if(index0 > updatedVertices.Count || index1 > updatedVertices.Count || index2 > updatedVertices.Count || index0 < 0 || index1 < 0 || index2 < 0)
+        /*
+        if(index0 > .Count || index1 > updatedVertices.Count || index2 > updatedVertices.Count || index0 < 0 || index1 < 0 || index2 < 0)
         {
             Debug.Log("Index out of bounds. Index0: " + index0 + " Index1: " + index1 + " Index2: " + index2);
             Debug.Log("Num vertices: " + updatedVertices.Count);
         }
+        */
         indices.Add(index0);
         indices.Add(index1);
         indices.Add(index2);
     }
 
-    private bool intersectsWithPlane(Vector3 lineVertex0, Vector3 lineVertex1, ref Vector3 intersectPoint, Vector3 original0, Vector3 original1, Transform meshTransform, bool isLeftPlane, GameObject plane) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
+    private bool intersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, GameObject plane) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     { 
-        Vector3 lineSegmentLocal = original1 - original0;
-        float dot = Vector3.Dot(plane.transform.up, lineVertex1 - lineVertex0);
-        Vector3 w = plane.transform.position - lineVertex0;
+        Vector3 lineSegmentLocal = lineVertexLocal1 - lineVertexLocal0;
+        float dot = Vector3.Dot(plane.transform.up, lineVertexWorld1 - lineVertexWorld0);
+        Vector3 w = plane.transform.position - lineVertexWorld0;
        
 
         float epsilon = 0.001f;
@@ -507,10 +556,12 @@ public class HandSelectionState : InteractionState {
             if (factor >= 0f && factor <= 1f)
             {
                 lineSegmentLocal = factor * lineSegmentLocal;
-                intersectPoint = original0 + lineSegmentLocal;
+                intersectPoint = lineVertexLocal0 + lineSegmentLocal;
+                intersectUV = vertex0UV + factor * (vertex1UV - vertex0UV);
 
+                /*
                 Vector3 worldIntersect = meshTransform.TransformPoint(intersectPoint);
-
+                
                 float u, v;
                 if (isLeftPlane)
                 {
@@ -526,14 +577,19 @@ public class HandSelectionState : InteractionState {
                 // UnityEngine.Debug.Log("U: " + u + " V: " + v);
 
                 return u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f; // If this works out, we probs want to pass it along to be reused later
+                */
+                return true;
+                
             }
         }
         return false;
     }
 
+    /*
     // returns true if at least one plane intersects with point
     private bool intersectsWithPlanes(Vector3 lineVertex0, Vector3 lineVertex1, ref Vector3 intersectPoint, Vector3 original0, Vector3 original1, Transform meshTransform)
     {
         return intersectsWithPlane(lineVertex0, lineVertex1, ref intersectPoint, original0, original1, meshTransform, true, leftPlane) || intersectsWithPlane(lineVertex0, lineVertex1, ref intersectPoint, original0, original1, meshTransform, false, rightPlane);
     }
+    */
 }
