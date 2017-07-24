@@ -45,8 +45,6 @@ public class HandSelectionState : InteractionState
         get { return selectedMeshes; }
     }
 
-
-
     public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo)
     {
         desc = "HandSelectionState";
@@ -125,6 +123,12 @@ public class HandSelectionState : InteractionState
     public override void deactivate()
     {
         selectedMeshes.Clear();
+
+        controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // Disable hand rendering
+        controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
+
+        controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); // Enable rendering of controllers
+        controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)

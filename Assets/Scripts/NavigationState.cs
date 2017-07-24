@@ -141,6 +141,13 @@ public class NavigationState : InteractionState {
         if (cubeColliders.Count > 0)
         {
             Debug.Log("Switching to handselectionstate");
+
+            controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
+            controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
+
+            controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
+            controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
+
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
         }
 
