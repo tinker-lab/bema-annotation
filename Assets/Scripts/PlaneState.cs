@@ -50,7 +50,7 @@ public class PlaneState : InteractionState {
             //TODO: set viewing plane inactive as well
             planeParent.Find("Plane " + planeParent.childCount).GetComponent<PlaneCollision>().enabled = false;
 
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(stateToReturnTo);
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
         }
     }
 

@@ -134,14 +134,14 @@ public class NavigationState : InteractionState {
 
         // Take input from cube and both handplanes about what they collide with
         HashSet<Collider> cubeColliders = centerComponent.CollidedObjects;
-        HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
-        HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
+        //HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
+        //HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
 
         // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
-        if ((leftColliders.Count > 0 && rightColliders.Count > 0) || (cubeColliders.Count > 0 && (leftColliders.Count == 0 || rightColliders.Count == 0)))
+        if (cubeColliders.Count > 0)
         {
             Debug.Log("Switching to handselectionstate");
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(handSelectionState);
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
         }
 
         // Teleport
@@ -182,7 +182,11 @@ public class NavigationState : InteractionState {
         RaycastHit hit;
         Vector3 laserStartPos = controllerInfo.trackedObj.transform.position;
 
-        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000))
+        var everythingExeceptPlaneLayer = LayerMask.NameToLayer("PlaneLayer");
+        everythingExeceptPlaneLayer = 1 << everythingExeceptPlaneLayer;
+        everythingExeceptPlaneLayer = ~everythingExeceptPlaneLayer;
+
+        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000, everythingExeceptPlaneLayer))
         {
             // No matter what object is hit, show the laser pointing to it
             hitPoint = hit.point;

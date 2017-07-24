@@ -25,11 +25,26 @@ public class HandSelectionState : InteractionState
     CubeCollision rightComponent;
     CubeCollision centerComponent;
 
-    private Dictionary<string, int> seenMeshes;   // Key = name of object with mesh, Value = original set of vertices
-    private Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object
+    private static Dictionary<string, int> seenMeshes;   // Key = name of object with mesh, Value = original set of vertices
+    private static Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object
+    private static HashSet<string> selectedMeshes; // Collection of the the names of all the meshes that have had pieces selected from them.
 
     List<int> selectedIndices;
     List<int> unselectedIndices;
+
+    public static Dictionary<string, int[]> OriginalIndices
+    {
+        get { return originalIndices; }
+    }
+    public static Dictionary<string, int> SeenMeshes
+    {
+        get { return seenMeshes; }
+    }
+    public static HashSet<string> SelectedMeshes
+    {
+        get { return selectedMeshes; }
+    }
+
 
 
     public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo)
@@ -65,10 +80,14 @@ public class HandSelectionState : InteractionState
         rightComponent = rightPlane.GetComponent<CubeCollision>();
 
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
+
+        selectedMeshes = new HashSet<string>();
         seenMeshes = new Dictionary<string, int>();
         originalIndices = new Dictionary<string, int[]>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
+
+        this.stateToReturnTo = stateToReturnTo;
     }
 
     public GameObject CreateHandPlane(ControllerInfo c, String name)
@@ -81,7 +100,7 @@ public class HandSelectionState : InteractionState
         handPlane.GetComponent<MeshCollider>().isTrigger = true;
         handPlane.AddComponent<Rigidbody>();
         handPlane.GetComponent<Rigidbody>().isKinematic = true;
-        handPlane.AddComponent<CubeCollision>();
+        //handPlane.AddComponent<CubeCollision>();
 
         handPlane.transform.position = c.controller.transform.position;
         handPlane.transform.rotation = c.controller.transform.rotation;
@@ -103,32 +122,25 @@ public class HandSelectionState : InteractionState
         CenterCubeBetweenControllers();
     }
 
+    public override void deactivate()
+    {
+        selectedMeshes.Clear();
+    }
+
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         UpdatePlanes();
 
-        // Take input from cube and both handplanes about what they collide with
+        // Take input from cube about what it collides with
         cubeColliders = centerComponent.CollidedObjects;
-        leftColliders = leftComponent.CollidedObjects;
-        rightColliders = rightComponent.CollidedObjects;
-
-        // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
-        if (leftColliders.Count > 0 && rightColliders.Count > 0)
-        {
-            foreach (Collider c in leftColliders)
-            {
-                if (rightColliders.Contains(c))
-                {
-                    collidedMeshes.Add(c);
-                }
-            }
-            print("Both planes colliding");
-        }
-        // If just the cube (or only one handplane) is colliding, we take the entire meshes of the objects cube collides with
-        else if (cubeColliders.Count > 0 && (leftColliders.Count == 0 || rightColliders.Count == 0))
+        
+        if (cubeColliders.Count > 0)
         {
             collidedMeshes = cubeColliders.ToList();
-            print("Cube!");
+        }
+        else
+        {
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);  // If not colliding with anything, go back to navigationstate or wherever
         }
 
 
@@ -147,7 +159,7 @@ public class HandSelectionState : InteractionState
 
 
 
-        if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+        if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())     // Looks as though all that happens is it only displays the unselected submesh
         {
             foreach (Collider m in collidedMeshes)
             {
@@ -158,19 +170,17 @@ public class HandSelectionState : InteractionState
                 Material[] origMaterials = m.GetComponent<Renderer>().materials;
                 for (int i = 0; i < origMaterials.Length; i++)
                 {
-                    if (origMaterials[i].name == "Selected")
+                    if (origMaterials[i].name == "Selected (Instance)")
                     {
                         submeshNum = i;
                     }
                 }
                 originalIndices[m.name] = m.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
+
+                selectedMeshes.Add(m.name);
             }
-
-            Debug.Log("Switching to " + stateToReturnTo.name + " state");
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(stateToReturnTo);
         }
-
-        collidedMeshes.Clear();
+        collidedMeshes.Clear(); // TODO: check that this list is still clear when returning to the state
     }
 
 
@@ -381,7 +391,7 @@ public class HandSelectionState : InteractionState
         mesh.Clear();
         mesh.subMeshCount = 2;
 
-        Debug.Log("vertex count: " + vertices.Count + " uv count: " + UVs.Count);
+        //Debug.Log("vertex count: " + vertices.Count + " uv count: " + UVs.Count);
 
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, UVs);
@@ -401,7 +411,7 @@ public class HandSelectionState : InteractionState
         m.GetComponent<Renderer>().materials = materials;
 
 
-        Debug.Log("Submesh count: " + mesh.subMeshCount);
+      //  Debug.Log("Submesh count: " + mesh.subMeshCount);
     }
 
     // returns value of latest index added and adds to list

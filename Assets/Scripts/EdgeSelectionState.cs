@@ -72,7 +72,7 @@ public class EdgeSelectionState : InteractionState {
 
         if (AwayFromPlane(controller0Info) || AwayFromPlane(controller1Info) || AwayFromPlane(planeProjection0) || AwayFromPlane(planeProjection1))
         {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(stateToReturnTo);
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
         }
 
         Quaternion delta0 = controller0Info.trackedObj.transform.rotation * Quaternion.Inverse(initialRotation0);

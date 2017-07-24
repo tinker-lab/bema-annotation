@@ -33,7 +33,7 @@ public class ResourceEditState : InteractionState {
         desc = "ResourceEditState";
         worldUILayer = LayerMask.NameToLayer("WorldUI");
 
-        laser = Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
+        laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
         laserTransform = laser.transform;
 
         canvas = GameObject.Find("ResourceEditMenu").transform.GetChild(0).gameObject;

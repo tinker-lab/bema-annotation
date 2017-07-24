@@ -14,7 +14,7 @@ public class RejectController : MonoBehaviour {
 	
     void Reject()
     {
-        GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
+        GameObject.Find("UIController").GetComponent<UIController>().ChangeState(new StartState());
 
     }
 

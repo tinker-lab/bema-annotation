@@ -61,7 +61,7 @@ public class PickResourceState : InteractionState
             else if (hitLayer == worldUILayer && hitObject.CompareTag(LoadImages.RESOURCE_TAG))
             {
                 // Carry user and resource to next state. Maybe reconfirm with user about their choice?
-                GameObject.Find("UIController").GetComponent<UIController>().changeState(new ResourceEditState(activeController, hitObject));
+                GameObject.Find("UIController").GetComponent<UIController>().ChangeState(new ResourceEditState(activeController, hitObject));
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////////

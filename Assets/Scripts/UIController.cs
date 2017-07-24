@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class InteractionState : MonoBehaviour
+public class InteractionState
 {
     protected string desc
     {
@@ -87,7 +87,7 @@ public class UIController : MonoBehaviour {
         currentState.HandleEvents(controller0Info, controller1Info);
 	}
 
-    public void changeState(InteractionState newState)
+    public void ChangeState(InteractionState newState)
     {
         currentState.deactivate();
         currentState = newState;
