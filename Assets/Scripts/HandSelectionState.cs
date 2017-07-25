@@ -30,6 +30,8 @@ public class HandSelectionState : InteractionState
     private static Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object
     private static HashSet<string> selectedMeshes; // Collection of the the names of all the meshes that have had pieces selected from them.
 
+    private Dictionary<Vector3, HashSet<Vector3>> pointGraph;   // Graph of selected points
+
     List<int> selectedIndices;
     List<int> unselectedIndices;
 
@@ -87,6 +89,8 @@ public class HandSelectionState : InteractionState
         originalIndices = new Dictionary<string, int[]>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
+
+        pointGraph = new Dictionary<Vector3, HashSet<Vector3>>();   // graph of selected points
 
         this.stateToReturnTo = stateToReturnTo;
     }
@@ -245,6 +249,8 @@ public class HandSelectionState : InteractionState
         Mesh mesh = m.GetComponent<MeshFilter>().mesh;
         selectedIndices.Clear();
 
+        Dictionary<Vector3, int> vertexToIndex = new Dictionary<Vector3, int>(); // TODO: do we want to declare this here?
+
         //TODO: When we get to multiple refinement we will need to not clear this here. Instead the new unselected should just be added to it.
         if (!selectedMeshes.Contains(m.name))
         {
@@ -312,90 +318,7 @@ public class HandSelectionState : InteractionState
                 bool side2 = intersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], currentPlane);
 
 
-                if (side0 && side1 && side2) // 3 intersections?
-                {
-                    Debug.Log("3 sides hit");
-                }
-                // determine which side of triangle has 1 vertex
-                // add vertex and indices to appropriate mesh
-                // for side with 2, add vertices, add 2 triangles
-                else if (side0 && side1) // 2 intersections
-                {
-                    intersect0Index = numVertices++;
-                    intersect1Index = numVertices++;
-                    vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                    vertices.Add(intersectPoint1);
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
-                    UVs.Add(intersectUV0);
-                    UVs.Add(intersectUV1);
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
-                    {
-
-                        // Add the indices for various triangles to selected and unselected
-
-                        AddNewIndices(selectedIndices, intersect1Index, intersect0Index, triangleIndex1);
-                        AddNewIndices(unselectedIndices, triangleIndex0, intersect0Index, intersect1Index);
-                        AddNewIndices(unselectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
-
-                    }
-                    else
-                    {
-                        AddNewIndices(unselectedIndices, intersect1Index, intersect0Index, triangleIndex1);
-                        AddNewIndices(selectedIndices, triangleIndex0, intersect0Index, intersect1Index);
-                        AddNewIndices(selectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
-                    }
-                }
-                else if (side0 && side2)
-                {
-                    intersect0Index = numVertices++;
-                    intersect2Index = numVertices++;
-                    vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                    vertices.Add(intersectPoint2);
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
-                    UVs.Add(intersectUV0);
-                    UVs.Add(intersectUV2);
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
-                    {
-                        AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect0Index);
-                        AddNewIndices(unselectedIndices, triangleIndex2, intersect2Index, intersect0Index);
-                        AddNewIndices(unselectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
-                    }
-                    else
-                    {
-                        AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect0Index);
-                        AddNewIndices(selectedIndices, triangleIndex2, intersect2Index, intersect0Index);
-                        AddNewIndices(selectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
-                    }
-                }
-                else if (side1 && side2)
-                {
-                    intersect1Index = numVertices++;
-                    intersect2Index = numVertices++;
-                    vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                    vertices.Add(intersectPoint2);
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
-                    transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
-                    UVs.Add(intersectUV1);
-                    UVs.Add(intersectUV2);
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], currentPlane))
-                    {
-                        AddNewIndices(selectedIndices, intersect1Index, triangleIndex2, intersect2Index);
-                        AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect1Index);
-                        AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
-                    }
-                    else
-                    {
-                        AddNewIndices(unselectedIndices, intersect1Index, triangleIndex2, intersect2Index);
-                        AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect1Index);
-                        AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
-                    }
-                }
-                else // 0 intersections
+                if (!side0 && !side1 && !side2) // 0 intersections
                 {
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
                     {
@@ -406,8 +329,166 @@ public class HandSelectionState : InteractionState
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
                 }
+                else
+                {  // intersections have occurred
+                   // determine which side of triangle has 1 vertex
+                   // add vertex and indices to appropriate mesh
+                   // for side with 2, add vertices, add 2 triangles
+                    if (side0 && side1) // 2 intersections
+                    {
+                        intersect0Index = numVertices++;
+                        intersect1Index = numVertices++;
+                        vertices.Add(intersectPoint0);
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint0))
+                        {
+                            vertexToIndex.Add(intersectPoint0, vertices.Count - 1); // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                        }
+
+                        vertices.Add(intersectPoint1);
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint1))
+                        {
+                            vertexToIndex.Add(intersectPoint1, vertices.Count - 1);
+                        }
+
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
+                        UVs.Add(intersectUV0);
+                        UVs.Add(intersectUV1);
+
+                        AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
+                        {
+
+                            // Add the indices for various triangles to selected and unselected
+
+                            AddNewIndices(selectedIndices, intersect1Index, intersect0Index, triangleIndex1);
+                            AddNewIndices(unselectedIndices, triangleIndex0, intersect0Index, intersect1Index);
+                            AddNewIndices(unselectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
+
+                        }
+                        else
+                        {
+                            AddNewIndices(unselectedIndices, intersect1Index, intersect0Index, triangleIndex1);
+                            AddNewIndices(selectedIndices, triangleIndex0, intersect0Index, intersect1Index);
+                            AddNewIndices(selectedIndices, triangleIndex2, triangleIndex0, intersect1Index);
+                        }
+                    }
+                    else if (side0 && side2)
+                    {
+                        intersect0Index = numVertices++;
+                        intersect2Index = numVertices++;
+                        vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint0))
+                        {
+                            vertexToIndex.Add(intersectPoint0, vertices.Count - 1);
+                        }
+
+                        vertices.Add(intersectPoint2);
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint2))
+                        {
+                            vertexToIndex.Add(intersectPoint2, vertices.Count - 1);
+                        }
+
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
+                        UVs.Add(intersectUV0);
+                        UVs.Add(intersectUV2);
+
+                        AddToGraph(intersectPoint0, intersectPoint2, ref pointGraph);
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
+                        {
+                            AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect0Index);
+                            AddNewIndices(unselectedIndices, triangleIndex2, intersect2Index, intersect0Index);
+                            AddNewIndices(unselectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
+                        }
+                        else
+                        {
+                            AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect0Index);
+                            AddNewIndices(selectedIndices, triangleIndex2, intersect2Index, intersect0Index);
+                            AddNewIndices(selectedIndices, triangleIndex1, triangleIndex2, intersect0Index);
+                        }
+                    }
+                    else if (side1 && side2)
+                    {
+                        intersect1Index = numVertices++;
+                        intersect2Index = numVertices++;
+                        vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint1))
+                        {
+                            vertexToIndex.Add(intersectPoint1, vertices.Count - 1);
+                        }
+
+                        vertices.Add(intersectPoint2);
+
+                        if (!vertexToIndex.ContainsKey(intersectPoint2))
+                        {
+                            vertexToIndex.Add(intersectPoint2, vertices.Count - 1);
+                        }
+
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
+                        transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
+                        UVs.Add(intersectUV1);
+                        UVs.Add(intersectUV2);
+
+                        AddToGraph(intersectPoint1, intersectPoint2, ref pointGraph);
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], currentPlane))
+                        {
+                            AddNewIndices(selectedIndices, intersect1Index, triangleIndex2, intersect2Index);
+                            AddNewIndices(unselectedIndices, intersect2Index, triangleIndex0, intersect1Index);
+                            AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
+                        }
+                        else
+                        {
+                            AddNewIndices(unselectedIndices, intersect1Index, triangleIndex2, intersect2Index);
+                            AddNewIndices(selectedIndices, intersect2Index, triangleIndex0, intersect1Index);
+                            AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, intersect1Index);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("hit else case: " + side0 + " " + side1 + " " + side2);
+                    }
+                    // handle intersection points here?
+
+                }
+         
 
             }
+
+            //List<Vector3> orderedMeshPoints = DFSOrderPoints(pointGraph);
+            //List<Vector2> orderedUVs = new List<Vector2>();
+            //List<Vector3> triangulatedMeshPoints = new List<Vector3>();
+            //orderedMeshPoints = RemoveSequentialDuplicates(orderedMeshPoints);        // VERY slow, doesn't do what we want
+            //foreach (Vector3 pt in orderedMeshPoints)
+            //{
+            //    orderedUVs.Add(GetUVFromPoint(pt, currentPlane));
+            //}
+
+            //Triangulator tr = new Triangulator(orderedUVs);
+            //int[] triangulatedUVs = tr.Triangulate();
+
+            //// Add to selected points somehow... 
+
+            //foreach (int index in triangulatedUVs)
+            //{
+            //    Vector3 v = orderedMeshPoints[index]; // gives original vertex
+            //                                          //  selectedIndices.Add(vertexToIndex[v]);
+            //}
+
+            // Next up:
+            // Convert points to 2D
+            // Pass points into Triangulate()
+            // Convert those points back to 3D
+            // Add to selected
+
         }
 
         mesh.Clear();
@@ -456,7 +537,7 @@ public class HandSelectionState : InteractionState
 
       //  Debug.Log("Submesh count: " + mesh.subMeshCount);
     }
-
+    
     // returns value of latest index added and adds to list
     private void AddNewIndices(List<int> indices, int numToAdd)
     {
@@ -504,5 +585,135 @@ public class HandSelectionState : InteractionState
             }
         }
         return false;
+    }
+
+    // Orders the points of one mesh. NOTE: currently just uses alreadyVisited HashSet, nothing else;
+    List<Vector3> DFSOrderPoints(Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    {
+        HashSet<Vector3> alreadyVisited = new HashSet<Vector3>();
+        List<Vector3> orderedPoints = new List<Vector3>();
+
+        foreach (Vector3 pt in pointConnections.Keys)
+        {
+            if (!alreadyVisited.Contains(pt))
+            {
+                //TODO: make a new list for ordered points here to pass in
+                DFSVisit(pt, pointConnections, ref alreadyVisited, ref orderedPoints);
+            }
+        }
+
+        return orderedPoints;
+    }
+
+    // Basic BFS, adds the intersection points of edges in the order it visits them
+    void DFSVisit(Vector3 pt, Dictionary<Vector3, HashSet<Vector3>> connectedEdges, ref HashSet<Vector3> alreadyVisited, ref List<Vector3> orderedPoints)
+    {
+        alreadyVisited.Add(pt);
+        orderedPoints.Add(pt);
+        
+        foreach (Vector3 otherIndex in connectedEdges[pt])
+        {
+            if (!alreadyVisited.Contains(otherIndex))
+            {
+                
+                DFSVisit(otherIndex, connectedEdges, ref alreadyVisited, ref orderedPoints);
+            }
+        }
+        
+    }
+
+    // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
+    private void AddToGraph(Vector3 point0, Vector3 point1, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    {
+
+        if (!pointConnections.ContainsKey(point0))
+        {
+            HashSet<Vector3> connections = new HashSet<Vector3>();
+            connections.Add(point1);
+            pointConnections.Add(point0, connections);
+        }
+        else
+        {
+            pointConnections[point0].Add(point1);
+        }
+
+        if (!pointConnections.ContainsKey(point1))
+        {
+            HashSet<Vector3> connections = new HashSet<Vector3>();
+            connections.Add(point0);
+            pointConnections.Add(point1, connections);
+        }
+        else
+        {
+            pointConnections[point1].Add(point0);
+        }
+
+    }
+
+    private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
+    {
+        List<Vector3> output = new List<Vector3>(points.Count);
+        List<Vector3>.Enumerator it = points.GetEnumerator();
+        it.MoveNext();
+        Vector3 prev = it.Current;
+        while (it.MoveNext())
+        {
+            if (!PlaneCollision.ApproximatelyEquals(it.Current, prev))
+            {
+                output.Add(it.Current);
+            }
+            prev = it.Current;
+        }
+        return output;
+    }
+
+    Vector2 GetUVFromPoint(Vector3 point, GameObject plane)
+    {
+        Vector3 centerOfPlane = plane.transform.position;                                                                                   //
+        float sideLength = (10 * plane.transform.localScale.x) / 2;                                                                         //
+                                                                                                                                            //
+        Vector3 corner0 = centerOfPlane - sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // Definitely need to assign vars here, but might 
+        Vector3 corner1 = centerOfPlane + sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // want to declare them in Start()
+        Vector3 corner2 = centerOfPlane - sideLength * plane.transform.right.normalized + sideLength * plane.transform.forward.normalized;  //
+        
+        Vector2 uv = new Vector2();
+
+        Vector3 uVec = corner1 - corner0;
+        Vector3 vVec = corner0 - corner2;
+
+        float uLength = uVec.magnitude;
+        float vLength = vVec.magnitude;
+        uVec = Vector3.Normalize(uVec);
+        vVec = Vector3.Normalize(vVec);
+
+        uv.x = Vector3.Dot(point - corner0, uVec);
+        uv.y = Vector3.Dot(point - corner2, vVec);
+
+        uv.x /= uLength;
+        uv.y /= vLength;
+
+        //clamp
+        uv.x = Mathf.Max(Mathf.Min(uv.x, 1f), 0f);
+        uv.y = Mathf.Max(Mathf.Min(uv.y, 1f), 0f);
+
+        return uv;
+    }
+
+    Vector3 GetPointFromUV(Vector2 uv, GameObject plane)
+    {
+        Vector3 centerOfPlane = plane.transform.position;                                                                                   //
+        float sideLength = (10 * plane.transform.localScale.x) / 2;                                                                         //
+                                                                                                                                            //
+        Vector3 corner0 = centerOfPlane - sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // Definitely need to assign vars here, but might 
+        Vector3 corner1 = centerOfPlane + sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // want to declare them in Start()
+        Vector3 corner2 = centerOfPlane - sideLength * plane.transform.right.normalized + sideLength * plane.transform.forward.normalized;  //
+
+        Vector3 uVec = corner1 - corner0;
+        Vector3 vVec = corner0 - corner2;
+
+        Vector3 multiplied_uVec = new Vector3(uv.x * uVec.x, uv.x * uVec.y, uv.x * uVec.z);
+        Vector3 multiplied_vVec = new Vector3(uv.y * vVec.x, uv.y * vVec.y, uv.y * vVec.z);
+
+        return (corner2 + multiplied_uVec + multiplied_vVec);
     }
 }

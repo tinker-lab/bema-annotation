@@ -159,7 +159,7 @@ public class PlaneCollision : MonoBehaviour
         //nextUp.Push(pt);
         //while (nextUp.Count != 0)
         //{
-            //int currentIndex = nextUp.Pop();
+            //int currentIndex = nextUp.Pop()
         foreach (Vector3 otherIndex in connectedEdges[pt])//[currentIndex])
         {
             if (!alreadyVisited.Contains(otherIndex))
