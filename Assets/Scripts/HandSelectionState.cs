@@ -25,7 +25,8 @@ public class HandSelectionState : InteractionState
     CubeCollision rightComponent;
     CubeCollision centerComponent;
 
-    private static Dictionary<string, int> seenMeshes;   // Key = name of object with mesh, Value = original set of vertices
+    private Dictionary<string, int[]> originalUnselectedIndices;
+    private static Dictionary<string, int> originalNumVertices;   // Key = name of object with mesh, Value = original set of vertices
     private static Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object
     private static HashSet<string> selectedMeshes; // Collection of the the names of all the meshes that have had pieces selected from them.
 
@@ -38,7 +39,7 @@ public class HandSelectionState : InteractionState
     }
     public static Dictionary<string, int> SeenMeshes
     {
-        get { return seenMeshes; }
+        get { return originalNumVertices; }
     }
     public static HashSet<string> SelectedMeshes
     {
@@ -68,6 +69,7 @@ public class HandSelectionState : InteractionState
         centerComponent = centerCube.AddComponent<CubeCollision>();
         centerCube.transform.localScale = new Vector3(0.3f, 0.00000001f, 0.3f);
         centerCube.layer = planeLayer;
+        centerCube.GetComponent<MeshRenderer>().enabled = false;
 
         collidedMeshes = new List<Collider>();      // TODO: figure out how to fill this up properly
         cubeColliders = new HashSet<Collider>();
@@ -80,7 +82,8 @@ public class HandSelectionState : InteractionState
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
 
         selectedMeshes = new HashSet<string>();
-        seenMeshes = new Dictionary<string, int>();
+        originalNumVertices = new Dictionary<string, int>();        // Keeps track of how many vertices a mesh should have
+        originalUnselectedIndices = new Dictionary<string, int[]>();      // Keeps track of indices that were previously unselected
         originalIndices = new Dictionary<string, int[]>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
@@ -106,6 +109,7 @@ public class HandSelectionState : InteractionState
         handPlane.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);
 
         handPlane.layer = planeLayer;
+        handPlane.GetComponent<MeshRenderer>().enabled = false;
         return handPlane;
     }
 
@@ -122,7 +126,6 @@ public class HandSelectionState : InteractionState
 
     public override void deactivate()
     {
-        selectedMeshes.Clear();
 
         controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // Disable hand rendering
         controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
@@ -150,12 +153,11 @@ public class HandSelectionState : InteractionState
 
         foreach (Collider m in collidedMeshes)
         {
-            if (!seenMeshes.ContainsKey(m.name))
+            if (!originalNumVertices.ContainsKey(m.name))
             {
+                originalNumVertices.Add(m.name, m.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
+
                 m.GetComponent<MeshFilter>().mesh.MarkDynamic();
-                seenMeshes.Add(m.name, m.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
-
-
                 originalIndices.Add(m.name, m.GetComponent<MeshFilter>().mesh.GetIndices(0));
             }
             ProcessMesh(m);
@@ -167,7 +169,8 @@ public class HandSelectionState : InteractionState
         {
             foreach (Collider m in collidedMeshes)
             {
-                seenMeshes[m.name] = m.GetComponent<MeshFilter>().mesh.vertices.Length;
+                originalNumVertices[m.name] = m.GetComponent<MeshFilter>().mesh.vertices.Length;
+
 
                 //The submesh to start
                 int submeshNum = 0;
@@ -180,7 +183,14 @@ public class HandSelectionState : InteractionState
                     }
                 }
                 originalIndices[m.name] = m.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
-
+                if (originalUnselectedIndices.ContainsKey(m.name))
+                {
+                    originalUnselectedIndices[m.name] = m.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                }
+                else
+                {
+                    originalUnselectedIndices.Add(m.name, m.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                }
                 selectedMeshes.Add(m.name);
             }
         }
@@ -236,16 +246,24 @@ public class HandSelectionState : InteractionState
         selectedIndices.Clear();
 
         //TODO: When we get to multiple refinement we will need to not clear this here. Instead the new unselected should just be added to it.
-        unselectedIndices.Clear();
+        if (!selectedMeshes.Contains(m.name))
+        {
+            unselectedIndices.Clear();
+            // unselectedIndices = mesh.GetTriangles(0).ToList();      // If this mesh has already been split, make sure unselected triangles are drawn too
+        }
+        else
+        {
+            unselectedIndices =  originalUnselectedIndices[m.name].ToList<int>();
+        }
 
-        int[] indices = originalIndices[m.name];
+        int[] indices = originalIndices[m.name];        // original indices is set to be JUST the selected part, that's why nothing else is drawn
         List<Vector3> vertices = new List<Vector3>();
         mesh.GetVertices(vertices);
 
         List<Vector2> UVs = new List<Vector2>();
         mesh.GetUVs(0, UVs); //TODO: are there multiple channels?
 
-        int numVertices = seenMeshes[m.name];
+        int numVertices = originalNumVertices[m.name];
         vertices.RemoveRange(numVertices, vertices.Count - numVertices);
         UVs.RemoveRange(numVertices, UVs.Count - numVertices);
 
@@ -409,7 +427,28 @@ public class HandSelectionState : InteractionState
         mesh.RecalculateNormals();
 
         Material[] materials = new Material[2];
-        materials[0] = m.GetComponent<Renderer>().materials[0];     // May need to specify which submesh we get this from?
+        Material baseMaterial = m.GetComponent<Renderer>().materials[0];
+
+        if (baseMaterial.name == "TransparentUnselected")
+        {
+            materials[0] = baseMaterial;
+        }
+        else
+        {
+            Material transparentBase = new Material(baseMaterial);
+            transparentBase.name = "TransparentUnselected";
+            transparentBase.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            transparentBase.SetFloat("_Mode", 3f);
+            transparentBase.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            transparentBase.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            transparentBase.SetInt("_ZWrite", 0);
+            transparentBase.DisableKeyword("_ALPHATEST_ON");
+            transparentBase.DisableKeyword("_ALPHABLEND_ON");
+            transparentBase.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            transparentBase.renderQueue = 3000;
+            materials[0] = transparentBase;
+        }
+        // May need to specify which submesh we get this from?
         materials[1] = Resources.Load("Selected") as Material;
         // materials[2] = Resources.Load("Unselected") as Material;
         m.GetComponent<Renderer>().materials = materials;

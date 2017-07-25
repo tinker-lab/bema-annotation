@@ -38,6 +38,8 @@ public class NavigationState : InteractionState {
     CubeCollision rightComponent;
     CubeCollision centerComponent;
 
+    private HashSet<Collider> cubeColliders;
+
 
     public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
@@ -52,6 +54,8 @@ public class NavigationState : InteractionState {
         leftComponent = leftPlane.GetComponent<CubeCollision>();
         rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
+
+        cubeColliders = new HashSet<Collider>();
 
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
@@ -133,7 +137,7 @@ public class NavigationState : InteractionState {
         UpdatePlanes();
 
         // Take input from cube and both handplanes about what they collide with
-        HashSet<Collider> cubeColliders = centerComponent.CollidedObjects;
+        cubeColliders = centerComponent.CollidedObjects;
         //HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
         //HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
 
@@ -142,28 +146,28 @@ public class NavigationState : InteractionState {
         {
             Debug.Log("Switching to handselectionstate");
 
-            controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
-            controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
+            controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
+            controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
 
-            controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
-            controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
+            controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
+            controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
         }
 
         // Teleport
-        if (controller0Info.device.GetHairTrigger()) {
+        if (controller0.device.GetHairTrigger()) {
 
             laser1.SetActive(false);
-            DoRayCast(controller0Info, laser0);
+            DoRayCast(controller0, laser0);
         }
-        else if (controller1Info.device.GetHairTrigger())
+        else if (controller1.device.GetHairTrigger())
         {
             laser0.SetActive(false);
-            DoRayCast(controller1Info, laser1);
+            DoRayCast(controller1, laser1);
            
         }
-        else if (controller0Info.device.GetHairTriggerUp() || controller1Info.device.GetHairTriggerUp())
+        else if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
         {
             if (shouldTeleport)
             {
