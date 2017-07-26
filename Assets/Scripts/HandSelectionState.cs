@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System;
 using System.Linq;
+using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class HandSelectionState : InteractionState
 {
@@ -30,10 +31,23 @@ public class HandSelectionState : InteractionState
     private static Dictionary<string, int[]> originalIndices; // key = name of object with mesh, value = original indices for the entire object
     private static HashSet<string> selectedMeshes; // Collection of the the names of all the meshes that have had pieces selected from them.
 
-    private Dictionary<Vector3, HashSet<Vector3>> pointGraph;   // Graph of selected points
+    //private Dictionary<Vector3, HashSet<Vector3>> pointGraph;   // Graph of selected points
+    private List<Vector3> outlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
 
     List<int> selectedIndices;
     List<int> unselectedIndices;
+
+    Vector3 corner0;
+    Vector3 corner1;
+    Vector3 corner2;
+    
+    List<Vector2> orderedUVs;
+    List<Vector3> triangulatedMeshPoints;
+
+    GameObject leftOutlineMesh;
+    GameObject rightOutlineMesh;
+
+    private Stopwatch watch;
 
     public static Dictionary<string, int[]> OriginalIndices
     {
@@ -90,9 +104,27 @@ public class HandSelectionState : InteractionState
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
 
-        pointGraph = new Dictionary<Vector3, HashSet<Vector3>>();   // graph of selected points
+        //pointGraph = new Dictionary<Vector3, HashSet<Vector3>>();   // graph of selected points
+        outlinePoints = new List<Vector3>();
 
         this.stateToReturnTo = stateToReturnTo;
+
+        corner0 = new Vector3();
+        corner1 = new Vector3();
+        corner2 = new Vector3();
+        
+        orderedUVs = new List<Vector2>();
+        triangulatedMeshPoints = new List<Vector3>();
+
+        watch = new Stopwatch();
+
+        leftOutlineMesh = new GameObject();
+        leftOutlineMesh.AddComponent<MeshRenderer>();
+        leftOutlineMesh.AddComponent<MeshFilter>();
+
+        rightOutlineMesh = new GameObject();
+        rightOutlineMesh.AddComponent<MeshRenderer>();
+        rightOutlineMesh.AddComponent<MeshFilter>();
     }
 
     public GameObject CreateHandPlane(ControllerInfo c, String name)
@@ -249,9 +281,6 @@ public class HandSelectionState : InteractionState
         Mesh mesh = m.GetComponent<MeshFilter>().mesh;
         selectedIndices.Clear();
 
-        Dictionary<Vector3, int> vertexToIndex = new Dictionary<Vector3, int>(); // TODO: do we want to declare this here?
-
-        //TODO: When we get to multiple refinement we will need to not clear this here. Instead the new unselected should just be added to it.
         if (!selectedMeshes.Contains(m.name))
         {
             unselectedIndices.Clear();
@@ -338,26 +367,18 @@ public class HandSelectionState : InteractionState
                     {
                         intersect0Index = numVertices++;
                         intersect1Index = numVertices++;
+
                         vertices.Add(intersectPoint0);
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint0))
-                        {
-                            vertexToIndex.Add(intersectPoint0, vertices.Count - 1); // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                        }
-
                         vertices.Add(intersectPoint1);
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint1))
-                        {
-                            vertexToIndex.Add(intersectPoint1, vertices.Count - 1);
-                        }
-
+                        
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV1);
 
-                        AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
+                        //AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
+                        outlinePoints.Add(intersectPoint0);
+                        outlinePoints.Add(intersectPoint1);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
                         {
@@ -380,26 +401,17 @@ public class HandSelectionState : InteractionState
                     {
                         intersect0Index = numVertices++;
                         intersect2Index = numVertices++;
+
                         vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint0))
-                        {
-                            vertexToIndex.Add(intersectPoint0, vertices.Count - 1);
-                        }
-
                         vertices.Add(intersectPoint2);
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint2))
-                        {
-                            vertexToIndex.Add(intersectPoint2, vertices.Count - 1);
-                        }
-
+                        
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint0));
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV2);
 
-                        AddToGraph(intersectPoint0, intersectPoint2, ref pointGraph);
+                        outlinePoints.Add(intersectPoint0);
+                        outlinePoints.Add(intersectPoint2);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
                         {
@@ -418,26 +430,18 @@ public class HandSelectionState : InteractionState
                     {
                         intersect1Index = numVertices++;
                         intersect2Index = numVertices++;
+
                         vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint1))
-                        {
-                            vertexToIndex.Add(intersectPoint1, vertices.Count - 1);
-                        }
-
                         vertices.Add(intersectPoint2);
-
-                        if (!vertexToIndex.ContainsKey(intersectPoint2))
-                        {
-                            vertexToIndex.Add(intersectPoint2, vertices.Count - 1);
-                        }
-
+                        
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint1));
                         transformedVertices.Add(m.gameObject.transform.TransformPoint(intersectPoint2));
                         UVs.Add(intersectUV1);
                         UVs.Add(intersectUV2);
 
-                        AddToGraph(intersectPoint1, intersectPoint2, ref pointGraph);
+                        //AddToGraph(intersectPoint1, intersectPoint2, ref pointGraph);
+                        outlinePoints.Add(intersectPoint1);
+                        outlinePoints.Add(intersectPoint2);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], currentPlane))
                         {
@@ -454,53 +458,39 @@ public class HandSelectionState : InteractionState
                     }
                     else
                     {
-                        Debug.Log("hit else case: " + side0 + " " + side1 + " " + side2);
+                        UnityEngine.Debug.Log("hit else case: " + side0 + " " + side1 + " " + side2);
                     }
-                    // handle intersection points here?
-
                 }
-         
-
             }
 
-            //List<Vector3> orderedMeshPoints = DFSOrderPoints(pointGraph);
-            //List<Vector2> orderedUVs = new List<Vector2>();
-            //List<Vector3> triangulatedMeshPoints = new List<Vector3>();
-            //orderedMeshPoints = RemoveSequentialDuplicates(orderedMeshPoints);        // VERY slow, doesn't do what we want
-            //foreach (Vector3 pt in orderedMeshPoints)
-            //{
-            //    orderedUVs.Add(GetUVFromPoint(pt, currentPlane));
-            //}
+            orderedUVs.Clear();
+            triangulatedMeshPoints.Clear();
+            
+            Mesh outlineMesh = CreateHighlightMesh(outlinePoints, currentPlane);
+            outlinePoints.Clear();
 
-            //Triangulator tr = new Triangulator(orderedUVs);
-            //int[] triangulatedUVs = tr.Triangulate();
-
-            //// Add to selected points somehow... 
-
-            //foreach (int index in triangulatedUVs)
-            //{
-            //    Vector3 v = orderedMeshPoints[index]; // gives original vertex
-            //                                          //  selectedIndices.Add(vertexToIndex[v]);
-            //}
-
-            // Next up:
-            // Convert points to 2D
-            // Pass points into Triangulate()
-            // Convert those points back to 3D
-            // Add to selected
-
+            if (planePass == 1)
+            {
+                rightOutlineMesh.GetComponent<MeshFilter>().mesh = outlineMesh;
+                rightOutlineMesh.transform.position = m.transform.position;
+                rightOutlineMesh.transform.localScale = m.transform.localScale;
+                rightOutlineMesh.transform.rotation = m.transform.rotation;
+            }
+            else
+            {
+                leftOutlineMesh.GetComponent<MeshFilter>().mesh = outlineMesh;
+                leftOutlineMesh.transform.position = m.transform.position;
+                leftOutlineMesh.transform.localScale = m.transform.localScale;
+                leftOutlineMesh.transform.rotation = m.transform.rotation;
+            }
         }
 
         mesh.Clear();
         mesh.subMeshCount = 2;
 
-        //Debug.Log("vertex count: " + vertices.Count + " uv count: " + UVs.Count);
-
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, UVs);
-
-        //mesh.SetTriangles(indices, 0);
-
+        
         mesh.SetTriangles(unselectedIndices, 0);
         mesh.SetTriangles(selectedIndices, 1);
 
@@ -537,7 +527,67 @@ public class HandSelectionState : InteractionState
 
       //  Debug.Log("Submesh count: " + mesh.subMeshCount);
     }
-    
+
+    /**
+     * points contains a list of points where each successive pair of points gets a tube drawn between them
+     * */
+    private Mesh CreateHighlightMesh(List<Vector3> points, GameObject plane)
+    {
+        List<Vector3> verts = new List<Vector3>();
+        List<int> faces = new List<int>();
+        List<Vector2> uvCoordinates = new List<Vector2>();
+
+        float radius = .005f;
+
+        Assert.IsTrue(points.Count % 2 == 0);
+
+        for (int i = 0; i < points.Count; i+=2)
+        {
+            Vector3 centerStart = points[i];
+            Vector3 centerEnd = points[i + 1];
+            Vector3 direction = centerEnd - centerStart;
+            Vector3 right = Vector3.Cross(plane.transform.up, direction);
+            Vector3 up = Vector3.Cross(direction, right);
+            up = up.normalized * radius;
+            right = right.normalized * radius;
+
+            int numSections = 10;
+
+            for (int slice = 0; slice <= numSections; slice++)
+            {
+                float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
+                Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+                Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+
+                verts.Add(p0);
+                verts.Add(p1);
+                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
+                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
+
+
+                if (slice > 0)
+                {
+                    faces.Add((slice*2 + 1) + ((numSections + 1) * i));
+                    faces.Add((slice*2) + ((numSections + 1) * i ));
+                    faces.Add((slice*2 -2) + ((numSections + 1) * i));
+
+                    faces.Add(slice*2+1 + ((numSections + 1) * i));
+                    faces.Add(slice*2-2 + ((numSections + 1) *i));
+                    faces.Add(slice*2-1 + ((numSections + 1) * i));
+                }
+            }
+        }
+        Mesh selectorMesh = new Mesh();
+        selectorMesh.vertices = verts.ToArray();
+        selectorMesh.uv = uvCoordinates.ToArray();
+        selectorMesh.triangles = faces.ToArray();
+
+        selectorMesh.RecalculateBounds();
+        selectorMesh.RecalculateNormals();
+
+        return selectorMesh;
+    }
+
     // returns value of latest index added and adds to list
     private void AddNewIndices(List<int> indices, int numToAdd)
     {
@@ -551,13 +601,6 @@ public class HandSelectionState : InteractionState
     // Adds a triangle with predefined indices into a list of indices
     private void AddNewIndices(List<int> indices, int index0, int index1, int index2)
     {
-        /*
-        if(index0 > .Count || index1 > updatedVertices.Count || index2 > updatedVertices.Count || index0 < 0 || index1 < 0 || index2 < 0)
-        {
-            Debug.Log("Index out of bounds. Index0: " + index0 + " Index1: " + index1 + " Index2: " + index2);
-            Debug.Log("Num vertices: " + updatedVertices.Count);
-        }
-        */
         indices.Add(index0);
         indices.Add(index1);
         indices.Add(index2);
@@ -672,9 +715,9 @@ public class HandSelectionState : InteractionState
         Vector3 centerOfPlane = plane.transform.position;                                                                                   //
         float sideLength = (10 * plane.transform.localScale.x) / 2;                                                                         //
                                                                                                                                             //
-        Vector3 corner0 = centerOfPlane - sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // Definitely need to assign vars here, but might 
-        Vector3 corner1 = centerOfPlane + sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // want to declare them in Start()
-        Vector3 corner2 = centerOfPlane - sideLength * plane.transform.right.normalized + sideLength * plane.transform.forward.normalized;  //
+        corner0 = centerOfPlane - sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // Definitely need to assign vars here, but might 
+        corner1 = centerOfPlane + sideLength * plane.transform.right.normalized - sideLength * plane.transform.forward.normalized;  // want to declare them in Start()
+        corner2 = centerOfPlane - sideLength * plane.transform.right.normalized + sideLength * plane.transform.forward.normalized;  //
         
         Vector2 uv = new Vector2();
 
@@ -688,14 +731,7 @@ public class HandSelectionState : InteractionState
 
         uv.x = Vector3.Dot(point - corner0, uVec);
         uv.y = Vector3.Dot(point - corner2, vVec);
-
-        uv.x /= uLength;
-        uv.y /= vLength;
-
-        //clamp
-        uv.x = Mathf.Max(Mathf.Min(uv.x, 1f), 0f);
-        uv.y = Mathf.Max(Mathf.Min(uv.y, 1f), 0f);
-
+        
         return uv;
     }
 
