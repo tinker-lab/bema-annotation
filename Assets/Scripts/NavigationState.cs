@@ -152,6 +152,9 @@ public class NavigationState : InteractionState {
             controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
             controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
+            GameObject.Find("Left outline").GetComponent<MeshRenderer>().enabled = true;
+            GameObject.Find("Right outline").GetComponent<MeshRenderer>().enabled = true;
+
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
         }
 
@@ -171,6 +174,8 @@ public class NavigationState : InteractionState {
         {
             if (shouldTeleport)
             {
+                laser0.SetActive(false);
+                laser1.SetActive(false);
                 Teleport();
             }
         }
