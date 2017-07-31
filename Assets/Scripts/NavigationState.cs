@@ -38,7 +38,7 @@ public class NavigationState : InteractionState {
     CubeCollision rightComponent;
     CubeCollision centerComponent;
 
-    private HashSet<Collider> cubeColliders;
+    private HashSet<GameObject> cubeColliders;
 
 
     public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -55,7 +55,7 @@ public class NavigationState : InteractionState {
         rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
 
-        cubeColliders = new HashSet<Collider>();
+        cubeColliders = new HashSet<GameObject>();
 
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;

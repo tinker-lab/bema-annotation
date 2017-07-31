@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class CubeCollision : MonoBehaviour {
 
-    private HashSet<Collider> collidedObjects;
+    private HashSet<GameObject> collidedObjects;
     private int planeLayer;
     //private bool isCenterCube = false;
 
-    public HashSet<Collider> CollidedObjects
+    public HashSet<GameObject> CollidedObjects
     {
         get { return collidedObjects; }
     }
@@ -16,7 +16,7 @@ public class CubeCollision : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 
-        collidedObjects = new HashSet<Collider>();
+        collidedObjects = new HashSet<GameObject>();
         planeLayer = LayerMask.NameToLayer("PlaneLayer");
         //if (this.name.Equals("handSelectionCenterCube"))
         //{
@@ -28,22 +28,21 @@ public class CubeCollision : MonoBehaviour {
     {
        
 
-        if (other.gameObject.layer != planeLayer)
+        if (other.gameObject.layer != planeLayer && other.name != "Left outline" && other.name != "Right outline")
         {
             UnityEngine.Debug.Log("Collided with: " + other.name);
-            collidedObjects.Add(other);
+            collidedObjects.Add(other.gameObject);
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        
+        //reverts color back to previous full selection. Designed to handle exiting objects without leaving state
         if (!HandSelectionState.SelectedMeshes.Contains(other.name))
         {
             int numVertices;
             if (HandSelectionState.SeenMeshes.TryGetValue(other.name, out numVertices))
             {
-
                 Mesh mesh = other.GetComponent<MeshFilter>().mesh;
                 List<Vector3> vertices = new List<Vector3>();
                 List<Vector2> UVs = new List<Vector2>();
@@ -69,6 +68,7 @@ public class CubeCollision : MonoBehaviour {
 
         }
 
-        collidedObjects.Remove(other);
+        HandSelectionState.ModelHighlights[other.name] = new HashSet<GameObject>();
+        collidedObjects.Remove(other.gameObject);
     }
 }

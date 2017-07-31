@@ -20,10 +20,10 @@ public class HandSelectionState : InteractionState
 
     private static int highlightObjectCount = 0;
 
-    private List<Collider> collidedMeshes;
-    private HashSet<Collider> cubeColliders;
-    private HashSet<Collider> leftColliders;
-    private HashSet<Collider> rightColliders;
+    private List<GameObject> collidedMeshes;
+    private HashSet<GameObject> cubeColliders;
+    private HashSet<GameObject> leftColliders;
+    private HashSet<GameObject> rightColliders;
     CubeCollision leftComponent;
     CubeCollision rightComponent;
     CubeCollision centerComponent;
@@ -32,6 +32,7 @@ public class HandSelectionState : InteractionState
     private static Dictionary<string, int> originalNumVertices;   // Key = name of object with mesh, Value = original set of vertices
     private static Dictionary<string, int[]> originalSelectedIndices; // key = name of object with mesh, value = original indices for the entire object
     private static HashSet<string> selectedMeshes; // Collection of the the names of all the meshes that have had pieces selected from them.
+    private static Dictionary<string, HashSet<GameObject>> modelHighlights;  // Key = name of object in model, Value = all the outline game objects attached to it
 
     //private Dictionary<Vector3, HashSet<Vector3>> pointGraph;   // Graph of selected points
     private List<Vector3> outlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
@@ -62,6 +63,11 @@ public class HandSelectionState : InteractionState
     {
         get { return selectedMeshes; }
     }
+    public static Dictionary<string, HashSet<GameObject>> ModelHighlights
+    {
+        get { return modelHighlights; }
+        set { modelHighlights = value; }
+    }
 
     public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo)
     {
@@ -87,10 +93,10 @@ public class HandSelectionState : InteractionState
         centerCube.layer = planeLayer;
         centerCube.GetComponent<MeshRenderer>().enabled = false;
 
-        collidedMeshes = new List<Collider>();      // TODO: figure out how to fill this up properly
-        cubeColliders = new HashSet<Collider>();
-        leftColliders = new HashSet<Collider>();
-        rightColliders = new HashSet<Collider>();
+        collidedMeshes = new List<GameObject>();      // TODO: figure out how to fill this up properly
+        cubeColliders = new HashSet<GameObject>();
+        leftColliders = new HashSet<GameObject>();
+        rightColliders = new HashSet<GameObject>();
 
         leftComponent = leftPlane.GetComponent<CubeCollision>();
         rightComponent = rightPlane.GetComponent<CubeCollision>();
@@ -101,6 +107,7 @@ public class HandSelectionState : InteractionState
         originalNumVertices = new Dictionary<string, int>();        // Keeps track of how many vertices a mesh should have
         originalUnselectedIndices = new Dictionary<string, int[]>();      // Keeps track of indices that were previously unselected
         originalSelectedIndices = new Dictionary<string, int[]>();
+        modelHighlights = new Dictionary<string, HashSet<GameObject>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
 
@@ -128,6 +135,11 @@ public class HandSelectionState : InteractionState
         rightOutlineMeshObject.AddComponent<MeshFilter>();
         rightOutlineMeshObject.GetComponent<MeshFilter>().mesh.MarkDynamic();
         rightOutlineMeshObject.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+
+        //leftOutlineMeshObject.AddComponent<MeshCollider>(); // do we need to add this after we add the mesh?
+        //rightOutlineMeshObject.AddComponent<MeshCollider>();
+        //leftOutlineMeshObject.GetComponent<MeshCollider>().isTrigger = true;
+        //rightOutlineMeshObject.GetComponent<MeshCollider>().isTrigger = true;
 
         leftOutlineMesh = new Mesh();
         rightOutlineMesh = new Mesh();
@@ -179,17 +191,16 @@ public class HandSelectionState : InteractionState
 
         UnityEngine.Debug.Log("Number meshes in collided meshes: " + collidedMeshes.Count);
         int[] indices;
-        foreach (Collider c in collidedMeshes)
+        foreach (GameObject c in collidedMeshes)
         {
             Mesh mesh = c.GetComponent<MeshFilter>().mesh;
             mesh.subMeshCount = 2;
             indices = originalSelectedIndices[c.name];
-            UnityEngine.Debug.Log("original indices: " + originalSelectedIndices[c.name].Length);
-           // UnityEngine.Debug.Log("original unselected indices: " + originalUnselectedIndices[c.name].Length); // only gets added to if clicked
+  
             if (selectedMeshes.Contains(c.name))    // If it previously had a piece selected (CLICKED) - use originalUnselectedIndices for unselected part, everything else should be what was selected at last click
             {
                 // Generate a mesh to fill the entire selected part of the collider
-                UnityEngine.Debug.Log("selectedMeshes contains this mesh");
+               // UnityEngine.Debug.Log("selectedMeshes contains this mesh");
                 Vector3[] verts = mesh.vertices;
                 List<Vector2> uvs = new List<Vector2>();
                 mesh.GetUVs(0, uvs);
@@ -213,13 +224,33 @@ public class HandSelectionState : InteractionState
 
                 mesh.RecalculateBounds();
                 mesh.RecalculateNormals();
+
+                foreach (GameObject highlight in modelHighlights[c.name])       // TOMORROW: print keys and values
+                {
+                    // Reset indices to original indices
+                    Mesh highlightMesh = highlight.GetComponent<MeshFilter>().mesh;
+                    Vector3[] highlightVerts = highlightMesh.vertices;
+                    List<Vector2> highlightUVs = new List<Vector2>();
+                    highlightMesh.GetUVs(0, uvs);
+
+                    highlightMesh.Clear();
+                    highlightMesh.vertices = highlightVerts;
+                    highlightMesh.SetUVs(0, highlightUVs);
+                    
+                    highlightMesh.subMeshCount = 1;
+                    highlightMesh.SetTriangles(originalSelectedIndices[highlight.name], 0);
+                    
+                    highlightMesh.RecalculateBounds();
+                    highlightMesh.RecalculateNormals();
+                    UnityEngine.Debug.Log("Highlight belongs to: " + c.name);
+                }
             }
             else // NOT CLICKED - everything should be unselected using originalIndices
             {
                 if (c.tag != "highlightmesh")
                 {
                     Material baseMaterial = c.GetComponent<Renderer>().materials[0];
-                    baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);// TODO: refactor this using other code (we set the mesh so. many. times.)
+                    baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                     c.GetComponent<Renderer>().materials[1] = baseMaterial;
                 }
             }
@@ -247,7 +278,7 @@ public class HandSelectionState : InteractionState
             // If not colliding with anything, go back to navigationstate or wherever
         }
 
-        foreach (Collider m in collidedMeshes)
+        foreach (GameObject m in collidedMeshes)
         {
             if (!originalNumVertices.ContainsKey(m.name))
             {
@@ -256,12 +287,39 @@ public class HandSelectionState : InteractionState
                 m.GetComponent<MeshFilter>().mesh.MarkDynamic();
                 originalSelectedIndices.Add(m.name, m.GetComponent<MeshFilter>().mesh.GetIndices(0));
             }
+
+            if (modelHighlights.ContainsKey(m.name))// i.e. selected meshes contains this mesh
+            {
+                foreach (GameObject highlight in modelHighlights[m.name])
+                {
+                    if (!originalNumVertices.ContainsKey(highlight.name))
+                    {
+                        originalNumVertices.Add(highlight.name, highlight.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
+
+                        highlight.GetComponent<MeshFilter>().mesh.MarkDynamic();
+
+                        if (!originalSelectedIndices.ContainsKey(highlight.name))
+                        {
+                            originalSelectedIndices.Add(highlight.name, highlight.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                        }
+                    }
+
+                    ProcessMesh(highlight); // process all the highlights
+                }
+            }
+            else
+            {
+                modelHighlights.Add(m.name, new HashSet<GameObject>());
+            }
             ProcessMesh(m);
         }
 
         if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())     // Looks as though all that happens is it only displays the unselected submesh
         {
-            foreach (Collider m in collidedMeshes)
+            GameObject savedLeftHighlight = copyObject(leftOutlineMeshObject);
+            GameObject savedRightHighlight = copyObject(rightOutlineMeshObject);
+
+            foreach (GameObject m in collidedMeshes)
             {
                 originalNumVertices[m.name] = m.GetComponent<MeshFilter>().mesh.vertices.Length;
 
@@ -285,13 +343,36 @@ public class HandSelectionState : InteractionState
                     originalUnselectedIndices.Add(m.name, m.GetComponent<MeshFilter>().mesh.GetIndices(0));
                 }
                 selectedMeshes.Add(m.name);
+
+
+                /*
+                if (!modelHighlights.ContainsKey(m.name))
+                {
+                    modelHighlights.Add(m.name, new HashSet<GameObject>());
+                }
+                */
+                modelHighlights[m.name].Add(savedLeftHighlight);
+                modelHighlights[m.name].Add(savedRightHighlight);
+
+                foreach (GameObject highlight in modelHighlights[m.name]) //should this go here or before?
+                {
+                    originalSelectedIndices[highlight.name] = highlight.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                    selectedMeshes.Add(highlight.name);
+                    originalNumVertices[highlight.name] = highlight.GetComponent<MeshFilter>().mesh.vertices.Length;
+                }
             }
-            GameObject savedLeftHighlight = copyObject(leftOutlineMeshObject);
-            GameObject savedRightHighlight = copyObject(rightOutlineMeshObject);
+
+        }
+            //GameObject savedLeftHighlight = copyObject(leftOutlineMeshObject);
+            //GameObject savedRightHighlight = copyObject(rightOutlineMeshObject);
+            //if (modelHightlights.ContainsKey(.name))
+            //{
+
+            //}
             //collidedMeshes.Add(savedLeftHighlight.GetComponent<Collider>());
             //collidedMeshes.Add(savedRightHighlight.GetComponent<Collider>());
-        }
     }
+    
 
     private GameObject copyObject(GameObject original)
     {
@@ -303,7 +384,7 @@ public class HandSelectionState : InteractionState
         copy.transform.localScale = original.transform.localScale;
         copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
         copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
-        copy.AddComponent<MeshCollider>();
+        //copy.AddComponent<MeshCollider>();
         copy.tag = "highlightmesh";
         copy.name = "highlight" + highlightObjectCount;
         highlightObjectCount++;
@@ -349,12 +430,12 @@ public class HandSelectionState : InteractionState
 
     }
 
-    private void ProcessMesh(Collider m)
+    private void ProcessMesh(GameObject m)
     {
         Mesh mesh = m.GetComponent<MeshFilter>().mesh;
         selectedIndices.Clear();
 
-        if (!selectedMeshes.Contains(m.name))
+        if (!selectedMeshes.Contains(m.name) || m.CompareTag("highlightmesh"))
         {
             unselectedIndices.Clear();
             // unselectedIndices = mesh.GetTriangles(0).ToList();      // If this mesh has already been split, make sure unselected triangles are drawn too
@@ -531,7 +612,7 @@ public class HandSelectionState : InteractionState
                     }
                     else
                     {
-                        UnityEngine.Debug.Log("hit else case: " + side0 + " " + side1 + " " + side2);
+                       // UnityEngine.Debug.Log("hit else case: " + side0 + " " + side1 + " " + side2);  //this happens often
                     }
                 }
             }
@@ -820,47 +901,7 @@ public class HandSelectionState : InteractionState
             }
         }
         return output;
-        //for (int i = 0; i < points.Count-1; i += 3)
-        //{
-        //    bool firstTwoEqual = PlaneCollision.ApproximatelyEquals(points[i], points[i+1]);
-        //    bool secondTwoEqual = PlaneCollision.ApproximatelyEquals(points[i+1], points[i + 2]);
 
-        //    if (firstTwoEqual && secondTwoEqual)
-        //    {
-        //        lastAllEqualIndex = i;
-        //        //output.Add(points[i]);
-        //        //output.Add(points[i + 2]);  // Any better solution?
-        //    }
-        //    else if (firstTwoEqual && !secondTwoEqual)
-        //    {
-        //        output.Add(points[i]);      // Add one of the equal points
-        //        output.Add(points[i + 1]);
-
-        //    }
-        //    else if (!firstTwoEqual && secondTwoEqual)
-        //    {
-        //        output.Add(points[i]);
-        //        output.Add(points[i + 2]); // Add one of the equal points
-        //    }
-        //    else  // All are distsinct
-        //    {
-        //        output.Add(points[i]);      // Add first two
-        //        output.Add(points[i + 1]);  //
-        //        i--;
-        //    }
-        //}
-        //List<Vector3>.Enumerator it = points.GetEnumerator();
-        //it.MoveNext();
-        //Vector3 prev = it.Current;
-        //while (it.MoveNext())
-        //{
-        //    if (!PlaneCollision.ApproximatelyEquals(it.Current, prev))
-        //    {
-        //        output.Add(it.Current);
-        //    }
-        //    prev = it.Current;
-        //}
-        //return output;
     }
 
     Vector2 GetUVFromPoint(Vector3 point, GameObject plane)
