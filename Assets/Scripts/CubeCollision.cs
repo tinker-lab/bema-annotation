@@ -28,10 +28,15 @@ public class CubeCollision : MonoBehaviour {
     {
        
 
-        if (other.gameObject.layer != planeLayer && other.name != "Left outline" && other.name != "Right outline")
+        if (other.gameObject.layer != planeLayer)
         {
             UnityEngine.Debug.Log("Collided with: " + other.name);
             collidedObjects.Add(other.gameObject);
+            if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
+            {
+                HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
+                HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
+            }
         }
     }
 
@@ -68,7 +73,12 @@ public class CubeCollision : MonoBehaviour {
 
         }
 
-        HandSelectionState.ModelHighlights[other.name] = new HashSet<GameObject>();
         collidedObjects.Remove(other.gameObject);
+
+        if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))
+        {
+            HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
+            HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
+        }
     }
 }

@@ -152,8 +152,14 @@ public class NavigationState : InteractionState {
             controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
             controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
-            GameObject.Find("Left outline").GetComponent<MeshRenderer>().enabled = true;
-            GameObject.Find("Right outline").GetComponent<MeshRenderer>().enabled = true;
+            foreach (GameObject activeHighlight in HandSelectionState.LeftOutlines.Values)
+            {
+                activeHighlight.GetComponent<MeshRenderer>().enabled = true;
+            }
+            foreach (GameObject activeHighlight in HandSelectionState.RightOutlines.Values)
+            {
+                activeHighlight.GetComponent<MeshRenderer>().enabled = true;
+            }
 
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
         }
