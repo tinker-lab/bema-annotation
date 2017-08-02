@@ -17,7 +17,7 @@ public class InteractionState
 
     /* Called by UIController if this state is currently active and another state is about to become active. This can be used to handle deactivating widgets etc.
      */
-    public virtual void deactivate() { }
+    public virtual void Deactivate() { }
 
     /*
      * Called every frame from the UIController update method if this interaction state is currently active. This should interpret the events and update any visual feedback.
@@ -89,7 +89,7 @@ public class UIController : MonoBehaviour {
 
     public void ChangeState(InteractionState newState)
     {
-        currentState.deactivate();
+        currentState.Deactivate();
         currentState = newState;
     }
 

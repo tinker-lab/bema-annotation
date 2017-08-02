@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class OutlineHighlight : MonoBehaviour {
 
+    /*This class was originally intended to handle the highlight objects
+     * colliding with each other, but it is not used anymore.
+     */
+
     private static HashSet<Collider> collidedHighlights;
     public static HashSet<Collider> CollidedHighlights
     {

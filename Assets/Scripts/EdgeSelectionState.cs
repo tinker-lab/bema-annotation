@@ -116,7 +116,7 @@ public class EdgeSelectionState : InteractionState {
         return pt + (viewPlane.transform.up * (-(Vector3.Dot(viewPlane.transform.up, pt) - Vector3.Dot(viewPlane.transform.up, viewPlane.transform.position))));
     }
 
-    public override void deactivate()
+    public override void Deactivate()
     {
         //viewPlane.GetComponent<BoxCollider>().enabled = false;
         viewPlane.transform.localScale = new Vector3(0.02f, 1f, 0.02f);
@@ -415,7 +415,4 @@ public class EdgeSelectionState : InteractionState {
         //bezierObject.GetComponent<MeshFilter>().mesh = selectorMesh; 
         return selectorMesh;
     }
-
-
-
 }

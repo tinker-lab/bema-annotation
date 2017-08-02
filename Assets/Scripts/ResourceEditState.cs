@@ -51,9 +51,9 @@ public class ResourceEditState : InteractionState {
         PositionCanvas();
     }
 
-    public override void deactivate()
+    public override void Deactivate()
     {
-        base.deactivate();
+        base.Deactivate();
         laser.SetActive(false);
         canvas.SetActive(false);
     }

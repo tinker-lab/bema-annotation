@@ -45,9 +45,9 @@ public class StartState : InteractionState {
         GameObject.Find("PlaneCameraParent").transform.GetChild(0).gameObject.SetActive(false);
     }
 
-    public override void deactivate()
+    public override void Deactivate()
     {
-        base.deactivate();
+        base.Deactivate();
         laser.SetActive(false);
         canvas.SetActive(false);
     }
