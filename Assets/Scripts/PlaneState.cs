@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlaneState : InteractionState {
 
-    private readonly float VIEWPLANE_SCALE = 0.2f;
+   // private readonly float VIEWPLANE_SCALE = 0.2f;
 
     //planes
     private GameObject newPlane;
@@ -59,12 +59,12 @@ public class PlaneState : InteractionState {
         GameObject viewPlane = GameObject.Find("ViewPlane");
         Transform headset = GameObject.FindGameObjectWithTag("MainCamera").transform;
         
-        bool hasMovedAway = Mathf.Approximately((viewPlane.transform.position - idealPosition).magnitude, 0.0f);
+        //bool hasMovedAway = Mathf.Approximately((viewPlane.transform.position - idealPosition).magnitude, 0.0f);
 
         viewPlane.transform.rotation = headset.rotation;
         viewPlane.transform.localRotation = Quaternion.LookRotation(-headset.up, -headset.forward);
 
-        Vector3 prevIdealPosition = idealPosition;
+        //Vector3 prevIdealPosition = idealPosition;
         idealPosition = headset.position - (viewPlane.transform.up.normalized * 0.5f);
       
         RaycastHit hit;

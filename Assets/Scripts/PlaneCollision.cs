@@ -23,11 +23,11 @@ public class PlaneCollision : MonoBehaviour
 {
 
     private HashSet<Collider> meshObjects;
-    private HashSet<GameObject> crossSections;
+    //private HashSet<GameObject> crossSections;
     private Dictionary<List<Vector3>, GameObject> processedPoints;
 
     private VectorComparer comparator;
-    private Boolean firstTime;
+    //private Boolean firstTime;
     private Stopwatch internalStopwatch;
     private Stopwatch externalStopwatch;
     private Stopwatch timer;
@@ -46,10 +46,10 @@ public class PlaneCollision : MonoBehaviour
     void Start()
     {
         meshObjects = new HashSet<Collider>();
-        crossSections = new HashSet<GameObject>();
+       // crossSections = new HashSet<GameObject>();
         comparator = new VectorComparer();
 
-        firstTime = false;
+       // firstTime = false;
         internalStopwatch = new Stopwatch();
         externalStopwatch = new Stopwatch();
         timer = new Stopwatch();
@@ -77,7 +77,7 @@ public class PlaneCollision : MonoBehaviour
         processedPoints = processMeshes();
         if (processedPoints.Count != 0)// && firstTime == false)
         {
-            firstTime = true;
+            //firstTime = true;
             // for each of the ordered lists of points (1 per intersected mesh), draw them in a new game object
             foreach (List<Vector3> meshPoints in processedPoints.Keys)
             {
@@ -189,7 +189,7 @@ public class PlaneCollision : MonoBehaviour
             Vector3[] vertices = mesh.vertices;
             int[] indices = mesh.triangles; // 0 refers to first set of triangles (because there is only one material on the mesh)
 
-            Dictionary<EdgeInfo, Vector3> seenEdges = new Dictionary<EdgeInfo, Vector3>(vertices.Length);
+            //Dictionary<EdgeInfo, Vector3> seenEdges = new Dictionary<EdgeInfo, Vector3>(vertices.Length);
 
             Vector3[] transformedVertices = new Vector3[vertices.Length];
             for (int i =0; i < vertices.Length; i++)
@@ -365,8 +365,6 @@ public class PlaneCollision : MonoBehaviour
         List<Vector2> uvCoordinates = new List<Vector2>();
 
         float radius = .005f;
-
-        Vector3 previousRight = new Vector3(0, 0, 0);
 
         //foreach (List<Vector3> points in allPoints)
 

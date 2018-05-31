@@ -255,6 +255,7 @@ public class LoadImages : MonoBehaviour
             }
             catch (Exception e)
             {
+                print(e.Message);
                 return 0;
             }
         }

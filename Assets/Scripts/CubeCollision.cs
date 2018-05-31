@@ -30,7 +30,7 @@ public class CubeCollision : MonoBehaviour {
 
         if (other.gameObject.layer != planeLayer)
         {
-            UnityEngine.Debug.Log("Collided with: " + other.name);
+            //UnityEngine.Debug.Log("Collided with: " + other.name);
             collidedObjects.Add(other.gameObject);
             if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
             {

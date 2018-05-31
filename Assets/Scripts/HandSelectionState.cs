@@ -6,6 +6,8 @@ using UnityEngine.Assertions;
 
 public class HandSelectionState : InteractionState
 {
+    private const bool debug = false;
+
     InteractionState stateToReturnTo;
     private ControllerInfo controller0;
     private ControllerInfo controller1;
@@ -85,7 +87,7 @@ public class HandSelectionState : InteractionState
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         centerCube.name = "handSelectionCenterCube";
-        centerCube.GetComponent<Renderer>().material = Resources.Load("Plane Material") as Material;
+        centerCube.GetComponent<Renderer>().material = Resources.Load("Cube Material") as Material;
         centerCube.AddComponent<MeshCollider>();
         centerCube.GetComponent<MeshCollider>().convex = true;
         centerCube.GetComponent<MeshCollider>().isTrigger = true;
@@ -93,7 +95,10 @@ public class HandSelectionState : InteractionState
         centerCube.GetComponent<Rigidbody>().isKinematic = true;
         centerComponent = centerCube.AddComponent<CubeCollision>();
         centerCube.layer = planeLayer;
-        centerCube.GetComponent<MeshRenderer>().enabled = false;
+        if (!debug)
+        {
+            centerCube.GetComponent<MeshRenderer>().enabled = false;
+        }
 
         collidedMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
@@ -137,10 +142,13 @@ public class HandSelectionState : InteractionState
 
         handPlane.transform.position = c.controller.transform.position;
         handPlane.transform.rotation = c.controller.transform.rotation;
-        handPlane.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);
+        handPlane.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);//Previously 0.03
 
         handPlane.layer = planeLayer;
-        handPlane.GetComponent<MeshRenderer>().enabled = false;
+        if (!debug)
+        {
+            handPlane.GetComponent<MeshRenderer>().enabled = false;
+        }
         return handPlane;
     }
     /// <summary>
@@ -150,9 +158,23 @@ public class HandSelectionState : InteractionState
     {
         leftPlane.transform.position = controller0.controller.transform.position;
         rightPlane.transform.position = controller1.controller.transform.position;
+        /*
+        Vector3 up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
+        Vector3 right = Vector3.Cross(up, Vector3.up).normalized;
+        Vector3 forward = Vector3.Cross(up, right).normalized;
+
+        leftPlane.transform.up = up;
+        leftPlane.transform.right = right;
+        leftPlane.transform.forward = forward;
+
+        rightPlane.transform.up = -up;
+        rightPlane.transform.right = right;
+        rightPlane.transform.forward = -forward;
+        */
 
         leftPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized; // the normals of both planes are always facing each other
         rightPlane.transform.up = (leftPlane.transform.position - rightPlane.transform.position).normalized;
+
 
         CenterCubeBetweenControllers();
     }
@@ -184,17 +206,19 @@ public class HandSelectionState : InteractionState
 
         Vector3 groundY = new Vector3(0, 1);
 
-        float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+        //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
         cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
     }
 
     public override void Deactivate()
     {
+        
         controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // Disable hand rendering
         controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
 
         controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); // Enable rendering of controllers
         controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //
+        
 
         int[] indices;
         foreach (GameObject c in collidedMeshes)

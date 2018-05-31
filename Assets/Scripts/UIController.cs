@@ -52,6 +52,8 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller0Info;
     private ControllerInfo controller1Info;
 
+    private static int screenshotCount;
+
     bool firstUpdate = true;
 
     public InteractionState CurrentState
@@ -64,6 +66,8 @@ public class UIController : MonoBehaviour {
 
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
+
+        screenshotCount = 0;
 
         //currentState = new PickResourceState(controller0Info);
         currentState = new NavigationState(controller0Info, controller1Info);
@@ -86,6 +90,24 @@ public class UIController : MonoBehaviour {
         determineLeftRightControllers();
         currentState.HandleEvents(controller0Info, controller1Info);
 	}
+    
+    /*
+    void LateUpdate()
+    {
+        if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
+        {
+            return;
+        }
+
+        if (controller0Info.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip) || controller1Info.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip))
+        {
+            string filename = "bema-screenshot" + screenshotCount + ".png";
+            screenshotCount++;
+            ScreenCapture.CaptureScreenshot(filename, 8);
+            Debug.Log("Saving screenshot: "+filename);
+        }
+    }
+    */
 
     public void ChangeState(InteractionState newState)
     {

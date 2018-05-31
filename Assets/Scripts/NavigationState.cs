@@ -34,8 +34,8 @@ public class NavigationState : InteractionState {
     private GameObject leftPlane;
     private GameObject rightPlane;
     private GameObject centerCube;
-    CubeCollision leftComponent;
-    CubeCollision rightComponent;
+    //CubeCollision leftComponent;
+    //CubeCollision rightComponent;
     CubeCollision centerComponent;
 
     private HashSet<GameObject> cubeColliders;
@@ -51,8 +51,8 @@ public class NavigationState : InteractionState {
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");
-        leftComponent = leftPlane.GetComponent<CubeCollision>();
-        rightComponent = rightPlane.GetComponent<CubeCollision>();
+        //leftComponent = leftPlane.GetComponent<CubeCollision>();
+        //rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
 
         cubeColliders = new HashSet<GameObject>();
@@ -72,6 +72,7 @@ public class NavigationState : InteractionState {
 
         reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
         teleportReticleTransform = reticle.transform;
+
     }
 
     public void UpdatePlanes()
@@ -116,7 +117,7 @@ public class NavigationState : InteractionState {
 
         Vector3 groundY = new Vector3(0, 1);
 
-        float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+        //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
         nPlane.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
 
     }

@@ -18,11 +18,11 @@ public class EdgeSelectionState : InteractionState {
 
     private GameObject viewPlane;
     private Texture2D planeTexture;
-    private Transform headset;
+    //private Transform headset;
     bool firstTime = true;
 
     private Mat gray;
-    private Mat element;
+   // private Mat element;
     private Mat distPos;
     private Mat distNeg;
     private Mat distanceMap;
@@ -48,7 +48,7 @@ public class EdgeSelectionState : InteractionState {
         this.stateToReturnTo = stateToReturnTo;
 
         viewPlane = GameObject.Find("ViewPlane");
-        headset = GameObject.FindGameObjectWithTag("MainCamera").transform;
+        //headset = GameObject.FindGameObjectWithTag("MainCamera").transform;
 
         //TODO: Rotate viewplane to be perpendicular with ground
         viewPlane.transform.localScale *= VIEWPLANE_SCALE;
@@ -193,7 +193,7 @@ public class EdgeSelectionState : InteractionState {
         // Opening morph to remove small points
         int morph_size = 1;
 
-        element = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(2 * morph_size + 1, 2 * morph_size + 1));
+        //element = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(2 * morph_size + 1, 2 * morph_size + 1));
         width = gray.Size().Width;
         height = gray.Size().Height;
         distPos = new Mat(height, width, MatType.CV_32FC1);
@@ -215,7 +215,7 @@ public class EdgeSelectionState : InteractionState {
 
         double currentThreshold = threshold;
         Mat binary = new Mat();
-        Cv2.Threshold(gray, binary, threshold, 255.0, ThresholdTypes.BinaryInv);
+        Cv2.Threshold(gray, binary, currentThreshold, 255.0, ThresholdTypes.BinaryInv);
 
         //Cv2.ImShow("binary", binary);
 
@@ -357,8 +357,6 @@ public class EdgeSelectionState : InteractionState {
         List<Vector2> uvCoordinates = new List<Vector2>();
 
          float radius = .005f;
-
-        Vector3 previousRight = new Vector3(0,0,0);
 
         for (int i = 0; i < points.Count; i++)
         {

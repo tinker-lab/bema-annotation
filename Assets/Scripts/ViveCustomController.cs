@@ -70,7 +70,9 @@ public class ViveCustomController : MonoBehaviour {
         {
             otherDev = SteamVR_Controller.Input((int)otherController.GetComponent<SteamVR_TrackedObject>().index);
         }
-        catch (System.IndexOutOfRangeException e) { }
+        catch (System.IndexOutOfRangeException e) {
+            print(e.Message);
+        }
 
         if (otherDev != null)
         {

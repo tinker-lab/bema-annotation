@@ -30,8 +30,8 @@ public class IntersectingPoint {
         return PlaneCollision.ApproximatelyEquals(this.point, otherObj.Point);
     }
 
-    //public override int GetHashCode()
-    //{
-        
-    //}
+    public override int GetHashCode()
+    {
+        return base.GetHashCode();
+    }
 }

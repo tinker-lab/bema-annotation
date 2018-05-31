@@ -4,11 +4,9 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - FxTemporaire
-  - projectile
   - uiButton
-  - resource
   - highlightmesh
+  - Do not teleport
   layers:
   - Default
   - TransparentFX
@@ -18,13 +16,13 @@ TagManager:
   - UI
   - 
   - 
-  - Can Teleport
-  - Do not teleport
-  - WorldUI
-  - CameraIgnore
-  - HeadsetIgnore
-  - ViewPlaneIgnore
   - PlaneLayer
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   - 
   - 
   - 
