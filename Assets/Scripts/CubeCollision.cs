@@ -42,27 +42,36 @@ public class CubeCollision : MonoBehaviour {
 
     private void OnTriggerExit(Collider other)
     {
+
+        Debug.Log("On Trigger Exit");
         //reverts color back to previous full selection. Designed to handle exiting objects without leaving state
-        if (!HandSelectionState.SelectedMeshes.Contains(other.name))
+        if (!HandSelectionState.ObjectsWithSelections.Contains(other.name))
         {
             int numVertices;
-            if (HandSelectionState.SeenMeshes.TryGetValue(other.name, out numVertices))
+            if (HandSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices))
             {
                 Mesh mesh = other.GetComponent<MeshFilter>().mesh;
-                List<Vector3> vertices = new List<Vector3>();
-                List<Vector2> UVs = new List<Vector2>();
-                mesh.GetVertices(vertices);
-                mesh.GetUVs(0, UVs);
+                //mesh.GetVertices(vertices);
+                //mesh.GetUVs(0, UVs);
 
                 mesh.Clear();
                 mesh.subMeshCount = 1;
 
-                vertices.RemoveRange(numVertices, vertices.Count - numVertices);
-                UVs.RemoveRange(numVertices, UVs.Count - numVertices);
+                //vertices.RemoveRange(numVertices, vertices.Count - numVertices);
+                //UVs.RemoveRange(numVertices, UVs.Count - numVertices);
 
-                mesh.SetVertices(vertices);
-                mesh.SetUVs(0, UVs);
-                mesh.SetTriangles(HandSelectionState.OriginalIndices[other.name], 0);
+                Vector3[] verticesArray = HandSelectionState.PreviousVertices[other.name];
+                Vector2[] UVsArray = HandSelectionState.PreviousUVs[other.name];
+
+                List<Vector3> vertices = new List<Vector3>(verticesArray);
+                List<Vector2> UVs = new List<Vector2>(UVsArray);
+
+                if (vertices.Count == UVs.Count)
+                {
+                    mesh.SetVertices(vertices);
+                    mesh.SetUVs(0, UVs);
+                    mesh.SetTriangles(HandSelectionState.PreviousSelectedIndices[other.name], 0);
+                }
 
                 mesh.RecalculateBounds();
                 mesh.RecalculateNormals();

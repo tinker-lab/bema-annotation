@@ -126,7 +126,7 @@ public class PlaneCollision : MonoBehaviour
 
     public static bool ApproximatelyEquals(Vector3 vector0, Vector3 vector1)
     {
-        float epsilon = 0.001f;
+        float epsilon = 0.001f; //Could be 0.001f
 
         return (Mathf.Abs(vector0.x - vector1.x) < epsilon && Mathf.Abs(vector0.y - vector1.y) < epsilon && Mathf.Abs(vector0.z- vector1.z) < epsilon);
     }
@@ -197,15 +197,15 @@ public class PlaneCollision : MonoBehaviour
                 transformedVertices[i] = m.gameObject.transform.TransformPoint(vertices[i]);
             }
 
-            externalStopwatch.Start();
+            //externalStopwatch.Start();
 
             // TODO: switch up data structures
             // preprocess points so that TransformPoint isn't called in IntersectsWithPlane
             // 
 
-            long initTime = 0;
-            long intersectTime = 0;
-            long graphTime = 0;
+            //long initTime = 0;
+            //long intersectTime = 0;
+            //long graphTime = 0;
 
 
             int numTriangles = (int)(indices.Length / 3);
@@ -213,18 +213,18 @@ public class PlaneCollision : MonoBehaviour
             Parallel.SerialFor(0, (int)(indices.Length / 3), i =>
             {
 
-                timer.Start();
+                //timer.Start();
 
 
                 bool side0 = intersectsWithPlane(transformedVertices[indices[3*i]], transformedVertices[indices[3*i + 1]], ref intersectPoint0, vertices[indices[3*i]], vertices[indices[3 * i + 1]], m.transform);
                 bool side1 = intersectsWithPlane(transformedVertices[indices[3*i + 1]], transformedVertices[indices[3*i + 2]], ref intersectPoint1, vertices[indices[3 * i + 1]], vertices[indices[3 * i + 2]], m.transform);
                 bool side2 = intersectsWithPlane(transformedVertices[indices[3*i]], transformedVertices[indices[3*i + 2]], ref intersectPoint2, vertices[indices[3 * i]], vertices[indices[3 * i + 2]], m.transform);
                 
-                timer.Stop();
-                intersectTime += timer.ElapsedMilliseconds;
+                //timer.Stop();
+                //intersectTime += timer.ElapsedMilliseconds;
 
-                timer.Reset();
-                timer.Start();
+                //timer.Reset();
+                //timer.Start();
                 
                 if (side0 && side1 && side2) {
                     if (ApproximatelyEquals(intersectPoint0, intersectPoint1))
@@ -253,27 +253,27 @@ public class PlaneCollision : MonoBehaviour
                 }
 
                
-                timer.Stop();
-                graphTime += timer.ElapsedMilliseconds;
-                timer.Reset();
+                //timer.Stop();
+                //graphTime += timer.ElapsedMilliseconds;
+                //timer.Reset();
             });
 
            
 
-            UnityEngine.Debug.Log("InitTime: " + initTime + " intersectTime: " + intersectTime + " graphTime: " + graphTime);
+            //UnityEngine.Debug.Log("InitTime: " + initTime + " intersectTime: " + intersectTime + " graphTime: " + graphTime);
             
-            externalStopwatch.Stop();
-            UnityEngine.Debug.Log("Time taken to process one mesh: " + externalStopwatch.ElapsedMilliseconds + "ms");
+            //externalStopwatch.Stop();
+            //UnityEngine.Debug.Log("Time taken to process one mesh: " + externalStopwatch.ElapsedMilliseconds + "ms");
 
-            externalStopwatch.Reset();
+            //externalStopwatch.Reset();
 
             // TODO: wait until all other threads finish
-            internalStopwatch.Start();
+            //internalStopwatch.Start();
             List<Vector3> orderedMeshPoints = DFSOrderPoints(pointConnections);
             orderedMeshPoints = RemoveSequentialDuplicates(orderedMeshPoints);
-            internalStopwatch.Stop();
-            UnityEngine.Debug.Log("Time taken for DFS of one mesh: " + internalStopwatch.ElapsedMilliseconds + "ms");
-            internalStopwatch.Reset();
+            //internalStopwatch.Stop();
+            //UnityEngine.Debug.Log("Time taken for DFS of one mesh: " + internalStopwatch.ElapsedMilliseconds + "ms");
+            //internalStopwatch.Reset();
 
             intersectionPoints.Add(orderedMeshPoints, m.gameObject);
             

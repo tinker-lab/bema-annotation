@@ -145,7 +145,7 @@ public class NavigationState : InteractionState {
         // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
         if (cubeColliders.Count > 0)
         {
-            Debug.Log("Switching to handselectionstate");
+            // Debug.Log("Switching to handselectionstate");
 
             controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
             controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
