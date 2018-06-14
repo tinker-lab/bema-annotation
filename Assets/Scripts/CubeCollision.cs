@@ -43,7 +43,7 @@ public class CubeCollision : MonoBehaviour {
     private void OnTriggerExit(Collider other)
     {
 
-        Debug.Log("On Trigger Exit");
+        //Debug.Log("On Trigger Exit");
         //reverts color back to previous full selection. Designed to handle exiting objects without leaving state
         if (!HandSelectionState.ObjectsWithSelections.Contains(other.name))
         {
