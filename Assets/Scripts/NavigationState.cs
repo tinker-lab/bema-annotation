@@ -29,6 +29,7 @@ public class NavigationState : InteractionState {
     private ControllerInfo controller1;
 
     private HandSelectionState handSelectionState;
+    private SliceNSwipeSelectionState sliceNSwipeSelectionState;
 
     //Plane stuff to determine whether to go to hand selection state
     private GameObject leftPlane;
@@ -48,6 +49,7 @@ public class NavigationState : InteractionState {
         controller1 = controller1Info;
 
         handSelectionState = new HandSelectionState(controller0, controller1, this);
+        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1, this);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");
@@ -162,7 +164,8 @@ public class NavigationState : InteractionState {
                 activeHighlight.GetComponent<MeshRenderer>().enabled = true;
             }
 
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(sliceNSwipeSelectionState);
         }
 
         // Teleport
