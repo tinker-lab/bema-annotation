@@ -12,6 +12,9 @@ public class HandSelectionState : InteractionState
     private ControllerInfo controller0;
     private ControllerInfo controller1;
 
+    private Vector3 currentPos;
+    private Vector3 lastPos;
+
     private GameObject leftPlane;   //
     private GameObject rightPlane;  // Used to detect collision with meshes in the model
     private GameObject centerCube;  //
@@ -91,6 +94,9 @@ public class HandSelectionState : InteractionState
         desc = "HandSelectionState";
         controller0 = controller0Info;
         controller1 = controller1Info;
+
+        currentPos = controller0.controller.transform.position;
+        lastPos = currentPos;
 
         planeLayer = LayerMask.NameToLayer("PlaneLayer");
 
@@ -332,6 +338,10 @@ public class HandSelectionState : InteractionState
 
         UpdatePlanes();
 
+        currentPos = controller0.controller.transform.position;
+
+        Debug.Log("Hand Motion " + Vector3.Distance(lastPos,currentPos).ToString());
+
         // Take input from cube about what it collides with
         cubeColliders = centerComponent.CollidedObjects;
         
@@ -417,6 +427,7 @@ public class HandSelectionState : InteractionState
 
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown()) // Clicked: a selection has been made
         {
+
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
@@ -511,9 +522,12 @@ public class HandSelectionState : InteractionState
                     outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
                     previousUVs[outline.name] = UVList.ToArray<Vector2>();
                 }
+
+              
             }
 
         }
+        lastPos = currentPos;
     }
     
     /// <summary>
