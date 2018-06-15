@@ -213,6 +213,10 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
         centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal, currentDiagonal);
 
+        //scale cube
+        float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+        centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize + new Vector3(0, 0, -0.5f); //-0.5f pushes cube outwards from controllers
+
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
 
