@@ -220,9 +220,9 @@ public class VolumeCubeSelectionState : InteractionState
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
 
-    //    //scale cube
-    //    float distance = Vector3.Distance(nonDominantCorner, dominantCorner);
-    //    centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * distance + new Vector3(0, 0.3f, 0.3f); //.3f pushes cube outwards and upwards slightly from user
+        ////scale cube
+        //float distance = Vector3.Distance(nonDominantCorner, dominantCorner);
+        //centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * distance + new Vector3(0, 0.3f, 0.3f); //.3f pushes cube outwards and upwards slightly from user
     }
 
     //private void RotateCube(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject cube)
@@ -254,7 +254,7 @@ public class VolumeCubeSelectionState : InteractionState
     //        Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
     //        mesh.subMeshCount = 2;
     //        indices = previousSelectedIndices[collidingObj.name]; // the indices of last selection
-  
+
     //        if (objWithSelections.Contains(collidingObj.name))    // If it previously had a piece selected (CLICKED) - revert to that selection
     //        {
     //            // Generate a mesh to fill the entire selected part of the collider
@@ -325,7 +325,7 @@ public class VolumeCubeSelectionState : InteractionState
     //            rightOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
     //        }
 
-            
+
     //    }
     //}
 

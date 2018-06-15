@@ -7,7 +7,7 @@ using UnityEngine.Assertions;
 public class SliceNSwipeSelectionState : InteractionState
 {
     private const bool debug = false;
-    private const float motionThreshold = 3.0f;
+    private const float motionThreshold = 0.01f;
 
     private int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     InteractionState stateToReturnTo;
@@ -343,6 +343,12 @@ public class SliceNSwipeSelectionState : InteractionState
         Vector3 currentPos = mainController.trackedObj.transform.position;
         Vector3 currentOrientation = mainController.trackedObj.transform.forward;
 
+        if (lastPos == new Vector3(0, 0, 0))
+        {
+            lastPos = currentPos;
+            lastOrientation = currentOrientation;
+        }
+
         List<Vector2> UVList = new List<Vector2>();
 
         CenterCubeOnController();
@@ -365,8 +371,9 @@ public class SliceNSwipeSelectionState : InteractionState
 
         float dist = Vector3.Distance(lastPos,currentPos);
 
-        if (dist > motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
+        if (dist <= motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
         {
+           // Debug.Log("not slice: " + dist.ToString());
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
@@ -395,7 +402,7 @@ public class SliceNSwipeSelectionState : InteractionState
         }
         else if (sliceStatus == 0) // you just made a big slicing movement
         {
-            Debug.Log("SLICE");
+            Debug.Log("SLICE: " + dist.ToString());
 
             sliceStatus = 1;
             UpdatePlane(lastPos - currentPos);
