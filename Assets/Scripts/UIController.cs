@@ -70,11 +70,13 @@ public class UIController : MonoBehaviour {
         screenshotCount = 0;
 
         //currentState = new PickResourceState(controller0Info);
-        currentState = new NavigationState(controller0Info, controller1Info);
-	}
-	
-	// Update is called once per frame
-	void Update () {
+        //currentState = new NavigationState(controller0Info, controller1Info);
+        currentState = new SliceNavigationState(controller0Info, controller1Info);
+
+    }
+
+    // Update is called once per frame
+    void Update () {
 
         if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
         {
