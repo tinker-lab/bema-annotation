@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CubeCollision : MonoBehaviour {
+public class SliceCubeCollision : MonoBehaviour {
 
     private HashSet<GameObject> collidedObjects;
     private int planeLayer;
@@ -32,10 +32,10 @@ public class CubeCollision : MonoBehaviour {
         {
             //UnityEngine.Debug.Log("Collided with: " + other.name);
             collidedObjects.Add(other.gameObject);
-            if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
+            if (SliceNSwipeSelectionState.IntersectOutlines.ContainsKey(other.name))    // If we already have an active outline 
             {
-                HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
-                HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
+                SliceNSwipeSelectionState.IntersectOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
+                //HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
             }
         }
     }
@@ -43,12 +43,12 @@ public class CubeCollision : MonoBehaviour {
     private void OnTriggerExit(Collider other)
     {
 
-        //Debug.Log("On Trigger Exit");
+        Debug.Log("On Trigger Exit");
         //reverts color back to previous full selection. Designed to handle exiting objects without leaving state
-        if (!HandSelectionState.ObjectsWithSelections.Contains(other.name))
+        if (!SliceNSwipeSelectionState.ObjectsWithSelections.Contains(other.name))
         {
             int numVertices;
-            if (HandSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices))
+            if (SliceNSwipeSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices))
             {
                 Mesh mesh = other.GetComponent<MeshFilter>().mesh;
                 //mesh.GetVertices(vertices);
@@ -60,8 +60,8 @@ public class CubeCollision : MonoBehaviour {
                 //vertices.RemoveRange(numVertices, vertices.Count - numVertices);
                 //UVs.RemoveRange(numVertices, UVs.Count - numVertices);
 
-                Vector3[] verticesArray = HandSelectionState.PreviousVertices[other.name];
-                Vector2[] UVsArray = HandSelectionState.PreviousUVs[other.name];
+                Vector3[] verticesArray = SliceNSwipeSelectionState.PreviousVertices[other.name];
+                Vector2[] UVsArray = SliceNSwipeSelectionState.PreviousUVs[other.name];
 
                 List<Vector3> vertices = new List<Vector3>(verticesArray);
                 List<Vector2> UVs = new List<Vector2>(UVsArray);
@@ -70,7 +70,7 @@ public class CubeCollision : MonoBehaviour {
                 {
                     mesh.SetVertices(vertices);
                     mesh.SetUVs(0, UVs);
-                    mesh.SetTriangles(HandSelectionState.PreviousSelectedIndices[other.name], 0);
+                    mesh.SetTriangles(SliceNSwipeSelectionState.PreviousSelectedIndices[other.name], 0);
                 }
 
                 mesh.RecalculateBounds();
@@ -84,10 +84,10 @@ public class CubeCollision : MonoBehaviour {
 
         collidedObjects.Remove(other.gameObject);
 
-        if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))
+        if (SliceNSwipeSelectionState.IntersectOutlines.ContainsKey(other.name))
         {
-            HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
-            HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
+            SliceNSwipeSelectionState.IntersectOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
+            //HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
         }
     }
 }

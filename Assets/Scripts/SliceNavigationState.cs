@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NavigationState : InteractionState {
+public class SliceNavigationState : InteractionState {
 
     public static readonly float MIN_DISTANCE = 0.25f;    // How close controllers need to be to plane
 
@@ -28,33 +28,33 @@ public class NavigationState : InteractionState {
     private ControllerInfo controller0;
     private ControllerInfo controller1;
 
-    private HandSelectionState handSelectionState;
+    //private HandSelectionState handSelectionState;
+    private SliceNSwipeSelectionState sliceNSwipeSelectionState;
 
     //Plane stuff to determine whether to go to hand selection state
-    private GameObject leftPlane;
-    private GameObject rightPlane;
+    private GameObject handPlane;
     private GameObject centerCube;
-    //CubeCollision leftComponent;
-    //CubeCollision rightComponent;
-    CubeCollision centerComponent;
-
+   
+    SliceCubeCollision centerComponent;
 
     private HashSet<GameObject> cubeColliders;
 
 
-    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public SliceNavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         desc = "NavigationState";
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        handSelectionState = new HandSelectionState(controller0, controller1, this);
-        leftPlane = GameObject.Find("handSelectionLeftPlane");
-        rightPlane = GameObject.Find("handSelectionRightPlane");
-        centerCube = GameObject.Find("handSelectionCenterCube");
+        //handSelectionState = new HandSelectionState(controller0, controller1, this);
+        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0, controller1, this);
+        handPlane = GameObject.Find("SliceNSwipeHandPlane");
+        centerCube = GameObject.Find("SliceNSwipeCenterCube");
         //leftComponent = leftPlane.GetComponent<CubeCollision>();
         //rightComponent = rightPlane.GetComponent<CubeCollision>();
-        centerComponent = centerCube.GetComponent<CubeCollision>();
+
+        //centerComponent = centerCube.GetComponent<CubeCollision>();
+        centerComponent = centerCube.GetComponent<SliceCubeCollision>();
 
         cubeColliders = new HashSet<GameObject>();
 
@@ -78,50 +78,50 @@ public class NavigationState : InteractionState {
 
     public void UpdatePlanes()
     {
-        leftPlane.transform.position = controller0.controller.transform.position;
-        rightPlane.transform.position = controller1.controller.transform.position;
+        handPlane.transform.position = controller0.controller.transform.position;
+        //rightPlane.transform.position = controller1.controller.transform.position;
 
-        leftPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
-        rightPlane.transform.up = (leftPlane.transform.position - rightPlane.transform.position).normalized;
+        //handPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
+        //rightPlane.transform.up = (leftPlane.transform.position - rightPlane.transform.position).normalized;
 
-        CenterCubeBetweenControllers();
+        CenterCubeOnController();
     }
 
-    private void CenterCubeBetweenControllers()
+    private void CenterCubeOnController()
     {
         // position plane at midpoint between controllers
 
-        Vector3 leftPosition = leftPlane.transform.position;
-        Vector3 rightPosition = rightPlane.transform.position;
+        //Vector3 handPosition = handPlane.transform.position;
+        //Vector3 rightPosition = rightPlane.transform.position;
 
-        Vector3 halfWayBtwHands = Vector3.Lerp(leftPosition, rightPosition, 0.5f);
-        centerCube.transform.position = halfWayBtwHands;
+        //Vector3 halfWayBtwHands = Vector3.Lerp(leftPosition, rightPosition, 0.5f);
+        centerCube.transform.position = handPlane.transform.position + new Vector3 (0.3f, 0, 0);
 
         // rotate plane w/ respect to both controllers
-        RotatePlane(controller0, controller1, leftPosition, rightPosition, centerCube);
+        //RotatePlane(controller0, controller1, leftPosition, rightPosition, centerCube);
 
-        // scale plane
-        float distance = Vector3.Distance(rightPosition, leftPosition);
+        //// scale plane
+        //float distance = Vector3.Distance(rightPosition, leftPosition);
 
-        centerCube.transform.localScale = new Vector3(1f, 0, 0) * distance + new Vector3(0, 0.3f, 0.3f);
+        centerCube.transform.localScale = new Vector3(1.3f, 0.7f, 0.7f);
 
-
-    }
-
-    private void RotatePlane(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject nPlane)
-    {
-        Vector3 xAxis = (rightPos - leftPos).normalized;
-
-        Vector3 zAxis = controller0Info.isLeft ? controller1Info.trackedObj.transform.forward : controller0Info.trackedObj.transform.forward;
-        zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
-        Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
-
-        Vector3 groundY = new Vector3(0, 1);
-
-        //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
-        nPlane.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
 
     }
+
+    //private void RotatePlane(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject nPlane)
+    //{
+    //    Vector3 xAxis = (rightPos - leftPos).normalized;
+
+    //    Vector3 zAxis = controller0Info.isLeft ? controller1Info.trackedObj.transform.forward : controller0Info.trackedObj.transform.forward;
+    //    zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
+    //    Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
+
+    //    Vector3 groundY = new Vector3(0, 1);
+
+    //    //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+    //    nPlane.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
+
+    //}
 
     // Update is called once per frame
     override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -154,17 +154,17 @@ public class NavigationState : InteractionState {
             //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
             //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
-            foreach (GameObject activeHighlight in HandSelectionState.LeftOutlines.Values)
-            {
-                activeHighlight.GetComponent<MeshRenderer>().enabled = true;
-            }
-            foreach (GameObject activeHighlight in HandSelectionState.RightOutlines.Values)
-            {
-                activeHighlight.GetComponent<MeshRenderer>().enabled = true;
-            }
+            //foreach (GameObject activeHighlight in HandSelectionState.LeftOutlines.Values)
+            //{
+            //    activeHighlight.GetComponent<MeshRenderer>().enabled = true;
+            //}
+            //foreach (GameObject activeHighlight in HandSelectionState.RightOutlines.Values)
+            //{
+            //    activeHighlight.GetComponent<MeshRenderer>().enabled = true;
+            //}
 
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
-
+            //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(sliceNSwipeSelectionState);
         }
 
         // Teleport
