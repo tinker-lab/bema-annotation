@@ -207,7 +207,7 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 nonDominantCorner = controller0.controller.transform.position;
         Vector3 dominantCorner = controller1.controller.transform.position;
         Vector3 centerOfCube = Vector3.Lerp(nonDominantCorner, dominantCorner, 0.5f);
-        centerCube.transform.position = centerOfCube;
+        centerCube.transform.position = centerOfCube; // + new Vector3(0, 0, -0.3f); //to push cube away from controllers
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
@@ -215,7 +215,7 @@ public class VolumeCubeSelectionState : InteractionState
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
-        centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize + new Vector3(0, 0, -0.5f); //-0.5f pushes cube outwards from controllers
+        centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize;
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
