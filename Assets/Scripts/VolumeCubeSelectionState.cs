@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public class TwoHandedVolumeCube : InteractionState
+public class VolumeCubeSelectionState : InteractionState
 {
     //private const bool debug = false;
 
@@ -91,10 +91,10 @@ public class TwoHandedVolumeCube : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public TwoHandedVolumeCube(ControllerInfo controller0Info, ControllerInfo controller1Info) //, InteractionState stateToReturnTo) 
+    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info) //, InteractionState stateToReturnTo) 
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
-        desc = "TwoHandedVolumeCube";
+        desc = "VolumeCubeSelectionState";
         controller0 = controller0Info;
         controller1 = controller1Info;
 
