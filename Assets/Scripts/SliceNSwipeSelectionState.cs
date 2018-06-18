@@ -7,7 +7,7 @@ using UnityEngine.Assertions;
 public class SliceNSwipeSelectionState : InteractionState
 {
     private const bool debug = false;
-    private const float motionThreshold = 0.08f;
+    private const float motionThreshold = 0.09f;
 
     private int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     InteractionState stateToReturnTo;
@@ -221,26 +221,28 @@ public class SliceNSwipeSelectionState : InteractionState
         centerCube.transform.position = handPosition + new Vector3(0.3f, 0, 0);
 
         // rotate cube w/ respect to both controllers
-        RotateCube(mainController, handPosition, centerCube);
+        centerCube.transform.rotation = mainController.trackedObj.transform.rotation;
 
         // scale cube
         //float distance = Vector3.Distance(rightPosition, leftPosition);
-        centerCube.transform.localScale = new Vector3(1.3f, 0.7f, 0.7f); // up & forward
+        centerCube.transform.localScale = new Vector3(1.1f, 0.7f, 1.3f); // up & forward
     }
 
-    private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
-    {
-        Vector3 xAxis = position.normalized;
+    //private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
+    //{
+    //    Vector3 xAxis = position.normalized;
 
-        Vector3 zAxis = controllerInfo.trackedObj.transform.forward;
-        zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
-        Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
+    //    Vector3 zAxis = controllerInfo.trackedObj.transform.forward;
+    //    zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
+    //    //Vector3 zAxis = controllerInfo.trackedObj.transform.up.normalized;
+    //    Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
 
-        Vector3 groundY = new Vector3(0, 1);
+    //    Vector3 groundY = new Vector3(0, 1);
 
-        //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
-        cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
-    }
+    //    //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+    //    //cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
+    //    cube.transform.rotation = Quaternion.FromToRotation(controllerInfo.trackedObj.transform.up.normalized, Vector3.Cross(position.normalized - xAxis, controllerInfo.trackedObj.transform.forward.normalized));
+    //}
 
     public override void Deactivate()
     {
@@ -343,6 +345,7 @@ public class SliceNSwipeSelectionState : InteractionState
         Vector3 currentPos = mainController.trackedObj.transform.position;
         Vector3 currentOrientation = mainController.trackedObj.transform.forward;
 
+
         if (lastPos == new Vector3(0, 0, 0))
         {
             lastPos = currentPos;
@@ -364,16 +367,18 @@ public class SliceNSwipeSelectionState : InteractionState
             //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
         }
         else // If not colliding with anything, change states
-        {                                                                                                             //DEACTIVATE is COMMENTED OUT
-            //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-            //return;
+        {                                                                                                             //DEACTIVATE isnt fixed
+            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+            return;
         }
 
-        float dist = Vector3.Distance(lastPos,currentPos);
 
-        if (dist <= motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
+        if (Vector3.Distance(lastPos, currentPos) <= motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
         {
-           // Debug.Log("not slice: " + dist.ToString());
+
+            UpdatePlane(lastPos - currentPos);
+
+            // Debug.Log("not slice: " + dist.ToString());
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
@@ -400,33 +405,9 @@ public class SliceNSwipeSelectionState : InteractionState
                 }
             }
         }
-        else if (sliceStatus == 0 && dist > motionThreshold) // you just made a big slicing movement
+        else if (sliceStatus == 1 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
         {
-            Debug.Log("SLICE: " + dist.ToString());
-
-            sliceStatus = 1;
-            UpdatePlane(lastPos - currentPos);
-            /* to make a cut plane you need to get the transform.forward and also the difference between last and current positions*/
-            foreach (GameObject currObjMesh in collidingMeshes)
-            {
-                SplitMesh(currObjMesh); 
-
-                currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
-                GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
-
-                if (!savedOutlines.ContainsKey(currObjMesh.name))
-                {
-                    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-                }
-
-                // process outlines and associate them with the original objects
-                savedOutlines[currObjMesh.name].Add(savedSliceOutline);
-            }
-
-        }
-        else if (sliceStatus == 1 && dist > motionThreshold) //you made a slice, now you need to select
-        {
-            Debug.Log("Swipe!! " + dist.ToString());
+            Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
             /* if movement is big & towards normal side of plane, discard the indeces on that side.
              * else if away from normal side of plane, discard indeces on that side.
              * make discarded indeces transparent and delete slicing plane.
@@ -439,13 +420,17 @@ public class SliceNSwipeSelectionState : InteractionState
                     previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
                 }
             }
-            else
+            else if (OnNormalSideOfPlane(currentPos,slicePlane))
             {
                 foreach (GameObject currObjMesh in collidingMeshes)
                 {
                     previousSelectedIndices[currObjMesh.name] = selection0Indices[currObjMesh.name].ToList();
                     previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection1Indices[currObjMesh.name]).ToList();
                 }  
+            }
+            else
+            {
+                Debug.Log("Swipe not to a normal or !normal side of plane???");
             }
             sliceStatus = 0;
 
@@ -473,10 +458,32 @@ public class SliceNSwipeSelectionState : InteractionState
                 ColorMesh(currObjMesh, "swipe");
             }
         }
+        else if (sliceStatus == 0 && Vector3.Distance(lastPos, currentPos) > motionThreshold) // you just made a big slicing movement
+        {
+            Debug.Log("SLICE: " + Vector3.Distance(lastPos, currentPos).ToString());
 
+            UpdatePlane(lastPos - currentPos);
 
+            sliceStatus = 1;
+            /* to make a cut plane you need to get the transform.forward and also the difference between last and current positions*/
+            foreach (GameObject currObjMesh in collidingMeshes)
+            {
+                SplitMesh(currObjMesh);
+
+                currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
+                GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
+
+                if (!savedOutlines.ContainsKey(currObjMesh.name))
+                {
+                    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                }
+
+                // process outlines and associate them with the original objects
+                savedOutlines[currObjMesh.name].Add(savedSliceOutline);
+            }
+        }
         lastPos = currentPos;
-        lastOrientation = currentOrientation; 
+        lastOrientation = currentOrientation;
     }
     
     /// <summary>

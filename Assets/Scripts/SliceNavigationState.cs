@@ -99,28 +99,26 @@ public class SliceNavigationState : InteractionState {
 
 
         // rotate cube w/ respect to both controllers
-        RotateCube(controller0, handPosition, centerCube);                                  //maybe move dominant hand into this class??? you shuoldn pass the maincontroller here, not always controller0
-
-        //// scale plane
+        centerCube.transform.rotation = handPlane.transform.rotation;
+        // scale cube
         //float distance = Vector3.Distance(rightPosition, leftPosition);
-
-        centerCube.transform.localScale = new Vector3(1.3f, 0.7f, 0.7f);
+        centerCube.transform.localScale = new Vector3(1.1f, 0.7f, 1.3f); // up & forward
     }
 
 
-    private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
-    {
-        Vector3 xAxis = position.normalized;
+    //private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
+    //{
+    //    Vector3 xAxis = position.normalized;
 
-        Vector3 zAxis = controllerInfo.trackedObj.transform.forward;
-        zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
-        Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
+    //    Vector3 zAxis = controllerInfo.trackedObj.transform.forward;
+    //    zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
+    //    Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
 
-        Vector3 groundY = new Vector3(0, 1);
+    //    //Vector3 groundY = new Vector3(0, 1);
 
-        //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
-        cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
-    }
+    //    //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
+    //    cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
+    //}
 
 
 
