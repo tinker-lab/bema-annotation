@@ -18,11 +18,11 @@ public class VolumeCubeSelectionState : InteractionState
     private GameObject centerCube;  //Cube that is attached to the controllers
 
     private int planeLayer;                         //Layer that cube and planes are on
-    private static int outlineObjectCount = 0;      //Keeps saved outlines distinguishable from one another
+    //private static int outlineObjectCount = 0;      //Keeps saved outlines distinguishable from one another
 
     private List<GameObject> collidingMeshes;       //List of meshes currently being collided with
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
-    CubeCollision centerComponent;                  //Script on cube that we get the list of colliders from
+    VolumeCubeCollision centerComponent;            //Script on cube that we get the list of colliders from
 
     private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
@@ -30,11 +30,11 @@ public class VolumeCubeSelectionState : InteractionState
     private static Dictionary<string, int> previousNumVertices;                 //Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
     private static Dictionary<string, int[]> previousSelectedIndices;           //key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
     private static HashSet<string> objWithSelections;                           //Collection of the the names of all the meshes that have had pieces selected from them.
-    private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
+    //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
     //private static Dictionary<string, GameObject> leftOutlines;                 //left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                //right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
 
-    private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
+    //private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
 
     List<int> selectedIndices;      //Reused for each mesh during ProcessMesh()
     List<int> unselectedIndices;    //^^^^
@@ -70,11 +70,11 @@ public class VolumeCubeSelectionState : InteractionState
     {
         get { return objWithSelections; }
     }
-    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    {
-        get { return savedOutlines; }
-        set { savedOutlines = value; }
-    }
+    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    //{
+    //    get { return savedOutlines; }
+    //    set { savedOutlines = value; }
+    //}
     //public static Dictionary<string, GameObject> LeftOutlines
     //{
     //    get { return leftOutlines; }
@@ -112,7 +112,7 @@ public class VolumeCubeSelectionState : InteractionState
         centerCube.GetComponent<MeshCollider>().isTrigger = true;
         centerCube.AddComponent<Rigidbody>();
         centerCube.GetComponent<Rigidbody>().isKinematic = true;
-        centerComponent = centerCube.AddComponent<CubeCollision>();
+        centerComponent = centerCube.AddComponent<VolumeCubeCollision>();
         centerCube.layer = planeLayer;
 
         //if (!debug)
@@ -131,10 +131,10 @@ public class VolumeCubeSelectionState : InteractionState
         previousSelectedIndices = new Dictionary<string, int[]>();
         previousVertices = new Dictionary<string, Vector3[]>();
         previousUVs = new Dictionary<string, Vector2[]>();
-        savedOutlines = new Dictionary<string, HashSet<GameObject>>();
+        //savedOutlines = new Dictionary<string, HashSet<GameObject>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
-        outlinePoints = new List<Vector3>();
+        //outlinePoints = new List<Vector3>();
 
         //this.stateToReturnTo = stateToReturnTo;
 
@@ -336,70 +336,70 @@ public class VolumeCubeSelectionState : InteractionState
         //Update cube (method has position, rotation, and scale in it)
         CenterCubeBetweenControllers();
 
-                        ////Take input from cube about what it collides with
-                        ////TODO: check (change if necessary) that this sends back everything within the cube
-                        //cubeColliders = centerComponent.CollidedObjects;
+        //Take input from cube about what it collides with
+        //TODO: check (change if necessary) that this sends back everything within the cube
+        cubeColliders = centerComponent.CollidedObjects;
 
-                        ////if there is an object inside the cube (must have at least one)
-                        ////clear the meshes the cube was colliding with previously
-                        ////and add the new meshes that are currently being colliding with to the list
-                        //if (cubeColliders.Count > 0)
-                        //{
-                        //    collidingMeshes.Clear();
-                        //    collidingMeshes = cubeColliders.ToList();
-                        //}
-                        ////else // If not colliding with anything, change states
-                        ////{ 
-                        ////    GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-                        ////    return;    
-                        ////}
+        //if there is an object inside the cube (must have at least one)
+        //clear the meshes the cube was colliding with previously
+        //and add the new meshes that are currently being colliding with to the list
+        if (cubeColliders.Count > 0)
+        {
+            collidingMeshes.Clear();
+            collidingMeshes = cubeColliders.ToList();
+        }
+        //else // If not colliding with anything, change states
+        //{ 
+        //    GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+        //    return;    
+        //}
 
-                        //foreach (GameObject currObjMesh in collidingMeshes)
-                        //{
-                            ////first time seeing object, if the original vertices are not stored already, store them
-                            //if (!previousNumVertices.ContainsKey(currObjMesh.name))
-                            //{
-                            //    previousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
-                            //    currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
-                            //    previousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                            //    previousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
+        foreach (GameObject currObjMesh in collidingMeshes)
+        {
+            //first time seeing object, if the original vertices are not stored already, store them
+            if (!previousNumVertices.ContainsKey(currObjMesh.name))
+            {
+                previousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
+                currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
+                previousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                previousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
 
-                            //    UVList = new List<Vector2>();
-                            //    currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            //    previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
+                UVList = new List<Vector2>();
+                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
 
-                            //    currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                            //}
+                currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
 
-                            ////if this object has outlines associated with it, process the outlines
-                            //if (savedOutlines.ContainsKey(currObjMesh.name))
-                            //{
-                            //    foreach (GameObject outline in savedOutlines[currObjMesh.name])
-                            //    {
-                            //        if (!previousNumVertices.ContainsKey(outline.name))
-                            //        {
-                            //            previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
-                            //            outline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+            ////if this object has outlines associated with it, process the outlines
+            //if (savedOutlines.ContainsKey(currObjMesh.name))
+            //{
+            //    foreach (GameObject outline in savedOutlines[currObjMesh.name])
+            //    {
+            //        if (!previousNumVertices.ContainsKey(outline.name))
+            //        {
+            //            previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
+            //            outline.GetComponent<MeshFilter>().mesh.MarkDynamic();
 
-                            //            //TODO: should this be nested?
-                            //            if (!previousSelectedIndices.ContainsKey(outline.name))
-                            //            {
-                            //                previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                            //                previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
+            //            //TODO: should this be nested?
+            //            if (!previousSelectedIndices.ContainsKey(outline.name))
+            //            {
+            //                previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
+            //                previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
 
-                            //                UVList = new List<Vector2>();
-                            //                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            //                previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
-                            //            }
-                            //        }
+            //                UVList = new List<Vector2>();
+            //                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+            //                previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
+            //            }
+            //        }
 
-                            //        ProcessMesh(outline);
-                            //    }
-                            //}
-                            //else
-                            //{
-                            //    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-                            //}
+            //        ProcessMesh(outline);
+            //    }
+            //}
+            //else
+            //{
+            //    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+            //}
 
             //if (currObjMesh.tag != "highlight")
             //{
@@ -413,80 +413,75 @@ public class VolumeCubeSelectionState : InteractionState
             //    }
             //}
 
-                            ////TODO: add back commented out part above but altered for cube
-                            //if(currObjMesh.tag != "highlight") //TODO: change tags
-                            //{
-                                
-                            //}
+            ProcessMesh(currObjMesh);
+        }
 
-                            //ProcessMesh(currObjMesh);
-                        //}
+        //The trigger is clicked and a selection of the volume has been made
+        //this if loop should make every item within the cube highlighted
+        //and save the outlines and new meshes
+        if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
+        {
+            foreach (GameObject currObjMesh in collidingMeshes)
+            {
+                currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
+                //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
+                //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
 
-                        ////The trigger is clicked and a selection of the volume has been made
-                        ////this if loop should make every item within the cube highlighted
-                        ////and save the outlines and new meshes
-                        //if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
-                        //{
-                        //    foreach (GameObject currObjMesh in collidingMeshes)
-                        //    {
-                        //        currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
-                        //        //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
-                        //        //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
+                previousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
+                previousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
 
-                        //        previousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
-                        //        previousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
+                UVList = new List<Vector2>();
+                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                previousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
 
-                        //        UVList = new List<Vector2>();
-                        //        currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                        //        previousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
+                //The submesh to start
+                int submeshNum = 0;
+                Material[] origMaterials = currObjMesh.GetComponent<Renderer>().materials;
+                for (int i = 0; i < origMaterials.Length; i++)
+                {
+                    if (origMaterials[i].name == "Selected (Instance)")
+                    {
+                        submeshNum = i;
+                    }
+                }
 
-                        //        //The submesh to start
-                        //        int submeshNum = 0;
-                        //        Material[] origMaterials = currObjMesh.GetComponent<Renderer>().materials;
-                        //        for (int i = 0; i < origMaterials.Length; i++)
-                        //        {
-                        //            if (origMaterials[i].name == "Selected (Instance)")
-                        //            {
-                        //                submeshNum = i;
-                        //            }
-                        //        }
+                //updates original indices to store the the most recently selected portion
+                previousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
 
-                        //        previousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);     // updates original indices to store the the most recently selected portion
+                if (previousUnselectedIndices.ContainsKey(currObjMesh.name))
+                {
+                    previousUnselectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                }
+                else
+                {
+                    previousUnselectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                }
 
-                        //        if (previousUnselectedIndices.ContainsKey(currObjMesh.name))
-                        //        {
-                        //            previousUnselectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                        //        }
-                        //        else
-                        //        {
-                        //            previousUnselectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                        //        }
+                objWithSelections.Add(currObjMesh.name);
 
-                        //        objWithSelections.Add(currObjMesh.name);
+                //if (!savedOutlines.ContainsKey(currObjMesh.name))
+                //{
+                //    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                //}
+                
+                //process outlines and associate them with the original objects
+                //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
+                //savedOutlines[currObjMesh.name].Add(savedRightOutline);
 
-                        //        if (!savedOutlines.ContainsKey(currObjMesh.name))
-                        //        {
-                        //            savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-                        //        }
-                                
-                        //        //process outlines and associate them with the original objects
-                        //        savedOutlines[currObjMesh.name].Add(savedLeftOutline);
-                        //        savedOutlines[currObjMesh.name].Add(savedRightOutline);
+                //foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
+                //{
+                //    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                //    objWithSelections.Add(outline.name);
+                //    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                //    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
 
-                        //        foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
-                        //        {
-                        //            previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                        //            objWithSelections.Add(outline.name);
-                        //            previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                        //            previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
+                //    UVList = new List<Vector2>();
+                //    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                //    previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                //}
+            }
 
-                        //            UVList = new List<Vector2>();
-                        //            outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                        //            previousUVs[outline.name] = UVList.ToArray<Vector2>();
-                        //        }
-                        //    }
-
-                        //}
+        }
     }
     
     /// <summary>
@@ -494,22 +489,22 @@ public class VolumeCubeSelectionState : InteractionState
     /// </summary>
     /// <param name="original"></param>
     /// <returns></returns>
-    private GameObject CopyObject(GameObject original)
-    {
-        GameObject copy = new GameObject();
-        copy.AddComponent<MeshRenderer>();
-        copy.AddComponent<MeshFilter>();
-        copy.transform.position = original.transform.position;
-        copy.transform.rotation = original.transform.rotation;
-        copy.transform.localScale = original.transform.localScale;
-        copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
-        copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
-        copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "highlight" + outlineObjectCount;
-        outlineObjectCount++;
+    //private GameObject CopyObject(GameObject original)
+    //{
+    //    GameObject copy = new GameObject();
+    //    copy.AddComponent<MeshRenderer>();
+    //    copy.AddComponent<MeshFilter>();
+    //    copy.transform.position = original.transform.position;
+    //    copy.transform.rotation = original.transform.rotation;
+    //    copy.transform.localScale = original.transform.localScale;
+    //    copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
+    //    copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
+    //    copy.tag = "highlightmesh"; // tag this object as a highlight
+    //    copy.name = "highlight" + outlineObjectCount;
+    //    outlineObjectCount++;
 
-        return copy;
-    }
+    //    return copy;
+    //}
 
     ////returns true if point is on the normal side
     //private bool OnNormalSideOfPlane(Vector3 pt, GameObject plane)
@@ -523,6 +518,8 @@ public class VolumeCubeSelectionState : InteractionState
         return Vector3.Dot(normalPoint, otherPoint) >= Vector3.Dot(otherPoint, normalPoint);
     }
 
+    //processes the mesh of an item in the scene that is colliding with the volume cube
+    //creates the new triangles in the mesh and adds the necessary vertices
     private void ProcessMesh(GameObject item)
     {
         Mesh mesh = item.GetComponent<MeshFilter>().mesh;
@@ -537,7 +534,7 @@ public class VolumeCubeSelectionState : InteractionState
             unselectedIndices =  previousUnselectedIndices[item.name].ToList<int>();
         }
 
-        int[] indices = previousSelectedIndices[item.name];        //original indices is set to be JUST the selected part, that's why nothing else is drawn
+        int[] indices = previousSelectedIndices[item.name];  //previous indices is set to be JUST the selected part, that's why nothing else is drawn
         List<Vector3> vertices = previousVertices[item.name].ToList();
 
         List<Vector2> UVs = previousUVs[item.name].ToList();
@@ -596,7 +593,7 @@ public class VolumeCubeSelectionState : InteractionState
                 bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass]);
 
 
-                if (!side0 && !side1 && !side2) // 0 intersections
+                if (!side0 && !side1 && !side2) //0 intersections
                 {
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass]))
                     {
@@ -627,8 +624,8 @@ public class VolumeCubeSelectionState : InteractionState
                         UVs.Add(intersectUV1);
 
                         //AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
-                        outlinePoints.Add(intersectPoint0);
-                        outlinePoints.Add(intersectPoint1);
+                        //outlinePoints.Add(intersectPoint0);
+                        //outlinePoints.Add(intersectPoint1);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass]))
                         {
@@ -659,8 +656,8 @@ public class VolumeCubeSelectionState : InteractionState
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV2);
 
-                        outlinePoints.Add(intersectPoint0);
-                        outlinePoints.Add(intersectPoint2);
+                        //outlinePoints.Add(intersectPoint0);
+                        //outlinePoints.Add(intersectPoint2);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass]))
                         {
@@ -688,8 +685,8 @@ public class VolumeCubeSelectionState : InteractionState
                         UVs.Add(intersectUV1);
                         UVs.Add(intersectUV2);
 
-                        outlinePoints.Add(intersectPoint1);
-                        outlinePoints.Add(intersectPoint2);
+                        //outlinePoints.Add(intersectPoint1);
+                        //outlinePoints.Add(intersectPoint2);
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass]))
                         {
@@ -758,70 +755,70 @@ public class VolumeCubeSelectionState : InteractionState
     /**
      * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
      * */
-    private Mesh CreateOutlineMesh(List<Vector3> points, GameObject plane, Mesh outlineMesh)
-    {
-        List<Vector3> verts = new List<Vector3>();
-        List<int> faces = new List<int>();
-        List<Vector2> uvCoordinates = new List<Vector2>();
-        outlineMesh.Clear();
+    //private Mesh CreateOutlineMesh(List<Vector3> points, GameObject plane, Mesh outlineMesh)
+    //{
+    //    List<Vector3> verts = new List<Vector3>();
+    //    List<int> faces = new List<int>();
+    //    List<Vector2> uvCoordinates = new List<Vector2>();
+    //    outlineMesh.Clear();
 
-        float radius = .005f;
-        int numSections = 6;
+    //    float radius = .005f;
+    //    int numSections = 6;
 
-        Assert.IsTrue(points.Count % 2 == 0);
-        int expectedNumVerts = (numSections + 1) * points.Count;
+    //    Assert.IsTrue(points.Count % 2 == 0);
+    //    int expectedNumVerts = (numSections + 1) * points.Count;
 
-        if (expectedNumVerts > 65000)
-        {
-            points = OrderMesh(points);
-        }
+    //    if (expectedNumVerts > 65000)
+    //    {
+    //        points = OrderMesh(points);
+    //    }
 
-        if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2)
-            {
-                Vector3 centerStart = points[i];
-                Vector3 centerEnd = points[i + 1];
-                Vector3 direction = centerEnd - centerStart;
-                direction = direction.normalized;
-                Vector3 right = Vector3.Cross(plane.transform.up, direction);
-                Vector3 up = Vector3.Cross(direction, right);
-                up = up.normalized * radius;
-                right = right.normalized * radius;
+    //    if (points.Count >= 2) {
+    //        for (int i = 0; i < points.Count-1; i += 2)
+    //        {
+    //            Vector3 centerStart = points[i];
+    //            Vector3 centerEnd = points[i + 1];
+    //            Vector3 direction = centerEnd - centerStart;
+    //            direction = direction.normalized;
+    //            Vector3 right = Vector3.Cross(plane.transform.up, direction);
+    //            Vector3 up = Vector3.Cross(direction, right);
+    //            up = up.normalized * radius;
+    //            right = right.normalized * radius;
 
-                for (int slice = 0; slice <= numSections; slice++)
-                {
-                    float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
-                    Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
-                    Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+    //            for (int slice = 0; slice <= numSections; slice++)
+    //            {
+    //                float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
+    //                Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+    //                Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
 
-                    verts.Add(p0);
-                    verts.Add(p1);
-                    uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
-                    uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
+    //                verts.Add(p0);
+    //                verts.Add(p1);
+    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
+    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
 
-                    if (slice > 0)
-                    {
-                        faces.Add((slice * 2 + 1) + ((numSections + 1) * i));
-                        faces.Add((slice * 2) + ((numSections + 1) * i));
-                        faces.Add((slice * 2 - 2) + ((numSections + 1) * i));
+    //                if (slice > 0)
+    //                {
+    //                    faces.Add((slice * 2 + 1) + ((numSections + 1) * i));
+    //                    faces.Add((slice * 2) + ((numSections + 1) * i));
+    //                    faces.Add((slice * 2 - 2) + ((numSections + 1) * i));
 
-                        faces.Add(slice * 2 + 1 + ((numSections + 1) * i));
-                        faces.Add(slice * 2 - 2 + ((numSections + 1) * i));
-                        faces.Add(slice * 2 - 1 + ((numSections + 1) * i));
-                    }
-                }
-            }
+    //                    faces.Add(slice * 2 + 1 + ((numSections + 1) * i));
+    //                    faces.Add(slice * 2 - 2 + ((numSections + 1) * i));
+    //                    faces.Add(slice * 2 - 1 + ((numSections + 1) * i));
+    //                }
+    //            }
+    //        }
 
-            outlineMesh.SetVertices(verts);
-            outlineMesh.SetUVs(0, uvCoordinates);
-            outlineMesh.SetTriangles(faces, 0);
+    //        outlineMesh.SetVertices(verts);
+    //        outlineMesh.SetUVs(0, uvCoordinates);
+    //        outlineMesh.SetTriangles(faces, 0);
 
-            outlineMesh.RecalculateBounds();
-            outlineMesh.RecalculateNormals();
-        }
+    //        outlineMesh.RecalculateBounds();
+    //        outlineMesh.RecalculateNormals();
+    //    }
 
-        return outlineMesh;
-    }
+    //    return outlineMesh;
+    //}
 
     /**
      * Make a graph of mesh vertices, order it, remove sequential duplicates and return new set of vertices
