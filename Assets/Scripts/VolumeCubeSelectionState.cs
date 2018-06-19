@@ -574,6 +574,8 @@ public class VolumeCubeSelectionState : InteractionState
 
         for (int planePass = 0; planePass < 6; planePass++)
         {
+            //TODO: is it a problem that the selectedIndices.Clear(); was removed?
+
             //GameObject currentPlane = leftPlane;
             //if (planePass == 1)
             //{
@@ -704,6 +706,8 @@ public class VolumeCubeSelectionState : InteractionState
                 }
             }
 
+
+            //TODO: Look at this section, maybe edges of highlights happen here?
             //if (item.gameObject.tag != "highlightmesh")
             //{
             //    if (planePass == 1)
