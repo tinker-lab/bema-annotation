@@ -296,11 +296,11 @@ public class SliceNSwipeSelectionState : InteractionState
                             //Debug.Log("Removing outlines for " + collidingObj.name);
 
                     Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
-                    //Vector3[] outlineVerts = outlineMesh.vertices;
-                    Vector3[] outlineVerts = previousVertices[outline.name];
+                    Vector3[] outlineVerts = outlineMesh.vertices;
+                    //Vector3[] outlineVerts = previousVertices[outline.name];
                     List<Vector2> outlineUVs = new List<Vector2>();
-                    outlineUVs = previousUVs[outline.name].ToList();
-                    //outlineMesh.GetUVs(0, outlineUVs);
+                    //outlineUVs = previousUVs[outline.name].ToList();
+                    outlineMesh.GetUVs(0, outlineUVs);
 
                     outlineMesh.Clear();
                     outlineMesh.vertices = outlineVerts;
@@ -367,11 +367,41 @@ public class SliceNSwipeSelectionState : InteractionState
             //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
         }
         else // If not colliding with anything, change states
-        {                                                                                                             //DEACTIVATE isnt fixed
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-            return;
+        {
+            if (sliceStatus == 0)                                                                                       //DEACTIVATE isnt fixed
+            {
+                //Debug.Log("DEACTIVATE");
+                //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+                //return;
+            }
         }
 
+
+        foreach (GameObject currObjMesh in collidingMeshes)
+        {
+            if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
+            {
+                previousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
+                currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
+                previousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList<int>());
+                previousUnselectedIndices.Add(currObjMesh.name, new List<int>());
+                previousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
+
+                UVList = new List<Vector2>();
+                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
+
+                currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                if (currObjMesh.tag != "highlight")
+                {
+                    if (!sliceOutlines.ContainsKey(currObjMesh.name))                              //
+                    {                                                                             // Add an Outline for this mesh if there isn't one already
+                        sliceOutlines.Add(currObjMesh.name, MakeHandOutline(currObjMesh.name));    //
+                    }
+                }
+            }
+        }
 
         if (Vector3.Distance(lastPos, currentPos) <= motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
         {
@@ -379,84 +409,7 @@ public class SliceNSwipeSelectionState : InteractionState
             UpdatePlane(lastPos - currentPos);
 
             // Debug.Log("not slice: " + dist.ToString());
-            foreach (GameObject currObjMesh in collidingMeshes)
-            {
-                if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
-                {
-                    previousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
-                    currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
-                    previousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList<int>());
-                    previousUnselectedIndices.Add(currObjMesh.name, new List<int>());
-                    previousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
-
-                    UVList = new List<Vector2>();
-                    currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                    previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
-
-                    currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-                    if (currObjMesh.tag != "highlight")
-                    {
-                        if (!sliceOutlines.ContainsKey(currObjMesh.name))                              //
-                        {                                                                             // Add an Outline for this mesh if there isn't one already
-                            sliceOutlines.Add(currObjMesh.name, MakeHandOutline(currObjMesh.name));    //
-                        }
-                    }
-                }
-            }
-        }
-        else if (sliceStatus == 1 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
-        {
-            Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
-            /* if movement is big & towards normal side of plane, discard the indeces on that side.
-             * else if away from normal side of plane, discard indeces on that side.
-             * make discarded indeces transparent and delete slicing plane.
-             */
-            if (!OnNormalSideOfPlane(currentPos, slicePlane))
-            {
-                foreach (GameObject currObjMesh in collidingMeshes)
-                {
-                    previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection0Indices[currObjMesh.name]).ToList();
-                    previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
-                }
-            }
-            else if (OnNormalSideOfPlane(currentPos,slicePlane))
-            {
-                foreach (GameObject currObjMesh in collidingMeshes)
-                {
-                    previousSelectedIndices[currObjMesh.name] = selection0Indices[currObjMesh.name].ToList();
-                    previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection1Indices[currObjMesh.name]).ToList();
-                }  
-            }
-            else
-            {
-                Debug.Log("Swipe not to a normal or !normal side of plane???");
-            }
-            sliceStatus = 0;
-
-            foreach (GameObject currObjMesh in collidingMeshes)
-            {
-                previousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
-                previousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
-
-                UVList = new List<Vector2>();
-                currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                previousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
-
-                //The submesh to start
-                int submeshNum = 0;
-                Material[] origMaterials = currObjMesh.GetComponent<Renderer>().materials;
-                for (int i = 0; i < origMaterials.Length; i++)
-                {
-                    if (origMaterials[i].name == "Selected (Instance)")
-                    {
-                        submeshNum = i;
-                    }
-                }
-
-                objWithSelections.Add(currObjMesh.name);
-                ColorMesh(currObjMesh, "swipe");
-            }
+            
         }
         else if (sliceStatus == 0 && Vector3.Distance(lastPos, currentPos) > motionThreshold) // you just made a big slicing movement
         {
@@ -482,6 +435,57 @@ public class SliceNSwipeSelectionState : InteractionState
                 savedOutlines[currObjMesh.name].Add(savedSliceOutline);
             }
         }
+        else if (sliceStatus == 1 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
+        {
+            Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
+            /* if movement is big & towards normal side of plane, discard the indeces on that side.
+             * else if away from normal side of plane, discard indeces on that side.
+             * make discarded indeces transparent and delete slicing plane.
+             */
+
+            Vector3 heading = lastPos - currentPos;
+            heading = heading / heading.magnitude;
+
+            if (Vector3.Dot(currentPos.normalized, heading) <= .1 && Vector3.Dot(currentPos.normalized, heading) >= -0.1)
+            {
+                Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
+                if (!OnNormalSideOfPlane(currentPos, slicePlane))
+                {
+                    foreach (GameObject currObjMesh in collidingMeshes)
+                    {
+                        previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection0Indices[currObjMesh.name]).ToList();
+                        previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
+                    }
+                }
+                else if (OnNormalSideOfPlane(currentPos, slicePlane))
+                {
+                    foreach (GameObject currObjMesh in collidingMeshes)
+                    {
+                        previousSelectedIndices[currObjMesh.name] = selection0Indices[currObjMesh.name].ToList();
+                        previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection1Indices[currObjMesh.name]).ToList();
+                    }
+                }
+                else
+                {
+                    Debug.Log("Swipe not to a normal or !normal side of plane???");
+                }
+                sliceStatus = 0;
+
+                foreach (GameObject currObjMesh in collidingMeshes)
+                {
+                    previousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
+                    previousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
+
+                    UVList = new List<Vector2>();
+                    currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                    previousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
+
+                    objWithSelections.Add(currObjMesh.name);
+                    ColorMesh(currObjMesh, "swipe");
+                }
+            }
+        }
+
         lastPos = currentPos;
         lastOrientation = currentOrientation;
     }
@@ -727,16 +731,17 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
-            mesh.subMeshCount = 2;
+            mesh.subMeshCount = 3;
 
-            Material[] materials = new Material[2];
+            Material[] materials = new Material[3];
             if (mode == "slice")
             {
-                mesh.SetTriangles(selection0Indices[item.name], 0);
-                mesh.SetTriangles(selection1Indices[item.name], 1);
+                mesh.SetTriangles(selection0Indices[item.name], 1);
+                mesh.SetTriangles(selection1Indices[item.name], 2);
 
-                materials[0] = Resources.Load("Blue Material") as Material;
-                materials[1] = Resources.Load("Green Material") as Material;
+                materials[0] = item.GetComponent<Renderer>().materials[0];
+                materials[1] = Resources.Load("Blue Material") as Material;
+                materials[2] = Resources.Load("Green Material") as Material;
             }
             else if (mode == "swipe")
             {
