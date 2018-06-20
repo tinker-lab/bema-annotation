@@ -411,7 +411,7 @@ public class SliceNSwipeSelectionState : InteractionState
             // Debug.Log("not slice: " + dist.ToString());
 
         }
-        else if (Vector3.Distance(lastPos, currentPos) > motionThreshold && sliceStatus == 0 ) // you just made a big slicing movement
+        else if (Vector3.Distance(lastPos, currentPos) > motionThreshold && sliceStatus == 0 && !mainController.device.GetHairTrigger() ) // you just made a big slicing movement
         //else if (sliceStatus == 0 && mainController.device.GetPress(SteamVR_Controller.ButtonMask.Grip))
         {
             Debug.Log("SLICE: " + Vector3.Distance(lastPos, currentPos).ToString());
@@ -447,9 +447,9 @@ public class SliceNSwipeSelectionState : InteractionState
             Vector3 heading = lastPos - currentPos;
             heading = heading / heading.magnitude;
 
-            if (Vector3.Dot(currentPos.normalized, heading) <= .3 && Vector3.Dot(currentPos.normalized, heading) >= -0.3)
-            {
-                Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
+            //if (Vector3.Dot(currentPos.normalized, heading) <= .3 && Vector3.Dot(currentPos.normalized, heading) >= -0.3)
+            //{
+                //Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
                 if (OnNormalSideOfPlane(currentPos, slicePlane))
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
@@ -484,7 +484,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     objWithSelections.Add(currObjMesh.name);
                     ColorMesh(currObjMesh, "swipe");
                 }
-            }
+            //}
         }
 
         lastPos = currentPos;
