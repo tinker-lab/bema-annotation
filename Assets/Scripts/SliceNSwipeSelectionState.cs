@@ -452,14 +452,21 @@ public class SliceNSwipeSelectionState : InteractionState
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
                     {
+                    if (previousUnselectedIndices.ContainsKey(currObjMesh.name))
+                    {
                         previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection0Indices[currObjMesh.name]).ToList();
                         previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
+                    }
+                    else {
+                        Debug.Log("prevUnselected doesn't have key.");
+                    }
                     }
                 }
                 else if (!OnNormalSideOfPlane(currentPos, slicePlane))
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
                     {
+                    
                         previousSelectedIndices[currObjMesh.name] = selection0Indices[currObjMesh.name].ToList();
                         previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection1Indices[currObjMesh.name]).ToList();
                     }
