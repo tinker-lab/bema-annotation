@@ -76,8 +76,8 @@ public class SliceCubeCollision : MonoBehaviour {
                 mesh.RecalculateBounds();
                 mesh.RecalculateNormals();
 
-                Material material = other.GetComponent<Renderer>().material; // materials[0] corresponds to unselected
-                other.GetComponent<Renderer>().material = material;
+                //Material material = other.GetComponent<Renderer>().material; // materials[0] corresponds to unselected
+                //other.GetComponent<Renderer>().material = material;
             }
 
         }

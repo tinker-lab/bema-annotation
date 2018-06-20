@@ -225,7 +225,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         // scale cube
         //float distance = Vector3.Distance(rightPosition, leftPosition);
-        centerCube.transform.localScale = new Vector3(0.5f, 0.5f, 1.3f); // up & forward
+        centerCube.transform.localScale = new Vector3(1.3f, 0.5f, 1.3f); // up & forward
     }
 
     //private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
@@ -320,7 +320,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 // reset object to original state (before interaction)
                 if (collidingObj.tag != "highlightmesh")
                 {
-                    Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
+                    Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[3];
                     baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
@@ -735,20 +735,22 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
-            mesh.subMeshCount = 3;
+            mesh.subMeshCount = 2;
 
-            Material[] materials = new Material[3];
+            Material[] materials = new Material[2];
             if (mode == "slice")
             {
-                mesh.SetTriangles(selection0Indices[item.name], 1);
-                mesh.SetTriangles(selection1Indices[item.name], 2);
+                Debug.Log("0: " + selection0Indices[item.name].Length.ToString() + " 1: " + selection1Indices[item.name].Length.ToString());
+                mesh.SetTriangles(selection0Indices[item.name], 0);
+                mesh.SetTriangles(selection1Indices[item.name], 1);
 
-                materials[0] = item.GetComponent<Renderer>().materials[0];
-                materials[1] = Resources.Load("Blue Material") as Material;
-                materials[2] = Resources.Load("Green Material") as Material;
+               // materials[2] = item.GetComponent<Renderer>().materials[0];
+                materials[0] = Resources.Load("Blue Material") as Material;
+                materials[1] = Resources.Load("Green Material") as Material;
             }
             else if (mode == "swipe")
             {
+                Debug.Log("s: " + previousSelectedIndices[item.name].Count.ToString() + " u: " + previousUnselectedIndices[item.name].Count.ToString());
                 mesh.SetTriangles(previousSelectedIndices[item.name], 1);
                 mesh.SetTriangles(previousUnselectedIndices[item.name], 0);
 

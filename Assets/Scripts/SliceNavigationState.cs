@@ -103,7 +103,7 @@ public class SliceNavigationState : InteractionState {
         centerCube.transform.rotation = controller0.trackedObj.transform.rotation;
         // scale cube
         //float distance = Vector3.Distance(rightPosition, leftPosition);
-        centerCube.transform.localScale = new Vector3(0.5f, 0.5f, 1.3f); // up & forward
+        centerCube.transform.localScale = new Vector3(1.3f, 0.5f, 1.3f); // up & forward
     }
 
 

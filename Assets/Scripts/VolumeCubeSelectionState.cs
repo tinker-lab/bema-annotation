@@ -41,7 +41,7 @@ public class VolumeCubeSelectionState : InteractionState
 
     //make six vectors for the normals
     private Vector3[] normals;
-    private enum cubeSides { forward, back, up, down, left, right };
+    private enum cubeSides { forward, up, left, back, down, right };
 
     //starting vector between the hands
     private Vector3 startingDiagonal;
@@ -151,7 +151,7 @@ public class VolumeCubeSelectionState : InteractionState
         normals[(int)cubeSides.right] = Vector3.right;
 
         //set starting diagonal (between controllers)
-        startingDiagonal = new Vector3(1f, 1f, 1f);
+        startingDiagonal = new Vector3(1f, -1f, -1f);
     }
 
     ///// <summary>
@@ -513,10 +513,9 @@ public class VolumeCubeSelectionState : InteractionState
     //}
 
     //returns true if point is on normal side
-    private bool OnNormalSideOfPlane(Vector3 otherPoint, Vector3 normalPoint)
+    private bool OnNormalSideOfPlane(Vector3 otherPoint, Vector3 normalPoint, Vector3 planePoint)
     {
-        return Vector3.Dot(normalPoint, otherPoint) >= Vector3.Dot(otherPoint, normalPoint);
-
+        return Vector3.Dot(normalPoint, otherPoint) >= Vector3.Dot(planePoint, normalPoint);
     }
 
     //processes the mesh of an item in the scene that is colliding with the volume cube
@@ -575,8 +574,6 @@ public class VolumeCubeSelectionState : InteractionState
 
         for (int planePass = 0; planePass < 6; planePass++)
         {
-            //TODO: is it a problem that the selectedIndices.Clear(); was removed?
-
             //GameObject currentPlane = leftPlane;
             //if (planePass == 1)
             //{
@@ -584,6 +581,19 @@ public class VolumeCubeSelectionState : InteractionState
             //    indices = selectedIndices.ToArray();
             //    selectedIndices.Clear();
             //}
+
+            //defining a point on the side of the cube depending on which side is being looped through
+            Vector3 planePoint;
+
+            //TODO: check if these are set to the correct controllers
+            if(planePass < 3)
+            {
+                planePoint = controller1.controller.transform.position;
+            }
+            else
+            {
+                planePoint = controller0.controller.transform.position;
+            }
 
             if (planePass != 0)
             {
@@ -597,14 +607,14 @@ public class VolumeCubeSelectionState : InteractionState
                 triangleIndex1 = indices[3 * i + 1];
                 triangleIndex2 = indices[3 * i + 2];
 
-                bool side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], rotationVectors[planePass]);
-                bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], rotationVectors[planePass]);
-                bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass]);
+                bool side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], rotationVectors[planePass], planePoint);
+                bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
+                bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
 
 
                 if (!side0 && !side1 && !side2) //0 intersections
                 {
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass]))
+                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                     {
                         AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
@@ -626,7 +636,6 @@ public class VolumeCubeSelectionState : InteractionState
                         vertices.Add(intersectPoint0);
                         vertices.Add(intersectPoint1);
 
-                        
                         transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
                         transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
                         UVs.Add(intersectUV0);
@@ -636,9 +645,8 @@ public class VolumeCubeSelectionState : InteractionState
                         //outlinePoints.Add(intersectPoint0);
                         //outlinePoints.Add(intersectPoint1);
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass]))
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
                         {
-
                             //Add the indices for various triangles to selected and unselected
                             AddNewIndices(selectedIndices, intersectIndex1, intersectIndex0, triangleIndex1);
                             AddNewIndices(unselectedIndices, triangleIndex0, intersectIndex0, intersectIndex1);
@@ -668,7 +676,7 @@ public class VolumeCubeSelectionState : InteractionState
                         //outlinePoints.Add(intersectPoint0);
                         //outlinePoints.Add(intersectPoint2);
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass]))
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                         {
                             AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(unselectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
@@ -697,7 +705,7 @@ public class VolumeCubeSelectionState : InteractionState
                         //outlinePoints.Add(intersectPoint1);
                         //outlinePoints.Add(intersectPoint2);
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass]))
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass], planePoint))
                         {
                             AddNewIndices(selectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
@@ -872,11 +880,11 @@ public class VolumeCubeSelectionState : InteractionState
 
     //use this method for each side of the cube instead of the plane, replace plane with side
     //instead of plane, pass in normal vector and point (corner of cube that is on that side)
-    private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, Vector3 normalVector) //checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
+    private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, Vector3 normalVector, Vector3 planePoint) //checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     {
         Vector3 lineSegmentLocal = lineVertexLocal1 - lineVertexLocal0;
         float dot = Vector3.Dot(normalVector, lineVertexWorld1 - lineVertexWorld0);
-        Vector3 w = normalVector - lineVertexWorld0;
+        Vector3 w = planePoint - lineVertexWorld0;
 
         float epsilon = 0.001f;
         if (Mathf.Abs(dot) > epsilon)
