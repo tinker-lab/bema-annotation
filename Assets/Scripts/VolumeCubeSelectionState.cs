@@ -8,7 +8,7 @@ public class VolumeCubeSelectionState : InteractionState
 {
     //private const bool debug = false;
 
-    InteractionState stateToReturnTo;
+    //InteractionState stateToReturnTo;
     private ControllerInfo controller0;
     private ControllerInfo controller1;
 
@@ -91,7 +91,7 @@ public class VolumeCubeSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo) 
+    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info) //, InteractionState stateToReturnTo) 
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "VolumeCubeSelectionState";
@@ -136,7 +136,7 @@ public class VolumeCubeSelectionState : InteractionState
         unselectedIndices = new List<int>();
         //outlinePoints = new List<Vector3>();
 
-        this.stateToReturnTo = stateToReturnTo;
+        //this.stateToReturnTo = stateToReturnTo;
 
         //leftOutlines = new Dictionary<string, GameObject>();
         //rightOutlines = new Dictionary<string, GameObject>();
@@ -348,8 +348,9 @@ public class VolumeCubeSelectionState : InteractionState
             collidingMeshes = cubeColliders.ToList();
         }
         else //If not colliding with anything, change states
-        { 
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+        {
+            //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+            Deactivate();
             return;    
         }
 
@@ -754,8 +755,7 @@ public class VolumeCubeSelectionState : InteractionState
             Material[] materials = new Material[2];
             Material baseMaterial = item.GetComponent<Renderer>().materials[0];
             materials[0] = DetermineBaseMaterial(baseMaterial); //Sets unselected as transparent
-            //materials[0] = baseMaterial; //returns back to original material
-            materials[1] = Resources.Load("Selected") as Material;      //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+            materials[1] = Resources.Load("Selected") as Material; //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             item.GetComponent<Renderer>().materials = materials;
         }
 
