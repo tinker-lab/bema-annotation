@@ -752,15 +752,13 @@ public class VolumeCubeSelectionState : InteractionState
         {
             mesh.subMeshCount = 2;
 
-            Debug.Log("s: " + selectedIndices.Count.ToString() + " u: " + unselectedIndices.Count.ToString() + " prev: " + previousSelectedIndices[item.name].Length.ToString());
-
-
             mesh.SetTriangles(unselectedIndices, 0);
             mesh.SetTriangles(selectedIndices, 1);
 
             Material[] materials = new Material[2];
             Material baseMaterial = item.GetComponent<Renderer>().materials[0];
-            materials[0] = DetermineBaseMaterial(baseMaterial);         //Sets unselected as transparent
+            //materials[0] = DetermineBaseMaterial(baseMaterial); //Sets unselected as transparent
+            materials[0] = baseMaterial; //returns back to original material
             materials[1] = Resources.Load("Selected") as Material;      //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             item.GetComponent<Renderer>().materials = materials;
         }
