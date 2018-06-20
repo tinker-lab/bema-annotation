@@ -123,10 +123,10 @@ public class SliceNSwipeSelectionState : InteractionState
         centerComponent = centerCube.AddComponent<SliceCubeCollision>();
         centerCube.layer = planeLayer;
 
-        //if (!debug)
-        //{
-        //    centerCube.GetComponent<MeshRenderer>().enabled = false;
-        //}
+        if (!debug)
+        {
+            centerCube.GetComponent<MeshRenderer>().enabled = false;
+        }
 
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
@@ -190,10 +190,10 @@ public class SliceNSwipeSelectionState : InteractionState
         handPlane.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); //Previously 0.03
 
         handPlane.layer = planeLayer;
-        if (!debug)
-        {
-            handPlane.GetComponent<MeshRenderer>().enabled = false;
-        }
+        //if (!debug)
+        //{
+        //    handPlane.GetComponent<MeshRenderer>().enabled = false;
+        //}
 
         return handPlane;
     }
@@ -335,8 +335,6 @@ public class SliceNSwipeSelectionState : InteractionState
                 sliceOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
                 //rightOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
             }
-
-            
         }
     }
 
@@ -370,7 +368,7 @@ public class SliceNSwipeSelectionState : InteractionState
         {
             if (sliceStatus == 0)                                                                                       //DEACTIVATE isnt fixed
             {
-                //Debug.Log("DEACTIVATE");
+                Debug.Log("DEACTIVATE");
                 //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
                 //return;
             }
@@ -411,7 +409,7 @@ public class SliceNSwipeSelectionState : InteractionState
             // Debug.Log("not slice: " + dist.ToString());
 
         }
-        else if (Vector3.Distance(lastPos, currentPos) > motionThreshold && sliceStatus == 0 ) // you just made a big slicing movement
+        else if (Vector3.Distance(lastPos, currentPos) > motionThreshold && sliceStatus == 0 && !mainController.device.GetHairTrigger() ) // you just made a big slicing movement
         //else if (sliceStatus == 0 && mainController.device.GetPress(SteamVR_Controller.ButtonMask.Grip))
         {
             Debug.Log("SLICE: " + Vector3.Distance(lastPos, currentPos).ToString());
@@ -447,9 +445,9 @@ public class SliceNSwipeSelectionState : InteractionState
             Vector3 heading = lastPos - currentPos;
             heading = heading / heading.magnitude;
 
-            if (Vector3.Dot(currentPos.normalized, heading) <= .3 && Vector3.Dot(currentPos.normalized, heading) >= -0.3)
-            {
-                Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
+            //if (Vector3.Dot(currentPos.normalized, heading) <= .3 && Vector3.Dot(currentPos.normalized, heading) >= -0.3)
+            //{
+                //Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
                 if (OnNormalSideOfPlane(currentPos, slicePlane))
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
@@ -484,7 +482,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     objWithSelections.Add(currObjMesh.name);
                     ColorMesh(currObjMesh, "swipe");
                 }
-            }
+            //}
         }
 
         lastPos = currentPos;
