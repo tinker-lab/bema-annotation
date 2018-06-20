@@ -123,10 +123,10 @@ public class SliceNSwipeSelectionState : InteractionState
         centerComponent = centerCube.AddComponent<SliceCubeCollision>();
         centerCube.layer = planeLayer;
 
-        //if (!debug)
-        //{
-        //    centerCube.GetComponent<MeshRenderer>().enabled = false;
-        //}
+        if (!debug)
+        {
+            centerCube.GetComponent<MeshRenderer>().enabled = false;
+        }
 
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
@@ -190,10 +190,10 @@ public class SliceNSwipeSelectionState : InteractionState
         handPlane.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); //Previously 0.03
 
         handPlane.layer = planeLayer;
-        if (!debug)
-        {
-            handPlane.GetComponent<MeshRenderer>().enabled = false;
-        }
+        //if (!debug)
+        //{
+        //    handPlane.GetComponent<MeshRenderer>().enabled = false;
+        //}
 
         return handPlane;
     }
@@ -335,8 +335,6 @@ public class SliceNSwipeSelectionState : InteractionState
                 sliceOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
                 //rightOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
             }
-
-            
         }
     }
 
@@ -370,7 +368,7 @@ public class SliceNSwipeSelectionState : InteractionState
         {
             if (sliceStatus == 0)                                                                                       //DEACTIVATE isnt fixed
             {
-                //Debug.Log("DEACTIVATE");
+                Debug.Log("DEACTIVATE");
                 //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
                 //return;
             }
