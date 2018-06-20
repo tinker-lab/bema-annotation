@@ -447,7 +447,7 @@ public class SliceNSwipeSelectionState : InteractionState
             Vector3 heading = lastPos - currentPos;
             heading = heading / heading.magnitude;
 
-            if (Vector3.Dot(currentPos.normalized, heading) <= .2 && Vector3.Dot(currentPos.normalized, heading) >= -0.2)
+            if (Vector3.Dot(currentPos.normalized, heading) <= .3 && Vector3.Dot(currentPos.normalized, heading) >= -0.3)
             {
                 Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
                 if (OnNormalSideOfPlane(currentPos, slicePlane))
@@ -732,16 +732,17 @@ public class SliceNSwipeSelectionState : InteractionState
     private void ColorMesh(GameObject item,  string mode)
     {
         Mesh mesh = item.GetComponent<MeshFilter>().mesh;
-        Material baseMaterial = item.GetComponent<Renderer>().material;
+        
 
         if (item.gameObject.tag != "highlightmesh")
         {
             mesh.subMeshCount = 2;
+            //Material baseMaterial = item.GetComponent<Renderer>().materials[0];
 
             Material[] materials = new Material[2];
             if (mode == "slice")
             {
-                Debug.Log("0: " + selection0Indices[item.name].Length.ToString() + " 1: " + selection1Indices[item.name].Length.ToString());
+                Debug.Log(item.name + " 0: " + selection0Indices[item.name].Length.ToString() + " 1: " + selection1Indices[item.name].Length.ToString());
                 mesh.SetTriangles(selection0Indices[item.name], 0);
                 mesh.SetTriangles(selection1Indices[item.name], 1);
 
@@ -751,16 +752,17 @@ public class SliceNSwipeSelectionState : InteractionState
             }
             else if (mode == "swipe")
             {
-                Debug.Log("s: " + previousSelectedIndices[item.name].Count.ToString() + " u: " + previousUnselectedIndices[item.name].Count.ToString());
+                Debug.Log(item.name + " s: " + previousSelectedIndices[item.name].Count.ToString() + " u: " + previousUnselectedIndices[item.name].Count.ToString());
                 mesh.SetTriangles(previousSelectedIndices[item.name], 1);
                 mesh.SetTriangles(previousUnselectedIndices[item.name], 0);
 
-                //Material baseMaterial = item.GetComponent<Renderer>().materials[0];
-                //materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
-                materials[0] = baseMaterial;
+                Material baseMaterial = item.GetComponent<Renderer>().materials[0];
+                materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                //materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             }
             item.GetComponent<Renderer>().materials = materials;
+            Debug.Log(item.name + " M0: " + materials[0].name + " M1: " + materials[1].name);
         }
         else if (item.gameObject.tag == "highlightmesh" && mode == "slice")
         {
