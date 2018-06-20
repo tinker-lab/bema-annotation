@@ -320,7 +320,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 // reset object to original state (before interaction)
                 if (collidingObj.tag != "highlightmesh")
                 {
-                    Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[3];
+                    Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
                     baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
@@ -450,7 +450,7 @@ public class SliceNSwipeSelectionState : InteractionState
             if (Vector3.Dot(currentPos.normalized, heading) <= .2 && Vector3.Dot(currentPos.normalized, heading) >= -0.2)
             {
                 Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
-                if (!OnNormalSideOfPlane(currentPos, slicePlane))
+                if (OnNormalSideOfPlane(currentPos, slicePlane))
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
                     {
@@ -458,7 +458,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
                     }
                 }
-                else if (OnNormalSideOfPlane(currentPos, slicePlane))
+                else if (!OnNormalSideOfPlane(currentPos, slicePlane))
                 {
                     foreach (GameObject currObjMesh in collidingMeshes)
                     {
@@ -732,6 +732,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private void ColorMesh(GameObject item,  string mode)
     {
         Mesh mesh = item.GetComponent<MeshFilter>().mesh;
+        Material baseMaterial = item.GetComponent<Renderer>().material;
 
         if (item.gameObject.tag != "highlightmesh")
         {
@@ -754,8 +755,9 @@ public class SliceNSwipeSelectionState : InteractionState
                 mesh.SetTriangles(previousSelectedIndices[item.name], 1);
                 mesh.SetTriangles(previousUnselectedIndices[item.name], 0);
 
-                Material baseMaterial = item.GetComponent<Renderer>().materials[0];
-                materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                //Material baseMaterial = item.GetComponent<Renderer>().materials[0];
+                //materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             }
             item.GetComponent<Renderer>().materials = materials;
