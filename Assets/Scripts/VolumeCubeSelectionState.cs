@@ -516,6 +516,7 @@ public class VolumeCubeSelectionState : InteractionState
     private bool OnNormalSideOfPlane(Vector3 otherPoint, Vector3 normalPoint)
     {
         return Vector3.Dot(normalPoint, otherPoint) >= Vector3.Dot(otherPoint, normalPoint);
+
     }
 
     //processes the mesh of an item in the scene that is colliding with the volume cube
@@ -583,6 +584,12 @@ public class VolumeCubeSelectionState : InteractionState
             //    indices = selectedIndices.ToArray();
             //    selectedIndices.Clear();
             //}
+
+            if (planePass != 0)
+            {
+                indices = selectedIndices.ToArray();
+                selectedIndices.Clear();
+            }
 
             for (int i = 0; i < indices.Length / 3 ; i++)
             {
@@ -736,6 +743,9 @@ public class VolumeCubeSelectionState : InteractionState
         if (item.gameObject.tag != "highlightmesh")
         {
             mesh.subMeshCount = 2;
+
+            Debug.Log("s: " + selectedIndices.Count.ToString() + " u: " + unselectedIndices.Count.ToString() + " prev: " + previousSelectedIndices[item.name].Length.ToString());
+
 
             mesh.SetTriangles(unselectedIndices, 0);
             mesh.SetTriangles(selectedIndices, 1);

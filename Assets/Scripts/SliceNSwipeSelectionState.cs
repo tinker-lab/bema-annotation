@@ -218,14 +218,14 @@ public class SliceNSwipeSelectionState : InteractionState
         //Vector3 rightPosition = rightPlane.transform.position;
 
         //Vector3 halfWayBtwHands = Vector3.Lerp(Position, rightPosition, 0.5f);
-        centerCube.transform.position = handPosition + new Vector3(0.3f, 0, 0);
+        centerCube.transform.position = handPosition + new Vector3(0.1f, 0, 0);
 
         // rotate cube w/ respect to both controllers
         centerCube.transform.rotation = mainController.trackedObj.transform.rotation;
 
         // scale cube
         //float distance = Vector3.Distance(rightPosition, leftPosition);
-        centerCube.transform.localScale = new Vector3(1.1f, 0.7f, 1.3f); // up & forward
+        centerCube.transform.localScale = new Vector3(0.5f, 0.5f, 1.3f); // up & forward
     }
 
     //private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
@@ -403,15 +403,16 @@ public class SliceNSwipeSelectionState : InteractionState
             }
         }
 
-        if (Vector3.Distance(lastPos, currentPos) <= motionThreshold && sliceStatus == 0) //small movement and you haven't made a slice
+        if (Vector3.Distance(lastPos, currentPos) <= motionThreshold )//&& sliceStatus == 0) //small movement and you haven't made a slice
         {
 
             UpdatePlane(lastPos - currentPos);
 
             // Debug.Log("not slice: " + dist.ToString());
-            
+
         }
-        else if (sliceStatus == 0 && Vector3.Distance(lastPos, currentPos) > motionThreshold) // you just made a big slicing movement
+        else if (Vector3.Distance(lastPos, currentPos) > motionThreshold && sliceStatus == 0 ) // you just made a big slicing movement
+        //else if (sliceStatus == 0 && mainController.device.GetPress(SteamVR_Controller.ButtonMask.Grip))
         {
             Debug.Log("SLICE: " + Vector3.Distance(lastPos, currentPos).ToString());
 
@@ -435,7 +436,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 savedOutlines[currObjMesh.name].Add(savedSliceOutline);
             }
         }
-        else if (sliceStatus == 1 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
+        else if (sliceStatus == 1 && mainController.device.GetHairTrigger()) //you made a slice, now you need to select
         {
             Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
             /* if movement is big & towards normal side of plane, discard the indeces on that side.
@@ -446,7 +447,7 @@ public class SliceNSwipeSelectionState : InteractionState
             Vector3 heading = lastPos - currentPos;
             heading = heading / heading.magnitude;
 
-            if (Vector3.Dot(currentPos.normalized, heading) <= .1 && Vector3.Dot(currentPos.normalized, heading) >= -0.1)
+            if (Vector3.Dot(currentPos.normalized, heading) <= .2 && Vector3.Dot(currentPos.normalized, heading) >= -0.2)
             {
                 Debug.Log("Perpindicular -- " + Vector3.Dot(currentPos.normalized, heading).ToString());
                 if (!OnNormalSideOfPlane(currentPos, slicePlane))
@@ -708,6 +709,9 @@ public class SliceNSwipeSelectionState : InteractionState
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, UVs);
 
+
+        //selected0 and selected1 are the locally used lists of indices. selection 0 & 1 are global dictionaries storing arrays of indices for every object
+        //i apologize for this
         selection0Indices[item.name] = selected0Indices.ToArray();
         selection1Indices[item.name] = selected1Indices.ToArray();
 
