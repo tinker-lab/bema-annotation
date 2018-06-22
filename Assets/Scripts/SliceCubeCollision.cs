@@ -48,39 +48,44 @@ public class SliceCubeCollision : MonoBehaviour {
         if (!SliceNSwipeSelectionState.ObjectsWithSelections.Contains(other.name))
         {
             int numVertices;
-            if (SliceNSwipeSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices))
+            if (SliceNSwipeSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices) && SliceNSwipeSelectionState.SliceStatus == 0)
             {
-                //Mesh mesh = other.GetComponent<MeshFilter>().mesh;
-                ////mesh.GetVertices(vertices);
-                ////mesh.GetUVs(0, UVs);
+                Mesh mesh = other.GetComponent<MeshFilter>().mesh;
+                //mesh.GetVertices(vertices);
+                //mesh.GetUVs(0, UVs);
 
-                //mesh.Clear();
-                //mesh.subMeshCount = 1;
+                mesh.Clear();
+                mesh.subMeshCount = 1;
 
-                ////vertices.RemoveRange(numVertices, vertices.Count - numVertices);
-                ////UVs.RemoveRange(numVertices, UVs.Count - numVertices);
+                //vertices.RemoveRange(numVertices, vertices.Count - numVertices);
+                //UVs.RemoveRange(numVertices, UVs.Count - numVertices);
 
-                //Vector3[] verticesArray = SliceNSwipeSelectionState.PreviousVertices[other.name];
-                //Vector2[] UVsArray = SliceNSwipeSelectionState.PreviousUVs[other.name];
+                Vector3[] verticesArray = SliceNSwipeSelectionState.PreviousVertices[other.name];
+                Vector2[] UVsArray = SliceNSwipeSelectionState.PreviousUVs[other.name];
 
-                //List<Vector3> vertices = new List<Vector3>(verticesArray);
-                //List<Vector2> UVs = new List<Vector2>(UVsArray);
+                List<Vector3> vertices = new List<Vector3>(verticesArray);
+                List<Vector2> UVs = new List<Vector2>(UVsArray);
 
-                //if (vertices.Count == UVs.Count)
-                //{
-                //    mesh.SetVertices(vertices);
-                //    mesh.SetUVs(0, UVs);
-                //    mesh.SetTriangles(SliceNSwipeSelectionState.PreviousSelectedIndices[other.name], 0);
-                //}
+                if (vertices.Count == UVs.Count)
+                {
+                    mesh.SetVertices(vertices);
+                    mesh.SetUVs(0, UVs);
+                    mesh.SetTriangles(SliceNSwipeSelectionState.PreviousSelectedIndices[other.name], 0);
+                }
 
-                //mesh.RecalculateBounds();
-                //mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+                mesh.RecalculateNormals();
 
-                //Material material = other.GetComponent<Renderer>().material; // materials[0] corresponds to unselected
-                //other.GetComponent<Renderer>().material = material;
+                Material material = other.GetComponent<Renderer>().material; // materials[0] corresponds to unselected
+                other.GetComponent<Renderer>().material = material;
+            }
+            else if (SliceNSwipeSelectionState.SliceStatus == 1)        // waiting for a swipe. green & blue sections are up
+            {
+                Debug.Log("trigger exit after slice " + other.name);
             }
 
         }
+        
 
         collidedObjects.Remove(other.gameObject);
 
