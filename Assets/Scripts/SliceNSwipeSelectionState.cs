@@ -186,6 +186,8 @@ public class SliceNSwipeSelectionState : InteractionState
     {
         GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         handPlane.name = name;
+        handPlane.layer = LayerMask.NameToLayer("Ignore Raycast"); //ignore raycast
+        Debug.Log("plane layer - " + handPlane.layer.ToString());
         handPlane.GetComponent<Renderer>().material = Resources.Load("Plane Material") as Material;
         handPlane.AddComponent<MeshCollider>();
         handPlane.GetComponent<MeshCollider>().convex = true;
@@ -197,7 +199,7 @@ public class SliceNSwipeSelectionState : InteractionState
         handPlane.transform.rotation = c.controller.transform.rotation;
         handPlane.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); //Previously 0.03
 
-        handPlane.layer = planeLayer;
+        //handPlane.layer = planeLayer;
         if (!debug)
         {
             handPlane.GetComponent<MeshRenderer>().enabled = false;
