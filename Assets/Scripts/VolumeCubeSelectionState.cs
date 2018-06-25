@@ -157,7 +157,7 @@ public class VolumeCubeSelectionState : InteractionState
         startingDiagonal = new Vector3(1f, -1f, -1f);
 
         //set starting rotation
-        startingRotation = Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+        startingRotation = Quaternion.FromToRotation(Vector3.forward, new Vector3(1, -1, -1));// Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
     }
 
     ///// <summary>
@@ -218,7 +218,7 @@ public class VolumeCubeSelectionState : InteractionState
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
         //centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
-        centerCube.transform.rotation = Quaternion.LookRotation((startingRotation * currentDiagonal).normalized, Vector3.up);
+        centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
