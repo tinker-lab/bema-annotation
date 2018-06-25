@@ -211,7 +211,7 @@ public class VolumeCubeSelectionState : InteractionState
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
-        centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal, currentDiagonal);
+        centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
@@ -564,12 +564,12 @@ public class VolumeCubeSelectionState : InteractionState
 
         //calculate plane normals of all six sides of the cube after rotation
         Vector3[] rotationVectors = new Vector3[6];
-        rotationVectors[(int)cubeSides.forward] = centerCube.transform.rotation * normals[(int)cubeSides.forward];
-        rotationVectors[(int)cubeSides.back] = centerCube.transform.rotation * normals[(int)cubeSides.back];
-        rotationVectors[(int)cubeSides.up] = centerCube.transform.rotation * normals[(int)cubeSides.up];
-        rotationVectors[(int)cubeSides.down] = centerCube.transform.rotation * normals[(int)cubeSides.down];
-        rotationVectors[(int)cubeSides.left] = centerCube.transform.rotation * normals[(int)cubeSides.left];
-        rotationVectors[(int)cubeSides.right] = centerCube.transform.rotation * normals[(int)cubeSides.right];
+        rotationVectors[(int)cubeSides.forward] = (centerCube.transform.rotation * normals[(int)cubeSides.forward]).normalized;
+        rotationVectors[(int)cubeSides.back] = (centerCube.transform.rotation * normals[(int)cubeSides.back]).normalized;
+        rotationVectors[(int)cubeSides.up] = (centerCube.transform.rotation * normals[(int)cubeSides.up]).normalized;
+        rotationVectors[(int)cubeSides.down] = (centerCube.transform.rotation * normals[(int)cubeSides.down]).normalized;
+        rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
+        rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
 
         for (int planePass = 0; planePass < 6; planePass++)
         {
