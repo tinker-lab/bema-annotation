@@ -150,6 +150,7 @@ public class SliceNSwipeSelectionState : InteractionState
         selected0Indices = new List<int>();
         selected1Indices = new List<int>();
         outlinePoints = new List<Vector3>();
+        originalMaterial = new Dictionary<string, Material>();
 
         selection0Indices = new Dictionary<string, int[]>();
         selection1Indices = new Dictionary<string, int[]>();
@@ -385,12 +386,9 @@ public class SliceNSwipeSelectionState : InteractionState
                        
                         collidingMeshes.Add(hit.collider.gameObject);
                         
-                    } else if ( hit.collider.name == "SliceNSwipeHandPlane")
-                    {
-                        Debug.Log("Gaze Colliding with HandPlane :/");
-                    }
+                    } 
                 //}
-                //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
+                Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
             }
             //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
         //}
@@ -562,10 +560,15 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (gObject.tag != "highlight")
         {
-            originalMaterial.Add(gObject.name, gObject.GetComponent<MeshRenderer>().material);
             if (!sliceOutlines.ContainsKey(gObject.name))                              //
             {                                                                             // Add an Outline for this mesh if there isn't one already
                 sliceOutlines.Add(gObject.name, MakeHandOutline(gObject.name));    //
+            }
+            Debug.Log("trying to save original material");
+            originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
+            if (originalMaterial.ContainsKey(gObject.name))
+            {
+                Debug.Log("Original material is: " + originalMaterial[gObject.name].name);
             }
         }
     }

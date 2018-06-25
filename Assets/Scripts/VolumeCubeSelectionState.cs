@@ -47,7 +47,9 @@ public class VolumeCubeSelectionState : InteractionState
     private Vector3 startingDiagonal;
 
     //dealing with rotation
-    Quaternion startingRotation;
+    //Quaternion startingRotation;
+    //Vector3 previousDiagonal;
+    //Quaternion previousRotation;
 
     //getters for the dictionaries
     public static Dictionary<string, int[]> PreviousSelectedIndices
@@ -155,9 +157,11 @@ public class VolumeCubeSelectionState : InteractionState
 
         //set starting diagonal (between controllers)
         startingDiagonal = new Vector3(1f, -1f, -1f);
+        //previousDiagonal = new Vector3(1f, -1f, -1f);
 
         //set starting rotation
-        startingRotation = Quaternion.FromToRotation(Vector3.forward, new Vector3(1, -1, -1));// Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+        //startingRotation = Quaternion.FromToRotation(Vector3.forward, new Vector3(1, -1, -1));// Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+        //previousRotation = Quaternion.identity;
     }
 
     ///// <summary>
@@ -217,8 +221,11 @@ public class VolumeCubeSelectionState : InteractionState
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
-        //centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
-        centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
+        centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+        //centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
+        //centerCube.transform.rotation = Quaternion.AngleAxis(-Vector3.Angle(currentDiagonal.normalized, previousDiagonal.normalized), Vector3.Cross(currentDiagonal.normalized, previousDiagonal.normalized)) * previousRotation;
+        //previousDiagonal = currentDiagonal;
+        //previousRotation = centerCube.transform.rotation;
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
