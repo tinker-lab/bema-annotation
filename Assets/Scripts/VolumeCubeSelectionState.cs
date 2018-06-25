@@ -46,6 +46,8 @@ public class VolumeCubeSelectionState : InteractionState
     //starting vector between the hands
     private Vector3 startingDiagonal;
 
+    private GameObject head;
+
     //dealing with rotation
     //Quaternion startingRotation;
     //Vector3 previousDiagonal;
@@ -156,8 +158,10 @@ public class VolumeCubeSelectionState : InteractionState
         normals[(int)cubeSides.right] = Vector3.right;
 
         //set starting diagonal (between controllers)
-        startingDiagonal = new Vector3(1f, -1f, -1f);
+        startingDiagonal = new Vector3(0.5f, -0.5f, -0.5f) - new Vector3(-0.5f, 0.5f, 0.5f);
         //previousDiagonal = new Vector3(1f, -1f, -1f);
+
+        head = GameObject.Find("Camera (eye)");
 
         //set starting rotation
         //startingRotation = Quaternion.FromToRotation(Vector3.forward, new Vector3(1, -1, -1));// Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
@@ -221,7 +225,9 @@ public class VolumeCubeSelectionState : InteractionState
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
-        centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+        Quaternion yaw = Quaternion.LookRotation(new Vector3(head.transform.forward.x, 0, head.transform.forward.z), Vector3.up);
+        centerCube.transform.rotation = Quaternion.AngleAxis(45, currentDiagonal.normalized) * Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw; 
+            //Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
         //centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
         //centerCube.transform.rotation = Quaternion.AngleAxis(-Vector3.Angle(currentDiagonal.normalized, previousDiagonal.normalized), Vector3.Cross(currentDiagonal.normalized, previousDiagonal.normalized)) * previousRotation;
         //previousDiagonal = currentDiagonal;
