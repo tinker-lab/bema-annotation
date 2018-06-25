@@ -387,8 +387,8 @@ public class HandSelectionState : InteractionState
                             previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
 
                             UVList = new List<Vector2>();
-                            currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
+                            outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                            previousUVs.Add(outline.name, UVList.ToArray<Vector2>());
                         }
                     }
 

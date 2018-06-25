@@ -49,14 +49,14 @@ public class SliceNavigationState : InteractionState {
         //handSelectionState = new HandSelectionState(controller0, controller1, this);
         sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0, controller1, this);
         handPlane = GameObject.Find("SliceNSwipeHandPlane");
-        centerCube = GameObject.Find("SliceNSwipeCenterCube");
+        //centerCube = GameObject.Find("SliceNSwipeCenterCube");
         //leftComponent = leftPlane.GetComponent<CubeCollision>();
         //rightComponent = rightPlane.GetComponent<CubeCollision>();
 
         //centerComponent = centerCube.GetComponent<CubeCollision>();
-        centerComponent = centerCube.GetComponent<SliceCubeCollision>();
+        //centerComponent = centerCube.GetComponent<SliceCubeCollision>();
 
-        cubeColliders = new HashSet<GameObject>();
+        //cubeColliders = new HashSet<GameObject>();
 
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
@@ -84,24 +84,24 @@ public class SliceNavigationState : InteractionState {
         //handPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
         //rightPlane.transform.up = (leftPlane.transform.position - rightPlane.transform.position).normalized;
 
-        CenterCubeOnController();
+        //CenterCubeOnController();
     }
 
-    private void CenterCubeOnController()
-    {
-        // position plane at midpoint between controllers
+    //private void CenterCubeOnController()
+    //{
+    //    // position plane at midpoint between controllers
 
-        Vector3 handPosition = handPlane.transform.position;
-        //Vector3 rightPosition = rightPlane.transform.position;
+    //    Vector3 handPosition = handPlane.transform.position;
+    //    //Vector3 rightPosition = rightPlane.transform.position;
 
-        centerCube.transform.position = handPosition + controller0.controller.transform.forward.normalized * 0.25f;
+    //    centerCube.transform.position = handPosition + controller0.controller.transform.forward.normalized * 0.25f;
 
-        // rotate cube w/ respect to both controllers
-        centerCube.transform.rotation = controller0.trackedObj.transform.rotation;
-        // scale cube
-        //float distance = Vector3.Distance(rightPosition, leftPosition);
-        centerCube.transform.localScale = new Vector3(0.5f, 0.5f, .7f); // up & forward
-    }
+    //    // rotate cube w/ respect to both controllers
+    //    centerCube.transform.rotation = controller0.trackedObj.transform.rotation;
+    //    // scale cube
+    //    //float distance = Vector3.Distance(rightPosition, leftPosition);
+    //    centerCube.transform.localScale = new Vector3(0.5f, 0.5f, .7f); // up & forward
+    //}
 
 
     //private void RotateCube(ControllerInfo controllerInfo, Vector3 position, GameObject cube)
@@ -151,13 +151,13 @@ public class SliceNavigationState : InteractionState {
         UpdatePlanes();
 
         // Take input from cube and both handplanes about what they collide with
-        cubeColliders = centerComponent.CollidedObjects;
+        //cubeColliders = centerComponent.CollidedObjects;
         //HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
         //HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
 
-        // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
-        if (cubeColliders.Count > 0)
-        {
+        //// If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
+        //if (cubeColliders.Count > 0)
+        //{
             // Debug.Log("Switching to handselectionstate");
 
             //controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
@@ -177,7 +177,7 @@ public class SliceNavigationState : InteractionState {
 
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(sliceNSwipeSelectionState);
-        }
+        //}
 
         // Teleport
         if (controller0.device.GetHairTrigger()) {

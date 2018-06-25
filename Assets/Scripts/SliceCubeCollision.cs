@@ -81,7 +81,7 @@ public class SliceCubeCollision : MonoBehaviour {
             }
             else if (SliceNSwipeSelectionState.SliceStatus == 1)        // waiting for a swipe. green & blue sections are up
             {
-                Debug.Log("trigger exit after slice " + other.name);
+                //Debug.Log("trigger exit after slice " + other.name);
             }
 
         }
