@@ -480,7 +480,7 @@ public class SliceNSwipeSelectionState : InteractionState
             }
             Debug.Log("SLICE: " + debugString);
         }
-        else if (sliceStatus == 1 && mainController.device.GetHairTrigger() && collidingMeshes.Count > 0) //you made a slice, now you need to select
+        else if (sliceStatus == 1 && mainController.device.GetHairTrigger() && collidingMeshes.Count > 0 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
         {
             //Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
             /* if movement is big & towards normal side of plane, discard the indeces on that side.
@@ -488,20 +488,19 @@ public class SliceNSwipeSelectionState : InteractionState
              * make discarded indeces transparent and delete slicing plane.
              */
 
-            //Vector3 heading = lastPos - currentPos;
-            //heading = heading / heading.magnitude;
+            Vector3 heading = (lastPos - currentPos).normalized;
 
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 if (previousNumVertices.ContainsKey(currObjMesh.name) && currObjMesh.gameObject.tag != "highlightmesh")
                 {
-                    if (OnNormalSideOfPlane(currentPos, slicePlane))
+                    if (NormalSwipe(heading,slicePlane))
                     {
                         Debug.Log("swipe " + currObjMesh.name);
                         previousUnselectedIndices[currObjMesh.name] = previousUnselectedIndices[currObjMesh.name].Concat(selection0Indices[currObjMesh.name]).ToList();
                         previousSelectedIndices[currObjMesh.name] = selection1Indices[currObjMesh.name].ToList();
                     }
-                    else if (!OnNormalSideOfPlane(currentPos, slicePlane))
+                    else if (!NormalSwipe(heading, slicePlane))
                     {
 
                         Debug.Log("swipe " + currObjMesh.name);
@@ -601,6 +600,11 @@ public class SliceNSwipeSelectionState : InteractionState
     private bool OnNormalSideOfPlane(Vector3 pt, GameObject plane)
     {
         return Vector3.Dot(plane.transform.up, pt) >= Vector3.Dot(plane.transform.up, plane.transform.position);
+    }
+
+    private bool NormalSwipe(Vector3 swipeDirection, GameObject slicePlane)
+    {
+        return Vector3.Dot(swipeDirection, slicePlane.transform.up) <= 0;
     }
 
     private void SplitMesh(GameObject item)
