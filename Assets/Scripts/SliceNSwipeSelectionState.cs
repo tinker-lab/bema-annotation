@@ -385,9 +385,12 @@ public class SliceNSwipeSelectionState : InteractionState
                        
                         collidingMeshes.Add(hit.collider.gameObject);
                         
+                    } else if ( hit.collider.name == "SliceNSwipeHandPlane")
+                    {
+                        Debug.Log("Gaze Colliding with HandPlane :/");
                     }
                 //}
-                Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
+                //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
             }
             //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
         //}
