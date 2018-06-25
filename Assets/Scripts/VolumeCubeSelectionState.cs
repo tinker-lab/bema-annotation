@@ -46,6 +46,9 @@ public class VolumeCubeSelectionState : InteractionState
     //starting vector between the hands
     private Vector3 startingDiagonal;
 
+    //dealing with rotation
+    Quaternion startingRotation = Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+
     //getters for the dictionaries
     public static Dictionary<string, int[]> PreviousSelectedIndices
     {
@@ -211,7 +214,9 @@ public class VolumeCubeSelectionState : InteractionState
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
-        centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+        //centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+        centerCube.transform.rotation = startingRotation * Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up);
+
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
