@@ -108,7 +108,7 @@ public class SliceNSwipeSelectionState : InteractionState
         ControllerInfo controller0 = controller0Info;
         ControllerInfo controller1 = controller1Info;
 
-        camera = GameObject.Find("Camera (eye)").transform.GetChild(0).gameObject;
+        camera = GameObject.Find("Camera (eye)"); //.transform.GetChild(0).gameObject;
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
 
         DetermineDominantController(controller0, controller1);
@@ -385,12 +385,10 @@ public class SliceNSwipeSelectionState : InteractionState
                 //{
                     if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane")
                     {
-                       
                         collidingMeshes.Add(hit.collider.gameObject);
-                        
                     } 
                 //}
-                Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
+                //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
             }
             //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
         //}
@@ -416,8 +414,6 @@ public class SliceNSwipeSelectionState : InteractionState
                     FirstContactProcess(currObjMesh, UVList);
                 }
             }
-
-
             // Debug.Log("not slice: " + dist.ToString());
 
         }
@@ -465,6 +461,7 @@ public class SliceNSwipeSelectionState : InteractionState
                                 }
                             }
                             SplitMesh(outline);
+                            debugString += outline.name + "  ";
                             previousSelectedIndices[outline.name] = selection0Indices[outline.name].Concat(selection0Indices[outline.name]).ToList();
                             previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
                             previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
@@ -566,12 +563,7 @@ public class SliceNSwipeSelectionState : InteractionState
             {                                                                             // Add an Outline for this mesh if there isn't one already
                 sliceOutlines.Add(gObject.name, MakeHandOutline(gObject.name));    //
             }
-            Debug.Log("trying to save original material");
             originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
-            if (originalMaterial.ContainsKey(gObject.name))
-            {
-                Debug.Log("Original material is: " + originalMaterial[gObject.name].name);
-            }
         }
     }
 
