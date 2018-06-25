@@ -48,7 +48,7 @@ public class SliceCubeCollision : MonoBehaviour {
         if (!SliceNSwipeSelectionState.ObjectsWithSelections.Contains(other.name))
         {
             int numVertices;
-            if (SliceNSwipeSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices))
+            if (SliceNSwipeSelectionState.PreviousNumVertices.TryGetValue(other.name, out numVertices) && SliceNSwipeSelectionState.SliceStatus == 0)
             {
                 //Mesh mesh = other.GetComponent<MeshFilter>().mesh;
                 ////mesh.GetVertices(vertices);
@@ -79,8 +79,13 @@ public class SliceCubeCollision : MonoBehaviour {
                 //Material material = other.GetComponent<Renderer>().material; // materials[0] corresponds to unselected
                 //other.GetComponent<Renderer>().material = material;
             }
+            else if (SliceNSwipeSelectionState.SliceStatus == 1)        // waiting for a swipe. green & blue sections are up
+            {
+                Debug.Log("trigger exit after slice " + other.name);
+            }
 
         }
+        
 
         collidedObjects.Remove(other.gameObject);
 
