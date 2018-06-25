@@ -113,7 +113,7 @@ public class VolumeCubeSelectionState : InteractionState
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         centerCube.name = "volumeCube";
-        centerCube.GetComponent<Renderer>().material = Resources.Load("Cube Material") as Material; //might want to change material
+        centerCube.GetComponent<Renderer>().material = Resources.Load("Volume Cube") as Material; //might want to change material
         centerCube.AddComponent<MeshCollider>();
         centerCube.GetComponent<MeshCollider>().convex = true;
         centerCube.GetComponent<MeshCollider>().isTrigger = true;
