@@ -46,8 +46,12 @@ public class VolumeCubeSelectionState : InteractionState
     //starting vector between the hands
     private Vector3 startingDiagonal;
 
+    private GameObject head;
+
     //dealing with rotation
-    Quaternion startingRotation;
+    //Quaternion startingRotation;
+    //Vector3 previousDiagonal;
+    //Quaternion previousRotation;
 
     //getters for the dictionaries
     public static Dictionary<string, int[]> PreviousSelectedIndices
@@ -109,7 +113,7 @@ public class VolumeCubeSelectionState : InteractionState
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         centerCube.name = "volumeCube";
-        centerCube.GetComponent<Renderer>().material = Resources.Load("Cube Material") as Material; //might want to change material
+        centerCube.GetComponent<Renderer>().material = Resources.Load("Volume Cube") as Material; //might want to change material
         centerCube.AddComponent<MeshCollider>();
         centerCube.GetComponent<MeshCollider>().convex = true;
         centerCube.GetComponent<MeshCollider>().isTrigger = true;
@@ -154,10 +158,14 @@ public class VolumeCubeSelectionState : InteractionState
         normals[(int)cubeSides.right] = Vector3.right;
 
         //set starting diagonal (between controllers)
-        startingDiagonal = new Vector3(1f, -1f, -1f);
+        startingDiagonal = new Vector3(1f, 1f, -1f);
+        //previousDiagonal = new Vector3(1f, -1f, -1f);
+
+        head = GameObject.Find("Camera (eye)");
 
         //set starting rotation
-        startingRotation = Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+        //startingRotation = Quaternion.FromToRotation(Vector3.forward, new Vector3(1, -1, -1));// Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(1, 0, -1)), Vector3.up) * Quaternion.AngleAxis(-Vector3.Angle(Vector3.forward, new Vector3(0, -1, 0)), Vector3.right);
+        //previousRotation = Quaternion.identity;
     }
 
     ///// <summary>
@@ -217,11 +225,23 @@ public class VolumeCubeSelectionState : InteractionState
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
-        //centerCube.transform.rotation = Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
-        centerCube.transform.rotation = Quaternion.LookRotation((startingRotation * currentDiagonal).normalized, Vector3.up);
+        Quaternion yaw = Quaternion.LookRotation(new Vector3(head.transform.forward.x, 0, head.transform.forward.z), Vector3.up);
+
+
+        //Quaternion.AngleAxis(40, currentDiagonal.normalized) *
+        centerCube.transform.rotation = Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw;
+
+        Debug.DrawRay(nonDominantCorner, 0.25f * currentDiagonal.normalized, Color.cyan);
+
+        //Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+        //centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
+        //centerCube.transform.rotation = Quaternion.AngleAxis(-Vector3.Angle(currentDiagonal.normalized, previousDiagonal.normalized), Vector3.Cross(currentDiagonal.normalized, previousDiagonal.normalized)) * previousRotation;
+        //previousDiagonal = currentDiagonal;
+        //previousRotation = centerCube.transform.rotation;
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+        Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
         centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize;
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
