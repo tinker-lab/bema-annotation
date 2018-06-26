@@ -158,7 +158,7 @@ public class VolumeCubeSelectionState : InteractionState
         normals[(int)cubeSides.right] = Vector3.right;
 
         //set starting diagonal (between controllers)
-        startingDiagonal = new Vector3(0.5f, -0.5f, -0.5f) - new Vector3(-0.5f, 0.5f, 0.5f);
+        startingDiagonal = new Vector3(1f, 1f, -1f);
         //previousDiagonal = new Vector3(1f, -1f, -1f);
 
         head = GameObject.Find("Camera (eye)");
@@ -226,8 +226,14 @@ public class VolumeCubeSelectionState : InteractionState
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
         Quaternion yaw = Quaternion.LookRotation(new Vector3(head.transform.forward.x, 0, head.transform.forward.z), Vector3.up);
-        centerCube.transform.rotation = Quaternion.AngleAxis(45, currentDiagonal.normalized) * Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw; 
-            //Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
+
+
+        //Quaternion.AngleAxis(40, currentDiagonal.normalized) *
+        centerCube.transform.rotation = Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw;
+
+        Debug.DrawRay(nonDominantCorner, 0.25f * currentDiagonal.normalized, Color.cyan);
+
+        //Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
         //centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
         //centerCube.transform.rotation = Quaternion.AngleAxis(-Vector3.Angle(currentDiagonal.normalized, previousDiagonal.normalized), Vector3.Cross(currentDiagonal.normalized, previousDiagonal.normalized)) * previousRotation;
         //previousDiagonal = currentDiagonal;
@@ -235,6 +241,7 @@ public class VolumeCubeSelectionState : InteractionState
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+        Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
         centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize;
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
