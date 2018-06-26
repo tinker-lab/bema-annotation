@@ -13,7 +13,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private const float motionThreshold = 0.06f;
 
     private static int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
-    InteractionState stateToReturnTo;
+    //InteractionState stateToReturnTo;
     //private ControllerInfo controller0;
     //private ControllerInfo controller1;
     private ControllerInfo mainController;
@@ -98,8 +98,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
-    /// <param name="stateToReturnTo"></param>
-    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo) 
+    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info) // InteractionState stateToReturnTo) 
     {
 
         Debug.Log("Constructing Slice State");
@@ -155,7 +154,7 @@ public class SliceNSwipeSelectionState : InteractionState
         selection0Indices = new Dictionary<string, int[]>();
         selection1Indices = new Dictionary<string, int[]>();
 
-        this.stateToReturnTo = stateToReturnTo;
+       // this.stateToReturnTo = stateToReturnTo;
 
         sliceOutlines = new Dictionary<string, GameObject>();
         //rightOutlines = new Dictionary<string, GameObject>();
@@ -462,7 +461,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             }
                             SplitMesh(outline);
                             debugString += outline.name + "  ";
-                            previousSelectedIndices[outline.name] = selection0Indices[outline.name].Concat(selection0Indices[outline.name]).ToList();
+                            previousSelectedIndices[outline.name] = selection0Indices[outline.name].Concat(selection1Indices[outline.name]).ToList();
                             previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
                             previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
 
@@ -882,6 +881,8 @@ public class SliceNSwipeSelectionState : InteractionState
         {
             points = OrderMesh(points);
         }
+
+        points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
 
         if (points.Count >= 2) {
             for (int i = 0; i < points.Count-1; i += 2)
