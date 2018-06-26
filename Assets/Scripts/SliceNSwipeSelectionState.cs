@@ -480,6 +480,24 @@ public class SliceNSwipeSelectionState : InteractionState
             }
             Debug.Log("SLICE: " + debugString);
         }
+        else if (sliceStatus == 1 && altController.device.GetHairTrigger())
+        {
+            sliceStatus = 0;
+            foreach (GameObject currObjMesh in collidingMeshes)
+            {
+                selection0Indices.Remove(currObjMesh.name);
+                selection1Indices.Remove(currObjMesh.name);
+
+                ColorMesh(currObjMesh, "slice");
+
+                string outlineCollection = "";
+                foreach (GameObject outline in savedOutlines[currObjMesh.name])
+                {
+                    outlineCollection += outline.name + ", ";
+                }
+                Debug.Log("outlines for removed SLICE: " + outlineCollection);
+            } 
+        }
         else if (sliceStatus == 1 && mainController.device.GetHairTrigger() && collidingMeshes.Count > 0 && Vector3.Distance(lastPos, currentPos) > motionThreshold) //you made a slice, now you need to select
         {
             //Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
@@ -849,12 +867,28 @@ public class SliceNSwipeSelectionState : InteractionState
             if (mode == "slice")
             {
                 // Debug.Log(item.name + " 0: " + selection0Indices[item.name].Length.ToString() + " 1: " + selection1Indices[item.name].Length.ToString());
-                mesh.SetTriangles(selection0Indices[item.name], 0);
-                mesh.SetTriangles(selection1Indices[item.name], 1);
+                if (selection0Indices.ContainsKey(item.name))
+                {
+                    mesh.SetTriangles(selection0Indices[item.name], 0);
+                    mesh.SetTriangles(selection1Indices[item.name], 1);
 
-                // materials[2] = item.GetComponent<Renderer>().materials[0];
-                materials[0] = Resources.Load("Blue Material") as Material;
-                materials[1] = Resources.Load("Green Material") as Material;
+                    // materials[2] = item.GetComponent<Renderer>().materials[0];
+                    materials[0] = Resources.Load("Blue Material") as Material;
+                    materials[1] = Resources.Load("Green Material") as Material;
+                } else
+                {
+                    if (objWithSelections.Contains(item.name))
+                    {
+                        ColorMesh(item, "swipe");
+                    }
+                    else
+                    {
+                        mesh.subMeshCount = 1;
+                        mesh.SetTriangles(previousSelectedIndices[item.name], 0);
+
+                        materials[0] = originalMaterial[item.name];
+                    }
+                }
             }
             else if (mode == "swipe")
             {
