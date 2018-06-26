@@ -353,6 +353,7 @@ public class SliceNSwipeSelectionState : InteractionState
         Vector3 currentPos = mainController.trackedObj.transform.position;
         Vector3 currentOrientation = mainController.trackedObj.transform.forward;
 
+
         if (lastPos == new Vector3(0, 0, 0))
         {
             lastPos = currentPos;
@@ -461,7 +462,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             }
                             SplitMesh(outline);
                             debugString += outline.name + "  ";
-                            previousSelectedIndices[outline.name] = selection0Indices[outline.name].Concat(selection1Indices[outline.name]).ToList();
+                            //previousSelectedIndices[outline.name] = selection0Indices[outline.name].Concat(selection1Indices[outline.name]).ToList();
                             previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
                             previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
 
@@ -491,6 +492,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 ColorMesh(currObjMesh, "slice");
 
                 string outlineCollection = "";
+
                 foreach (GameObject outline in savedOutlines[currObjMesh.name])
                 {
                     outlineCollection += outline.name + ", ";
@@ -545,7 +547,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 {
                     if (selection0Indices.ContainsKey(outline.name))
                     {
-                        SplitMesh(outline);
+                        //SplitMesh(outline);
                         if (NormalSwipe(heading, slicePlane))
                         {
                             previousSelectedIndices[outline.name] = selection1Indices[outline.name].ToList();
@@ -846,7 +848,7 @@ public class SliceNSwipeSelectionState : InteractionState
             sliceOutlines[item.name].transform.position = item.transform.position;
             sliceOutlines[item.name].transform.localScale = item.transform.localScale;
             sliceOutlines[item.name].transform.rotation = item.transform.rotation;
-            PreviousSelectedIndices[item.name] = outlineMesh.GetIndices(0).ToList();
+            //PreviousSelectedIndices[item.name] = outlineMesh.GetIndices(0).ToList();
         }
 
         outlinePoints.Clear();
@@ -879,10 +881,20 @@ public class SliceNSwipeSelectionState : InteractionState
                 {
                     if (objWithSelections.Contains(item.name))
                     {
-                        ColorMesh(item, "swipe");
+                        Debug.Log("Remove slice with selections");
+                        mesh.SetTriangles(previousSelectedIndices[item.name], 1);
+                        mesh.SetTriangles(previousUnselectedIndices[item.name], 0);
+
+                        Material baseMaterial = originalMaterial[item.name];
+                        materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                                                                                    //materials[0] = baseMaterial;
+                        materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+                        Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
+
                     }
                     else
                     {
+                        Debug.Log("Remove first slice");
                         mesh.subMeshCount = 1;
                         mesh.SetTriangles(previousSelectedIndices[item.name], 0);
 
@@ -995,6 +1007,8 @@ public class SliceNSwipeSelectionState : InteractionState
         }
 
         meshVertices = DFSOrderPoints(vertexGraph);
+
+        meshVertices.Add(meshVertices[0]);
         meshVertices = RemoveSequentialDuplicates(meshVertices);
 
         return meshVertices;
