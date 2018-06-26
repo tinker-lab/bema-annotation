@@ -43,6 +43,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                // right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private Dictionary<string, Material> originalMaterial;
+    private Dictionary<string, GameObject> lastSliceOutline;
 
     private static Dictionary<string, int[]> selection0Indices;
     private static Dictionary<string, int[]> selection1Indices;
@@ -150,6 +151,7 @@ public class SliceNSwipeSelectionState : InteractionState
         selected1Indices = new List<int>();
         outlinePoints = new List<Vector3>();
         originalMaterial = new Dictionary<string, Material>();
+        lastSliceOutline = new Dictionary<string, GameObject>();
 
         selection0Indices = new Dictionary<string, int[]>();
         selection1Indices = new Dictionary<string, int[]>();
@@ -395,7 +397,7 @@ public class SliceNSwipeSelectionState : InteractionState
             {
                 UpdatePlane(lastPos - currentPos);
 
-                foreach (GameObject currObjMesh in collidingMeshes)
+                foreach (GameObject currObjMesh in collidingMeshes)             //TODO: convert to remove loops bc there's always only 1 obj in colldingMeshes
                 {
                     if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
                     {
@@ -426,6 +428,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         debugString += currObjMesh.name + "  ";
                         currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                         GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
+                        lastSliceOutline[currObjMesh.name] = savedSliceOutline;
 
                         // process outlines and associate them with the original objects
 
@@ -482,9 +485,17 @@ public class SliceNSwipeSelectionState : InteractionState
                         ColorMesh(currObjMesh, "slice");
 
                         string outlineCollection = "";
+
+                        if(savedOutlines[currObjMesh.name].Remove(lastSliceOutline[currObjMesh.name]))
+                        {
+                            Debug.Log("~~~~~ removed: " + lastSliceOutline[currObjMesh.name].name);
+                        }
+
+
                         foreach (GameObject outline in savedOutlines[currObjMesh.name])
                         {
                             outlineCollection += outline.name + ", ";
+                            ColorMesh(outline, "slice");
                         }
                         Debug.Log("outlines for removed SLICE: " + outlineCollection);
                     }
