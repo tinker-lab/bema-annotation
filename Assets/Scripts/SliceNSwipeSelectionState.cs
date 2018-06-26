@@ -933,7 +933,7 @@ public class SliceNSwipeSelectionState : InteractionState
             points = OrderMesh(points);
         }
 
-        points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
+       // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
 
         if (points.Count >= 2) {
             for (int i = 0; i < points.Count-1; i += 2)

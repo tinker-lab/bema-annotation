@@ -47,7 +47,7 @@ public class SliceNavigationState : InteractionState {
         controller1 = controller1Info;
 
         //handSelectionState = new HandSelectionState(controller0, controller1, this);
-        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0, controller1, this);
+        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0, controller1);
         handPlane = GameObject.Find("SliceNSwipeHandPlane");
         //centerCube = GameObject.Find("SliceNSwipeCenterCube");
         //leftComponent = leftPlane.GetComponent<CubeCollision>();
