@@ -18,6 +18,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //private ControllerInfo controller1;
     private ControllerInfo mainController;
     private ControllerInfo altController;
+    private GameObject handTrail;
 
     private Vector3 lastPos;
     private Vector3 lastOrientation;
@@ -110,6 +111,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         camera = GameObject.Find("Camera (eye)"); //.transform.GetChild(0).gameObject;
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        handTrail = GameObject.Find("HandTrail");
 
         DetermineDominantController(controller0, controller1);
 
@@ -172,6 +174,9 @@ public class SliceNSwipeSelectionState : InteractionState
         Debug.Log("Set Dominant Hand");
         mainController = controller0Info;
         altController = controller1Info;
+
+        handTrail.transform.parent = mainController.controller.gameObject.transform;
+
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
         //  altController.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //enable rendering of controllers
         Debug.Log("Remember to Implement DetermineDominantController()");
