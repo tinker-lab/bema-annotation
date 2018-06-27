@@ -889,10 +889,8 @@ public class SliceNSwipeSelectionState : InteractionState
 
                         Material baseMaterial = originalMaterial[item.name];
                         materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
-                                                                                    //materials[0] = baseMaterial;
                         materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
-                        Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
-
+                        //Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
                     }
                     else
                     {
