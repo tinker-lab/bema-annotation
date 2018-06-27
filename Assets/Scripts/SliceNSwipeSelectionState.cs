@@ -10,7 +10,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private GameObject laser;
 
     private const bool debug = false;
-    private const float motionThreshold = 0.06f;
+    private const float motionThreshold = 0.04f;
 
     private static int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     //InteractionState stateToReturnTo;
@@ -174,8 +174,11 @@ public class SliceNSwipeSelectionState : InteractionState
         Debug.Log("Set Dominant Hand");
         mainController = controller0Info;
         altController = controller1Info;
+        GameObject hand = GameObject.Find("Hand");
 
-        handTrail.transform.parent = mainController.controller.gameObject.transform;
+        handTrail.transform.parent = mainController.controller.transform;
+        handTrail.transform.localPosition = new Vector3 (0f, 0f, 0f);
+        Debug.Log(handTrail.transform.position.ToString());
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
         //  altController.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //enable rendering of controllers
@@ -505,7 +508,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         Debug.Log("outlines for removed SLICE: " + outlineCollection);
                     }
                 }
-                else if (mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold) //Swipe with main trigger helf to select
+                else if (mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold - 0.02f) //Swipe with main trigger helf to select
                 {
                     //Debug.Log("Swipe!! " + Vector3.Distance(lastPos, currentPos).ToString());
                     /* if movement is big & towards normal side of plane, discard the indeces on that side.
