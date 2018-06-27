@@ -400,6 +400,10 @@ public class SliceNSwipeSelectionState : InteractionState
             } 
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
         }
+        //else
+        //{
+        //    reticle.SetActive(false);
+        //}
         //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
 
         if (collidingMeshes.Count > 0)
@@ -624,18 +628,20 @@ public class SliceNSwipeSelectionState : InteractionState
         laserTransform.LookAt(hitPoint);
         laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
     }
-    /* From the Interaction in VR unity tutorials here:
+    /* Adapted from the Interaction in VR unity tutorials here:
      * https://unity3d.com/learn/tutorials/topics/virtual-reality/interaction-vr
      */
     public void ShowReticle(RaycastHit hit)
     {
+        reticle.SetActive(true);
+
         reticle.transform.position = hit.point;
-        reticle.transform.localScale = hit.distance * new Vector3(0.5f, 0.5f, 0.5f);
+        reticle.transform.localScale = hit.distance * new Vector3(0.1f, 0.1f, 0.1f);
 
         // If the reticle should use the normal of what has been hit...
         //if (hit.normal)
             // ... set it's rotation based on it's forward vector facing along the normal.
-            reticle.transform.rotation = Quaternion.FromToRotation(Vector3.forward, hit.normal);
+            reticle.transform.rotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
         //else
             //// However if it isn't using the normal then it's local rotation should be as it was originally.
             //m_ReticleTransform.localRotation = m_OriginalRotation;
