@@ -8,6 +8,7 @@ public class SliceNSwipeSelectionState : InteractionState
 {
     public GameObject camera = new GameObject();
     private GameObject laser;
+    private GameObject reticle;
 
     private const bool debug = false;
     private const float motionThreshold = 0.04f;
@@ -111,6 +112,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         camera = GameObject.Find("Camera (eye)"); //.transform.GetChild(0).gameObject;
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject;
         handTrail = GameObject.Find("HandTrail");
 
         DetermineDominantController(controller0, controller1);
@@ -390,7 +392,8 @@ public class SliceNSwipeSelectionState : InteractionState
 
             Vector3 hitPoint = hit.point;
             int hitLayer = hit.collider.gameObject.layer;
-            ShowLaser(hit, laser, camera.transform.position, hitPoint);
+            //ShowLaser(hit, laser, camera.transform.position, hitPoint);
+            ShowReticle(hit);
             if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane")
             {
                 collidingMeshes.Add(hit.collider.gameObject);
@@ -620,6 +623,22 @@ public class SliceNSwipeSelectionState : InteractionState
         laserTransform.position = Vector3.Lerp(laserStartPos, hitPoint, .5f);
         laserTransform.LookAt(hitPoint);
         laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
+    }
+    /* From the Interaction in VR unity tutorials here:
+     * https://unity3d.com/learn/tutorials/topics/virtual-reality/interaction-vr
+     */
+    public void ShowReticle(RaycastHit hit)
+    {
+        reticle.transform.position = hit.point;
+        reticle.transform.localScale = hit.distance * new Vector3(0.5f, 0.5f, 0.5f);
+
+        // If the reticle should use the normal of what has been hit...
+        //if (hit.normal)
+            // ... set it's rotation based on it's forward vector facing along the normal.
+            reticle.transform.rotation = Quaternion.FromToRotation(Vector3.forward, hit.normal);
+        //else
+            //// However if it isn't using the normal then it's local rotation should be as it was originally.
+            //m_ReticleTransform.localRotation = m_OriginalRotation;
     }
 
     /// <summary>
