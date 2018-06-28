@@ -35,6 +35,7 @@ public class RayCastSelectionState : InteractionState
     private GameObject laser;
     private Vector3 hitPoint;
     private int hitLayer;
+    bool buttonPressed;
 
     //getters for dictionaries
     public static Dictionary<string, int[]> PreviousSelectedIndices
@@ -98,6 +99,8 @@ public class RayCastSelectionState : InteractionState
 
         //setup laser
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        rayDirection = new List<Vector3>();
+        buttonPressed = false;
     }
 
     bool DoRayCast(ControllerInfo controllerInfo, GameObject laser)
@@ -118,6 +121,9 @@ public class RayCastSelectionState : InteractionState
 
             if(!collidingMeshes.Contains(hit.collider.gameObject))
             {
+                //GameObject collider = hit.collider.gameObject;
+                //PreviousNumVertices[collider.name] = collider.GetComponent<MeshFilter>().mesh.vertices.Length;
+                //PreviousSelectedIndices[collider.name] = collider.GetComponent<MeshFilter>().mesh.GetIndices(0);
                 collidingMeshes.Add(hit.collider.gameObject);
                 outlineObjectCount++;
             }
@@ -139,6 +145,15 @@ public class RayCastSelectionState : InteractionState
         laserTransform.position = Vector3.Lerp(laserStartPos, hitPoint, .5f);
         laserTransform.LookAt(hitPoint);
         laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
+    }
+
+    private void ClearOldPlanes()
+    {
+        foreach (GameObject plane in outlinePlanes)
+        {
+            plane.GetComponent<MeshRenderer>().enabled = false;
+        }
+        outlinePlanes.Clear();
     }
 
     ////when not colliding with an object
@@ -219,12 +234,14 @@ public class RayCastSelectionState : InteractionState
     {
         //update ray cast as well as find out if it is colliding with something
         bool collided = DoRayCast(controller0Info, laser);
-        bool buttonPressed = false;
+        
 
         //button has been clicked, begin selection
-        if(controller0.device.GetHairTriggerDown() && collided)
+        if(controller0.device.GetHairTriggerDown() && collided && !buttonPressed)
         {
+            Debug.Log("Trigger down!");
             outlinePoints.Clear();
+            ClearOldPlanes();
             rayDirection.Clear();
 
             firstPoint = hitPoint;
@@ -235,20 +252,27 @@ public class RayCastSelectionState : InteractionState
         }
 
         //button is being held down, continue selection
-        while(!controller0.device.GetHairTriggerUp() && collided && buttonPressed)
+        if(collided && buttonPressed)
         {
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
         }
 
         //button has been released, end selection
-        if(controller0.device.GetHairTriggerUp())
+        if(controller0.device.GetHairTriggerUp() && buttonPressed)
         {
+            Debug.Log("        Trigger Up");
+            buttonPressed = false;
             lastPoint = hitPoint;
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
 
-            ProcessMesh();
+            CreateOutlinePlanes();
+            //foreach (GameObject outline in outlinePlanes)
+            //{
+            //    ProcessMesh(collidingMeshes[0], outline);
+
+            //}
         }
 
         //List<Vector2> UVList = new List<Vector2>();
@@ -398,16 +422,24 @@ public class RayCastSelectionState : InteractionState
         return Vector3.Dot(plane.transform.up, pt) >= Vector3.Dot(plane.transform.up, plane.transform.position);
     }
 
-    private void ProcessMesh()
+    private void CreateOutlinePlanes()
     {
+        Debug.Log("About to make planes");
         //make planes for each set of points
+        int planeCount = 0;
+
         for (int i = 0; i < outlinePoints.Count() - 1; i++)
         {
-            outlinePlanes.Add(makePlane(outlinePoints[i], outlinePoints[i+1], rayDirection[i]));
+
+            outlinePlanes.Add(makePlane(outlinePoints[i], outlinePoints[i + 1], rayDirection[i]));
+            planeCount++;
+
         }
 
-        //make a plane connecting the last point, where release happens, back to the first point
-        outlinePlanes.Add(makePlane(outlinePoints[outlinePoints.Count], outlinePoints[0], rayDirection[rayDirection.Count]));
+            //make a plane connecting the last point, where release happens, back to the first point
+            outlinePlanes.Add(makePlane(outlinePoints[outlinePoints.Count - 1], outlinePoints[0], rayDirection[rayDirection.Count - 1]));
+            Debug.Log("made planes: " + planeCount.ToString());
+
     }
 
     //makes a plane between two points
@@ -423,8 +455,12 @@ public class RayCastSelectionState : InteractionState
         plane.GetComponent<Rigidbody>().isKinematic = true;
 
         plane.transform.position = outlinePoint;
+        //plane.transform.rotation = Quaternion.FromToRotation(outlinePoint, secondOutlinePoint);
         plane.transform.rotation = Quaternion.FromToRotation(outlinePoint, rayDirection);
-        plane.transform.localScale = secondOutlinePoint - outlinePoint;
+        plane.transform.rotation = Quaternion.LookRotation(secondOutlinePoint - outlinePoint);
+        //plane.transform.rotation = Quaternion.LookRotation(rayDirection - outlinePoint);
+
+        plane.transform.localScale = new Vector3(0.05f,0.05f,0.05f);
 
         plane.layer = planeLayer;
         plane.GetComponent<MeshRenderer>().enabled = true;
@@ -432,7 +468,7 @@ public class RayCastSelectionState : InteractionState
         return plane;
     }
 
-    //private void ProcessMesh(GameObject item)
+    //private void ProcessMesh(GameObject item, GameObject plane)
     //{
     //    Mesh mesh = item.GetComponent<MeshFilter>().mesh;
     //    selectedIndices.Clear();
@@ -443,7 +479,7 @@ public class RayCastSelectionState : InteractionState
     //    }
     //    else
     //    {
-    //        unselectedIndices =  previousUnselectedIndices[item.name].ToList<int>();
+    //        unselectedIndices = previousUnselectedIndices[item.name].ToList<int>();
     //    }
 
     //    int[] indices = previousSelectedIndices[item.name];        // original indices is set to be JUST the selected part, that's why nothing else is drawn
@@ -479,31 +515,31 @@ public class RayCastSelectionState : InteractionState
     //    int intersectIndex1;
     //    int intersectIndex2;
 
-    //    for (int planePass = 0; planePass < 2; planePass++)
+    //    for (int planePass = 0; planePass < 1; planePass++)
     //    {
-    //        GameObject currentPlane = leftPlane;
-    //        if (planePass == 1)
-    //        {
-    //            currentPlane = rightPlane;
-    //            indices = selectedIndices.ToArray();
-    //            selectedIndices.Clear();
-    //        }
+    //        //GameObject currentPlane = leftPlane;
+    //        //if (planePass == 1)
+    //        //{
+    //        //    currentPlane = rightPlane;
+    //        //    indices = selectedIndices.ToArray();
+    //        //    selectedIndices.Clear();
+    //        //}
 
 
-    //        for (int i = 0; i < indices.Length / 3 ; i++)
+    //        for (int i = 0; i < indices.Length / 3; i++)
     //        {
     //            triangleIndex0 = indices[3 * i];
     //            triangleIndex1 = indices[3 * i + 1];
     //            triangleIndex2 = indices[3 * i + 2];
 
-    //            bool side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], currentPlane);
-    //            bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], currentPlane);
-    //            bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], currentPlane);
+    //            bool side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], plane);
+    //            bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], plane);
+    //            bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], plane);
 
 
     //            if (!side0 && !side1 && !side2) // 0 intersections
     //            {
-    //                if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
+    //                if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], plane))
     //                {
     //                    AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
     //                }
@@ -525,7 +561,7 @@ public class RayCastSelectionState : InteractionState
     //                    vertices.Add(intersectPoint0);
     //                    vertices.Add(intersectPoint1);
 
-                        
+
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
     //                    UVs.Add(intersectUV0);
@@ -535,7 +571,7 @@ public class RayCastSelectionState : InteractionState
     //                    outlinePoints.Add(intersectPoint0);
     //                    outlinePoints.Add(intersectPoint1);
 
-    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
+    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], plane))
     //                    {
 
     //                        //Add the indices for various triangles to selected and unselected
@@ -559,7 +595,7 @@ public class RayCastSelectionState : InteractionState
 
     //                    vertices.Add(intersectPoint0);   //Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
     //                    vertices.Add(intersectPoint2);
-                        
+
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
     //                    UVs.Add(intersectUV0);
@@ -568,7 +604,7 @@ public class RayCastSelectionState : InteractionState
     //                    outlinePoints.Add(intersectPoint0);
     //                    outlinePoints.Add(intersectPoint2);
 
-    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
+    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], plane))
     //                    {
     //                        AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
     //                        AddNewIndices(unselectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
@@ -588,7 +624,7 @@ public class RayCastSelectionState : InteractionState
 
     //                    vertices.Add(intersectPoint1);   //Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
     //                    vertices.Add(intersectPoint2);
-                        
+
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
     //                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
     //                    UVs.Add(intersectUV1);
@@ -597,7 +633,7 @@ public class RayCastSelectionState : InteractionState
     //                    outlinePoints.Add(intersectPoint1);
     //                    outlinePoints.Add(intersectPoint2);
 
-    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], currentPlane))
+    //                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], plane))
     //                    {
     //                        AddNewIndices(selectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
     //                        AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
@@ -613,27 +649,27 @@ public class RayCastSelectionState : InteractionState
     //            }
     //        }
 
-    //        if (item.gameObject.tag != "highlightmesh")
-    //        {
-    //            if (planePass == 1)
-    //            {
-    //                Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
-    //                //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-    //                rightOutlines[item.name].transform.position = item.transform.position;
-    //                rightOutlines[item.name].transform.localScale = item.transform.localScale;
-    //                rightOutlines[item.name].transform.rotation = item.transform.rotation;
-    //            }
-    //            else
-    //            {
-    //                Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
-    //                //leftOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-    //                leftOutlines[item.name].transform.position = item.transform.position;
-    //                leftOutlines[item.name].transform.localScale = item.transform.localScale;
-    //                leftOutlines[item.name].transform.rotation = item.transform.rotation;
-    //            }
+    //        //if (item.gameObject.tag != "highlightmesh")
+    //        //{
+    //        //    if (planePass == 1)
+    //        //    {
+    //        //        Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
+    //        //        //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
+    //        //        rightOutlines[item.name].transform.position = item.transform.position;
+    //        //        rightOutlines[item.name].transform.localScale = item.transform.localScale;
+    //        //        rightOutlines[item.name].transform.rotation = item.transform.rotation;
+    //        //    }
+    //        //    else
+    //        //    {
+    //        //        Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
+    //        //        //leftOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
+    //        //        leftOutlines[item.name].transform.position = item.transform.position;
+    //        //        leftOutlines[item.name].transform.localScale = item.transform.localScale;
+    //        //        leftOutlines[item.name].transform.rotation = item.transform.rotation;
+    //        //    }
 
-    //            outlinePoints.Clear();
-    //        }
+    //        //    outlinePoints.Clear();
+    //        //}
     //    }
 
     //    mesh.Clear();
