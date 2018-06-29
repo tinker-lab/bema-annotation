@@ -14,6 +14,7 @@ public class RayCastSelectionState : InteractionState
 
     private List<GameObject> collidingMeshes;       //List of meshes/objects currently being collided with
     private List<GameObject> outlinePlanes;
+    private GameObject tubeMesh;
 
     private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
@@ -24,9 +25,8 @@ public class RayCastSelectionState : InteractionState
     private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
    
     private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
+    private int drawnOutlinePointsCount;
     private List<Vector3> rayDirection;
-    private Vector3 firstPoint;
-    private Vector3 lastPoint;
 
     List<int> selectedIndices;      //Reused for each mesh during ProcessMesh()
     List<int> unselectedIndices;    //^^^^
@@ -96,6 +96,8 @@ public class RayCastSelectionState : InteractionState
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
         outlinePoints = new List<Vector3>();
+        drawnOutlinePointsCount = 0;
+        tubeMesh = MakeTubeMesh();
 
         //setup laser
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
@@ -235,7 +237,6 @@ public class RayCastSelectionState : InteractionState
         //update ray cast as well as find out if it is colliding with something
         bool collided = DoRayCast(controller0Info, laser);
         
-
         //button has been clicked, begin selection
         if(controller0.device.GetHairTriggerDown() && collided && !buttonPressed)
         {
@@ -244,7 +245,6 @@ public class RayCastSelectionState : InteractionState
             ClearOldPlanes();
             rayDirection.Clear();
 
-            firstPoint = hitPoint;
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
 
@@ -255,7 +255,13 @@ public class RayCastSelectionState : InteractionState
         if(collided && buttonPressed)
         {
             outlinePoints.Add(hitPoint);
+            outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
+
+            //if (outlinePoints.Count% 2 == 0)
+            //{
+                CreateOutlineMesh(outlinePoints, rayDirection[rayDirection.Count - 1], tubeMesh.GetComponent<MeshFilter>().mesh);
+            //}
         }
 
         //button has been released, end selection
@@ -263,11 +269,12 @@ public class RayCastSelectionState : InteractionState
         {
             Debug.Log("        Trigger Up");
             buttonPressed = false;
-            lastPoint = hitPoint;
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
 
-            CreateOutlinePlanes();
+            CreateOutlineMesh(outlinePoints, rayDirection[rayDirection.Count - 1], tubeMesh.GetComponent<MeshFilter>().mesh);
+
+            // CreateOutlinePlanes();
             //foreach (GameObject outline in outlinePlanes)
             //{
             //    ProcessMesh(collidingMeshes[0], outline);
@@ -430,10 +437,8 @@ public class RayCastSelectionState : InteractionState
 
         for (int i = 0; i < outlinePoints.Count() - 1; i++)
         {
-
             outlinePlanes.Add(makePlane(outlinePoints[i], outlinePoints[i + 1], rayDirection[i]));
             planeCount++;
-
         }
 
             //make a plane connecting the last point, where release happens, back to the first point
@@ -463,7 +468,7 @@ public class RayCastSelectionState : InteractionState
         plane.transform.localScale = new Vector3(0.05f,0.05f,0.05f);
 
         plane.layer = planeLayer;
-        plane.GetComponent<MeshRenderer>().enabled = true;
+        plane.GetComponent<MeshRenderer>().enabled = false;
 
         return plane;
     }
@@ -703,8 +708,9 @@ public class RayCastSelectionState : InteractionState
     /**
      * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
      * */
-    private Mesh CreateOutlineMesh(List<Vector3> points, GameObject plane, Mesh outlineMesh)
+    private Mesh CreateOutlineMesh(List<Vector3> points, Vector3 rayDirection, Mesh outlineMesh)
     {
+        //Todo: save all returned meshes w CopyObject() to a list or hash. figure out if/where/why tubes are deleting or disappearing. maybe bc they only exist in the outlineMesh but ??
         List<Vector3> verts = new List<Vector3>();
         List<int> faces = new List<int>();
         List<Vector2> uvCoordinates = new List<Vector2>();
@@ -713,7 +719,7 @@ public class RayCastSelectionState : InteractionState
         float radius = .005f;
         int numSections = 6;
 
-        Assert.IsTrue(points.Count % 2 == 0);
+   //     Assert.IsTrue(points.Count % 2 == 0);
         int expectedNumVerts = (numSections + 1) * points.Count;
 
         if (expectedNumVerts > 65000)
@@ -722,13 +728,14 @@ public class RayCastSelectionState : InteractionState
         }
 
         if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2)
+            for (int i = 0; i < points.Count-1; i += 2) //was i += 2
             {
-                Vector3 centerStart = points[i];
+                Vector3 centerStart = points[i]; 
                 Vector3 centerEnd = points[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
-                Vector3 right = Vector3.Cross(plane.transform.up, direction);
+                //Vector3 right = Vector3.Cross(plane.transform.up, direction);
+                Vector3 right = Vector3.Cross(rayDirection, direction);
                 Vector3 up = Vector3.Cross(direction, right);
                 up = up.normalized * radius;
                 right = right.normalized * radius;
@@ -763,6 +770,8 @@ public class RayCastSelectionState : InteractionState
 
             outlineMesh.RecalculateBounds();
             outlineMesh.RecalculateNormals();
+
+            drawnOutlinePointsCount = outlinePoints.Count;
         }
 
         return outlineMesh;
@@ -939,18 +948,18 @@ public class RayCastSelectionState : InteractionState
     /// </summary>
     /// <param name="meshName"></param>
     /// <returns></returns>
-    //private GameObject MakeHandOutline(string meshName)
-    //{
-    //    GameObject newOutline = new GameObject();
-    //    newOutline.name = meshName + " highlight";
-    //    newOutline.AddComponent<MeshRenderer>();
-    //    newOutline.AddComponent<MeshFilter>();
-    //    newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
-    //    newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
-    //    newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+    private GameObject MakeTubeMesh()
+    {
+        GameObject newOutline = new GameObject();
+        newOutline.name = "outline";
+        newOutline.AddComponent<MeshRenderer>();
+        newOutline.AddComponent<MeshFilter>();
+        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
+        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+        newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
 
-    //    return newOutline;
-    //}
+        return newOutline;
+    }
 
     /// <summary>
     /// Sets up the planes that follow each hand/controller
