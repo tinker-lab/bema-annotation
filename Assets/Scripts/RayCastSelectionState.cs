@@ -36,6 +36,9 @@ public class RayCastSelectionState : InteractionState
     private Vector3 hitPoint;
     private int hitLayer;
     bool buttonPressed;
+    Mesh tubeMeshA;
+    Mesh tubeMeshB;
+    bool renderingA;
 
     //getters for dictionaries
     public static Dictionary<string, int[]> PreviousSelectedIndices
@@ -103,6 +106,7 @@ public class RayCastSelectionState : InteractionState
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
         rayDirection = new List<Vector3>();
         buttonPressed = false;
+
     }
 
     bool DoRayCast(ControllerInfo controllerInfo, GameObject laser)
@@ -254,14 +258,17 @@ public class RayCastSelectionState : InteractionState
         //button is being held down, continue selection
         if(collided && buttonPressed)
         {
-            outlinePoints.Add(hitPoint);
-            outlinePoints.Add(hitPoint);
+            outlinePoints.Add(hitPoint);            //add hit point twice so all middle points along the outline are drawn. ie draw tubes from 0->1, 1->2, 2->3.
+            //outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
 
-            //if (outlinePoints.Count% 2 == 0)
-            //{
-                CreateOutlineMesh(outlinePoints, rayDirection[rayDirection.Count - 1], tubeMesh.GetComponent<MeshFilter>().mesh);
-            //}
+            outlinePoints = RemoveSequentialDuplicates(outlinePoints);
+            List<Vector3> resampled = Resample(outlinePoints, 0.03f);
+
+            Mesh bufferMesh = renderingA ? tubeMeshA : tubeMeshB;
+            renderingA = !renderingA;
+            tubeMesh.GetComponent<MeshFilter>().sharedMesh = CreateOutlineMesh(resampled, rayDirection[rayDirection.Count - 1], bufferMesh);
+           
         }
 
         //button has been released, end selection
@@ -272,7 +279,13 @@ public class RayCastSelectionState : InteractionState
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
 
-            CreateOutlineMesh(outlinePoints, rayDirection[rayDirection.Count - 1], tubeMesh.GetComponent<MeshFilter>().mesh);
+            outlinePoints = RemoveSequentialDuplicates(outlinePoints);
+            List<Vector3> resampled = Resample(outlinePoints, 0.03f);
+
+
+            Mesh bufferMesh = renderingA ? tubeMeshA : tubeMeshB;
+            renderingA = !renderingA;
+            tubeMesh.GetComponent<MeshFilter>().sharedMesh = CreateOutlineMesh(resampled, rayDirection[rayDirection.Count - 1], bufferMesh);
 
             // CreateOutlinePlanes();
             //foreach (GameObject outline in outlinePlanes)
@@ -422,6 +435,47 @@ public class RayCastSelectionState : InteractionState
         //    }
 
         //}
+    }
+
+    public List<Vector3> Resample(List<Vector3> pts, float sampleDistance)
+    {
+        CatmullRomSpline spline = new CatmullRomSpline();
+        float time = 0f;
+        float totalDistance = 0f;
+        for (int i = 0; i < pts.Count(); i++)
+        {
+            if (i > 0)
+            {
+                float distance = (pts[i] - pts[i - 1]).magnitude;
+                totalDistance += distance;
+                time += Mathf.Sqrt(distance);
+            }
+            spline.Append(time, pts[i]);
+        }
+
+        List<Vector3> resampled = new List<Vector3>();
+
+        int numSampleIntervals = (int) (totalDistance / sampleDistance);
+        float interval = spline.TotalTime() / numSampleIntervals;
+        if (numSampleIntervals != 0 && time != 0)
+        {
+            for (int i = 0; i <= numSampleIntervals; i++)
+            {
+                Vector3 pos = spline.Evaluate(i * interval);
+                resampled.Add(pos);
+                if (i > 0)
+                {
+                    resampled.Add(pos);
+                }
+            }
+        }
+        else
+        {
+            resampled = pts;
+        }
+
+        return resampled;
+
     }
 
     private bool OnNormalSideOfPlane(Vector3 pt, GameObject plane)
@@ -711,30 +765,33 @@ public class RayCastSelectionState : InteractionState
     private Mesh CreateOutlineMesh(List<Vector3> points, Vector3 rayDirection, Mesh outlineMesh)
     {
         //Todo: save all returned meshes w CopyObject() to a list or hash. figure out if/where/why tubes are deleting or disappearing. maybe bc they only exist in the outlineMesh but ??
-        List<Vector3> verts = new List<Vector3>();
-        List<int> faces = new List<int>();
-        List<Vector2> uvCoordinates = new List<Vector2>();
+        List<Vector3> verts;
+        List<int> faces;
+        List<Vector2> uvCoordinates;
+
+        const float radius = .005f;
+        const int numSections = 4;
+
+        int expectedNumVertices = (numSections + 1) * points.Count;
+        //int expectedNumVertices = points.Count * numSections;
+        verts = new List<Vector3>(expectedNumVertices);
+        faces = new List<int>(expectedNumVertices*2 - (numSections*2));
+        uvCoordinates = new List<Vector2>(expectedNumVertices);
+    
         outlineMesh.Clear();
 
-        float radius = .005f;
-        int numSections = 6;
+      
+        // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
 
-   //     Assert.IsTrue(points.Count % 2 == 0);
-        int expectedNumVerts = (numSections + 1) * points.Count;
-
-        if (expectedNumVerts > 65000)
+        if (points.Count >= 2)
         {
-            points = OrderMesh(points);
-        }
-
-        if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2) //was i += 2
+            // Assumes that points contains the first point of the line and then every other point in points is duplicated!!!!!!!!!!!!!!!!!!! Point duplication happens in resample method
+            for (int i = 0; i < points.Count - 1; i+=2)
             {
-                Vector3 centerStart = points[i]; 
+                Vector3 centerStart = points[i];
                 Vector3 centerEnd = points[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
-                //Vector3 right = Vector3.Cross(plane.transform.up, direction);
                 Vector3 right = Vector3.Cross(rayDirection, direction);
                 Vector3 up = Vector3.Cross(direction, right);
                 up = up.normalized * radius;
@@ -764,11 +821,54 @@ public class RayCastSelectionState : InteractionState
                 }
             }
 
+            //if (points.Count >= 2) {
+            //    for (int i = 0; i < points.Count; i++) //was i += 2
+            //    {
+            //        Vector3 centerStart = points[i];
+            //        Vector3 direction;
+            //        if (i < points.Count - 1)
+            //        {
+            //            direction = points[i + 1] - centerStart;
+            //        }
+            //        else
+            //        {
+            //            direction = centerStart - points[i - 1];
+            //        }
+            //        direction = direction.normalized;
+            //        //Vector3 right = Vector3.Cross(plane.transform.up, direction);
+            //        Vector3 right = Vector3.Cross(rayDirection, direction);
+            //        Vector3 up = Vector3.Cross(direction, right);
+            //        up = up.normalized * radius;
+            //        right = right.normalized * radius;
+
+            //        for (int slice = 0; slice <= numSections; slice++)
+            //        {
+            //            float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
+            //            Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+
+            //            verts.Add(p0);
+
+            //            //TODO: fix me now that we don't have a second duplicate point
+            //            uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
+
+
+            //            if (slice > 0 && i > 0)
+            //            {
+            //                faces.Add(slice+(numSections*i));
+            //                faces.Add((slice) + (numSections) * (i-1));
+            //                faces.Add((slice - 1) + ((numSections) * (i-1)));
+
+            //                faces.Add(slice + (numSections * i));
+            //                faces.Add((slice - 1) + ((numSections) * (i - 1)));
+            //                faces.Add(slice -1  + ((numSections) * i));
+            //            }
+            //        }
+            //    }
+
             outlineMesh.SetVertices(verts);
             outlineMesh.SetUVs(0, uvCoordinates);
             outlineMesh.SetTriangles(faces, 0);
 
-            outlineMesh.RecalculateBounds();
             outlineMesh.RecalculateNormals();
 
             drawnOutlinePointsCount = outlinePoints.Count;
@@ -954,8 +1054,13 @@ public class RayCastSelectionState : InteractionState
         newOutline.name = "outline";
         newOutline.AddComponent<MeshRenderer>();
         newOutline.AddComponent<MeshFilter>();
-        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
-        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+        tubeMeshA = new Mesh();
+        tubeMeshB = new Mesh();
+        tubeMeshA.MarkDynamic();
+        tubeMeshB.MarkDynamic();
+        newOutline.GetComponent<MeshFilter>().mesh = tubeMeshA;
+        renderingA = true;
+       // newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
 
         return newOutline;
