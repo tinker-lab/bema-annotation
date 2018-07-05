@@ -70,8 +70,8 @@ public class UIController : MonoBehaviour {
 
         //currentState = new PickResourceState(controller0Info);
         //currentState = new NavigationState(controller0Info, controller1Info);
-        currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
-        //currentState = new VolumeCubeSelectionState(controller0Info, controller1Info);
+        //currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
+        currentState = new VolumeCubeSelectionState(controller0Info, controller1Info);
         //currentState = new RayCastSelectionState(controller0Info, controller1Info);
     }
 
