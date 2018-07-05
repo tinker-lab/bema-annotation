@@ -42,7 +42,7 @@ public class VolumeCubeSelectionState : InteractionState
 
     //make six vectors for the normals
     private Vector3[] normals;
-    private enum cubeSides { forward, up, left, back, down, right };
+    private enum cubeSides { back, top, right, front, bottom, left };
     Vector3[] rotationVectors;
 
     //starting vector between the hands
@@ -158,17 +158,17 @@ public class VolumeCubeSelectionState : InteractionState
 
         //set starting normal values
         normals = new Vector3[6];
-        normals[(int)cubeSides.forward] = Vector3.forward;
+        normals[(int)cubeSides.front] = Vector3.forward;
         normals[(int)cubeSides.back] = Vector3.back;
-        normals[(int)cubeSides.up] = Vector3.up;
-        normals[(int)cubeSides.down] = Vector3.down;
-        normals[(int)cubeSides.left] = Vector3.left;
-        normals[(int)cubeSides.right] = Vector3.right;
+        normals[(int)cubeSides.top] = Vector3.down;
+        normals[(int)cubeSides.bottom] = Vector3.up;
+        normals[(int)cubeSides.left] = Vector3.right;
+        normals[(int)cubeSides.right] = Vector3.left;
 
         rotationVectors = new Vector3[6];
 
         //set starting diagonal (between controllers)
-        startingDiagonal = new Vector3(1f, 1f, -1f);
+        startingDiagonal = new Vector3(1f, 1f, 1f);
         //previousDiagonal = new Vector3(1f, -1f, -1f);
 
         head = GameObject.Find("Camera (eye)");
@@ -603,12 +603,20 @@ public class VolumeCubeSelectionState : InteractionState
         int intersectIndex2;
 
         //calculate plane normals of all six sides of the cube after rotation
-        rotationVectors[(int)cubeSides.forward] = (centerCube.transform.rotation * normals[(int)cubeSides.forward]).normalized;
+        rotationVectors[(int)cubeSides.front] = (centerCube.transform.rotation * normals[(int)cubeSides.front]).normalized;
         rotationVectors[(int)cubeSides.back] = (centerCube.transform.rotation * normals[(int)cubeSides.back]).normalized;
-        rotationVectors[(int)cubeSides.up] = (centerCube.transform.rotation * normals[(int)cubeSides.up]).normalized;
-        rotationVectors[(int)cubeSides.down] = (centerCube.transform.rotation * normals[(int)cubeSides.down]).normalized;
+        rotationVectors[(int)cubeSides.top] = (centerCube.transform.rotation * normals[(int)cubeSides.top]).normalized;
+        rotationVectors[(int)cubeSides.bottom] = (centerCube.transform.rotation * normals[(int)cubeSides.bottom]).normalized;
         rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
         rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
+
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green);
+
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta);
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow);
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black);
 
         for (int planePass = 0; planePass < 6; planePass++)
         {
@@ -761,8 +769,20 @@ public class VolumeCubeSelectionState : InteractionState
                 }
             }
 
-            savedOutlinePoints.Add(item.name, new Dictionary<int, List<Vector3>>());
-            savedOutlinePoints[item.name].Add(planePass, outlinePoints);
+            if (!savedOutlinePoints.ContainsKey(item.name))
+            {
+                savedOutlinePoints.Add(item.name, new Dictionary<int, List<Vector3>>());
+            }
+
+            if (!savedOutlinePoints[item.name].ContainsKey(planePass))
+            {
+                savedOutlinePoints[item.name].Add(planePass, outlinePoints);
+            }
+            else
+            {
+                savedOutlinePoints[item.name][planePass] = outlinePoints;
+            }
+
             outlinePoints.Clear();
 
             //if (item.gameObject.tag != "highlightmesh")
