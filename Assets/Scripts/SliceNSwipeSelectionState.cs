@@ -45,7 +45,6 @@ public class SliceNSwipeSelectionState : InteractionState
     private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                // right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private Dictionary<string, Material> originalMaterial;
-    private Dictionary<string, GameObject> lastSliceOutline;
 
     private static Dictionary<string, int[]> selection0Indices;
     private static Dictionary<string, int[]> selection1Indices;
@@ -155,7 +154,6 @@ public class SliceNSwipeSelectionState : InteractionState
         selected1Indices = new List<int>();
         outlinePoints = new List<Vector3>();
         originalMaterial = new Dictionary<string, Material>();
-        lastSliceOutline = new Dictionary<string, GameObject>();
 
         selection0Indices = new Dictionary<string, int[]>();
         selection1Indices = new Dictionary<string, int[]>();
@@ -434,9 +432,6 @@ public class SliceNSwipeSelectionState : InteractionState
                         ColorMesh(currObjMesh, "slice");
                         debugString += currObjMesh.name + "  ";
                         currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
-                        //sliceOutline was most recently updated in split mesh
-                        GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
-                        lastSliceOutline[currObjMesh.name] = savedSliceOutline;
 
                         // process outlines and associate them with the original objects
                         /*
@@ -612,7 +607,8 @@ public class SliceNSwipeSelectionState : InteractionState
                             
                         }
 
-                        savedOutlines[currObjMesh.name].Add(lastSliceOutline[currObjMesh.name]);
+                        GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
+                        savedOutlines[currObjMesh.name].Add(savedSliceOutline);
 
                         Debug.Log(debugStr);
                     }
