@@ -6,7 +6,7 @@ using UnityEngine.Assertions;
 
 public class SliceNSwipeSelectionState : InteractionState
 {
-    public GameObject camera = new GameObject();
+    public GameObject camera;// = new GameObject();
     private GameObject laser;
     private GameObject reticle;
 
@@ -141,7 +141,7 @@ public class SliceNSwipeSelectionState : InteractionState
         //    centerCube.GetComponent<MeshRenderer>().enabled = false;
         //}
 
-        collidingMesh = new GameObject();      
+        collidingMesh = null; new GameObject();      
         //cubeColliders = new HashSet<GameObject>();
      
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
@@ -623,21 +623,14 @@ public class SliceNSwipeSelectionState : InteractionState
             if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
             {
                 collidingMesh = hit.collider.gameObject;
+                Material mat = collidingMesh.GetComponent<Renderer>().materials[0];
+                //mat.EnableKeyword("_EMISSION");
+                collidingMesh.GetComponent<Renderer>().materials[0] = DetermineBaseMaterial(mat);
             } else{
+               // collidingMesh.GetComponent<Renderer>().materials[0].DisableKeyword("_EMISSION");
                 collidingMesh = null;
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
-        }
-        if (collidingMesh != null)
-        {
-            Material[] objMaterials = collidingMesh.GetComponent<Renderer>().materials;
-            if(collidingMesh.name == hit.collider.name){
-                objMaterials[0].SetColor("_EmissionColor", Color.yellow);
-            } 
-            else
-            {
-                objMaterials[0].SetColor("_Emission.Color", Color.clear);
-            }
         }
     }
 
