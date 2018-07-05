@@ -382,28 +382,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         List<Vector2> UVList = new List<Vector2>();
 
-        RaycastHit hit;
-
-
-        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000) && sliceStatus == 0)
-        {
-            collidingMeshes.Clear();
-
-            Vector3 hitPoint = hit.point;
-            int hitLayer = hit.collider.gameObject.layer;
-            //ShowLaser(hit, laser, camera.transform.position, hitPoint);
-            ShowReticle(hit);
-            if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
-            {
-                collidingMeshes.Add(hit.collider.gameObject);
-            } 
-            //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
-        }
-        //else
-        //{
-        //    reticle.SetActive(false);
-        //}
-        //Debug.Log("Colliding Meshes: " + collidingMeshes.ToString());
+        GazeSelection();
 
         if (collidingMeshes.Count > 0)
         { 
@@ -631,6 +610,38 @@ public class SliceNSwipeSelectionState : InteractionState
 
         lastPos = currentPos;
         lastOrientation = currentOrientation;
+    }
+
+    private void GazeSelection()
+    {
+        RaycastHit hit;
+
+
+        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000) && sliceStatus == 0)
+        {
+            collidingMeshes.Clear();
+
+            Vector3 hitPoint = hit.point;
+            int hitLayer = hit.collider.gameObject.layer;
+            //ShowLaser(hit, laser, camera.transform.position, hitPoint);
+            ShowReticle(hit);
+            if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
+            {
+                collidingMeshes.Add(hit.collider.gameObject);
+            }
+            //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
+        }
+        foreach (GameObject obj in collidingMeshes)
+        {
+            Material[] objMaterials = obj.GetComponent<Renderer>().materials;
+            if(obj.name == hit.collider.name){
+                objMaterials[0].SetColor("_EmissionColor", Color.yellow);
+            } 
+            else
+            {
+                objMaterials[0].SetColor("_Emission.Color", Color.clear);
+            }
+        }
     }
 
     private void FirstContactProcess(GameObject gObject, List<Vector2> UVList)
@@ -1272,7 +1283,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// <summary>
     /// Make a Gameobject that will follow the user's hands
     /// </summary>
-    /// <param name="meshName"></param>
+    /// <param name="item"></param>
     /// <returns></returns>
     private GameObject MakeHandOutline(GameObject item)
     {
