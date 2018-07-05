@@ -544,7 +544,19 @@ public class HandSelectionState : InteractionState
         copy.transform.rotation = original.transform.rotation;
         copy.transform.localScale = original.transform.localScale;
         copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
-        copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
+        Mesh mesh = new Mesh();
+        List<Vector3> verts = new List<Vector3>();
+        List<int> ind = new List<int>();
+        List<Vector2> uvs = new List<Vector2>();
+        original.GetComponent<MeshFilter>().mesh.GetVertices(verts);
+        original.GetComponent<MeshFilter>().mesh.GetTriangles(ind, 0);
+        original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
+
+
+        mesh.SetTriangles(ind, 0);
+        mesh.SetVertices(verts);
+        mesh.SetUVs(0, uvs);
+        copy.GetComponent<MeshFilter>().mesh = mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
         copy.name = "highlight" + outlineObjectCount;
         outlineObjectCount++;
