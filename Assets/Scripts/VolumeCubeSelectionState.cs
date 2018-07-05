@@ -18,7 +18,7 @@ public class VolumeCubeSelectionState : InteractionState
     private GameObject centerCube;  //Cube that is attached to the controllers
 
     private int planeLayer;                         //Layer that cube and planes are on
-    //private static int outlineObjectCount = 0;      //Keeps saved outlines distinguishable from one another
+    private static int outlineObjectCount = 0;      //Keeps saved outlines distinguishable from one another
 
     private List<GameObject> collidingMeshes;       //List of meshes currently being collided with
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
@@ -31,6 +31,7 @@ public class VolumeCubeSelectionState : InteractionState
     private static Dictionary<string, int[]> previousSelectedIndices;           //key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
     private static HashSet<string> objWithSelections;                           //Collection of the the names of all the meshes that have had pieces selected from them.
     private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
+    private static Dictionary<string, Dictionary<int, List<Vector3>>> savedOutlinePoints;     //Key = name of the object in model, Value = all the sets of outline points
     //private static Dictionary<string, GameObject> leftOutlines;                 //left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                //right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
 
@@ -42,6 +43,7 @@ public class VolumeCubeSelectionState : InteractionState
     //make six vectors for the normals
     private Vector3[] normals;
     private enum cubeSides { forward, up, left, back, down, right };
+    Vector3[] rotationVectors;
 
     //starting vector between the hands
     private Vector3 startingDiagonal;
@@ -81,6 +83,11 @@ public class VolumeCubeSelectionState : InteractionState
     {
         get { return savedOutlines; }
         set { savedOutlines = value; }
+    }
+    public static Dictionary<string, Dictionary<int, List<Vector3>>> SavedOutlinePoints
+    {
+        get { return savedOutlinePoints; }
+        set { savedOutlinePoints = value;  }
     }
     //public static Dictionary<string, GameObject> LeftOutlines
     //{
@@ -139,6 +146,7 @@ public class VolumeCubeSelectionState : InteractionState
         previousVertices = new Dictionary<string, Vector3[]>();
         previousUVs = new Dictionary<string, Vector2[]>();
         savedOutlines = new Dictionary<string, HashSet<GameObject>>();
+        savedOutlinePoints = new Dictionary<string, Dictionary<int, List<Vector3>>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
         outlinePoints = new List<Vector3>();
@@ -156,6 +164,8 @@ public class VolumeCubeSelectionState : InteractionState
         normals[(int)cubeSides.down] = Vector3.down;
         normals[(int)cubeSides.left] = Vector3.left;
         normals[(int)cubeSides.right] = Vector3.right;
+
+        rotationVectors = new Vector3[6];
 
         //set starting diagonal (between controllers)
         startingDiagonal = new Vector3(1f, 1f, -1f);
@@ -423,10 +433,6 @@ public class VolumeCubeSelectionState : InteractionState
                     ProcessMesh(outline);
                 }
             }
-            else
-            {
-                savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-            }
 
             //if (currObjMesh.tag != "highlight")
             //{
@@ -490,25 +496,29 @@ public class VolumeCubeSelectionState : InteractionState
                 {
                     savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
                 }
-                
+
                 //process outlines and associate them with the original objects
-                //TODO: Change the savedLeftOutline into createOutlineMesh and
-                //change the type in savedOutlines from gameObject to Mesh?
-                //Must then also change everywhere else
                 //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
                 //savedOutlines[currObjMesh.name].Add(savedRightOutline);
 
-                foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
+                for (int i = 0; i < 6; i++)
                 {
-                    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                    objWithSelections.Add(outline.name);
-                    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
-
-                    UVList = new List<Vector2>();
-                    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                    previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                    GameObject outlineObject = MakeOutline(currObjMesh.name);
+                    Mesh outlineMesh = CreateOutlineMesh(SavedOutlinePoints[currObjMesh.name][i], rotationVectors[i], outlineObject.GetComponent<MeshFilter>().mesh);
+                    savedOutlines[currObjMesh.name].Add(outlineObject);
                 }
+             
+                //foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
+                //{
+                //    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                //    objWithSelections.Add(outline.name);
+                //    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                //    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
+
+                //    UVList = new List<Vector2>();
+                //    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                //    previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                //}
             }
         }
     }
@@ -593,7 +603,6 @@ public class VolumeCubeSelectionState : InteractionState
         int intersectIndex2;
 
         //calculate plane normals of all six sides of the cube after rotation
-        Vector3[] rotationVectors = new Vector3[6];
         rotationVectors[(int)cubeSides.forward] = (centerCube.transform.rotation * normals[(int)cubeSides.forward]).normalized;
         rotationVectors[(int)cubeSides.back] = (centerCube.transform.rotation * normals[(int)cubeSides.back]).normalized;
         rotationVectors[(int)cubeSides.up] = (centerCube.transform.rotation * normals[(int)cubeSides.up]).normalized;
@@ -752,27 +761,31 @@ public class VolumeCubeSelectionState : InteractionState
                 }
             }
 
-            if (item.gameObject.tag != "highlightmesh")
-            {
-                Mesh outlineMesh = CreateOutlineMesh(outlinePoints, rotationVectors[planePass], item.gameObject.GetComponent<MeshFilter>().mesh);
+            savedOutlinePoints.Add(item.name, new Dictionary<int, List<Vector3>>());
+            savedOutlinePoints[item.name].Add(planePass, outlinePoints);
+            outlinePoints.Clear();
 
-                //if (planePass == 1)
-                //{
-                //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
-                //    //rightOutlines[item.name].transform.position = item.transform.position;
-                //    //rightOutlines[item.name].transform.localScale = item.transform.localScale;
-                //    //rightOutlines[item.name].transform.rotation = item.transform.rotation;
-                //}
-                //else
-                //{
-                //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
-                //    //leftOutlines[item.name].transform.position = item.transform.position;
-                //    //leftOutlines[item.name].transform.localScale = item.transform.localScale;
-                //    //leftOutlines[item.name].transform.rotation = item.transform.rotation;
-                //}
+            //if (item.gameObject.tag != "highlightmesh")
+            //{
+            //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, rotationVectors[planePass], item.gameObject.GetComponent<MeshFilter>().mesh);
 
-                outlinePoints.Clear();
-            }
+            //    //if (planePass == 1)
+            //    //{
+            //    //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
+            //    //    //rightOutlines[item.name].transform.position = item.transform.position;
+            //    //    //rightOutlines[item.name].transform.localScale = item.transform.localScale;
+            //    //    //rightOutlines[item.name].transform.rotation = item.transform.rotation;
+            //    //}
+            //    //else
+            //    //{
+            //    //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
+            //    //    //leftOutlines[item.name].transform.position = item.transform.position;
+            //    //    //leftOutlines[item.name].transform.localScale = item.transform.localScale;
+            //    //    //leftOutlines[item.name].transform.rotation = item.transform.rotation;
+            //    //}
+
+            //    outlinePoints.Clear();
+            //}
         }
 
         mesh.Clear();
@@ -1038,21 +1051,22 @@ public class VolumeCubeSelectionState : InteractionState
         }
     }
 
-    ///// <summary>
-    ///// Make a Gameobject that will follow the user's hands
-    ///// </summary>
-    ///// <param name="meshName"></param>
-    ///// <returns></returns>
-    //private GameObject MakeHandOutline(string meshName)
-    //{
-    //    GameObject newOutline = new GameObject();
-    //    newOutline.name = meshName + " highlight";
-    //    newOutline.AddComponent<MeshRenderer>();
-    //    newOutline.AddComponent<MeshFilter>();
-    //    newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
-    //    newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
-    //    newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+    /// <summary>
+    /// Make a Gameobject that will follow the user's hands
+    /// </summary>
+    /// <param name="meshName"></param>
+    /// <returns></returns>
+    private GameObject MakeOutline(string meshName)
+    {
+        GameObject newOutline = new GameObject();
+        newOutline.name = "highlight" + outlineObjectCount;
+        newOutline.AddComponent<MeshRenderer>();
+        newOutline.AddComponent<MeshFilter>();
+        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
+        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+        newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        outlineObjectCount++;
 
-    //    return newOutline;
-    //}
+        return newOutline;
+    }
 }
