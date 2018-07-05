@@ -900,6 +900,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
+            sliceOutlines[item.name].GetComponent<MeshFilter>().mesh = new Mesh();
             CreateOutlineMesh(outlinePoints, slicePlane, sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
             //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
             //sliceOutlines[item.name].transform.position = item.transform.position;
