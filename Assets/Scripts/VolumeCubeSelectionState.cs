@@ -35,7 +35,7 @@ public class VolumeCubeSelectionState : InteractionState
     //private static Dictionary<string, GameObject> leftOutlines;                 //left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                //right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
 
-    private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
+    //private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
 
     List<int> selectedIndices;      //Reused for each mesh during ProcessMesh()
     List<int> unselectedIndices;    //^^^^
@@ -149,7 +149,7 @@ public class VolumeCubeSelectionState : InteractionState
         savedOutlinePoints = new Dictionary<string, Dictionary<int, List<Vector3>>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
-        outlinePoints = new List<Vector3>();
+        //outlinePoints = new List<Vector3>();
 
         //this.stateToReturnTo = stateToReturnTo;
 
@@ -408,32 +408,6 @@ public class VolumeCubeSelectionState : InteractionState
                 currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
 
-            //if this object has outlines associated with it, process the outlines
-            if (savedOutlines.ContainsKey(currObjMesh.name))
-            {
-                foreach (GameObject outline in savedOutlines[currObjMesh.name])
-                {
-                    if (!previousNumVertices.ContainsKey(outline.name))
-                    {
-                        previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
-                        outline.GetComponent<MeshFilter>().mesh.MarkDynamic();
-
-                        //TODO: should this be nested?
-                        if (!previousSelectedIndices.ContainsKey(outline.name))
-                        {
-                            previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                            previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
-
-                            UVList = new List<Vector2>();
-                            currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
-                        }
-                    }
-
-                    ProcessMesh(outline);
-                }
-            }
-
             //if (currObjMesh.tag != "highlight")
             //{
             //    if (!leftOutlines.ContainsKey(currObjMesh.name))                              //
@@ -501,24 +475,45 @@ public class VolumeCubeSelectionState : InteractionState
                 //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
                 //savedOutlines[currObjMesh.name].Add(savedRightOutline);
 
+                //if this object has outlines associated with it, process the outlines
+                foreach (GameObject outline in savedOutlines[currObjMesh.name])
+                {
+                    if (!previousNumVertices.ContainsKey(outline.name))
+                    {
+                        previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
+
+                        //TODO: should this be nested?
+                        //if (!previousSelectedIndices.ContainsKey(outline.name))
+                        //{
+                            previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                            previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
+
+                            UVList = new List<Vector2>();
+                            outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                            previousUVs.Add(outline.name, UVList.ToArray<Vector2>());
+                            //previous two lines used to be currObjMesh instead of outline, trying to see if this is correct
+                        //}
+                    }
+
+                    ProcessMesh(outline);
+
+                    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                    objWithSelections.Add(outline.name);
+                    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
+
+                    UVList = new List<Vector2>();
+                    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                    previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                }
+
+
                 for (int i = 0; i < 6; i++)
                 {
                     GameObject outlineObject = MakeOutline(currObjMesh.name);
                     Mesh outlineMesh = CreateOutlineMesh(SavedOutlinePoints[currObjMesh.name][i], rotationVectors[i], outlineObject.GetComponent<MeshFilter>().mesh);
                     savedOutlines[currObjMesh.name].Add(outlineObject);
                 }
-             
-                //foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
-                //{
-                //    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                //    objWithSelections.Add(outline.name);
-                //    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                //    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
-
-                //    UVList = new List<Vector2>();
-                //    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                //    previousUVs[outline.name] = UVList.ToArray<Vector2>();
-                //}
             }
         }
     }
@@ -561,6 +556,8 @@ public class VolumeCubeSelectionState : InteractionState
     //creates the new triangles in the mesh and adds the necessary vertices
     private void ProcessMesh(GameObject item)
     {
+        List<Vector3> outlinePoints = new List<Vector3>(); 
+
         Mesh mesh = item.GetComponent<MeshFilter>().mesh;
         selectedIndices.Clear();
 
@@ -769,18 +766,21 @@ public class VolumeCubeSelectionState : InteractionState
                 }
             }
 
-            if (!savedOutlinePoints.ContainsKey(item.name))
+            if (item.gameObject.tag != "highlightmesh")
             {
-                savedOutlinePoints.Add(item.name, new Dictionary<int, List<Vector3>>());
-            }
+                if (!savedOutlinePoints.ContainsKey(item.name))
+                {
+                    savedOutlinePoints.Add(item.name, new Dictionary<int, List<Vector3>>());
+                }
 
-            if (!savedOutlinePoints[item.name].ContainsKey(planePass))
-            {
-                savedOutlinePoints[item.name].Add(planePass, outlinePoints);
-            }
-            else
-            {
-                savedOutlinePoints[item.name][planePass] = outlinePoints;
+                if (!savedOutlinePoints[item.name].ContainsKey(planePass))
+                {
+                    savedOutlinePoints[item.name].Add(planePass, outlinePoints);
+                }
+                else
+                {
+                    savedOutlinePoints[item.name][planePass] = outlinePoints;
+                }
             }
 
             outlinePoints.Clear();
@@ -1085,6 +1085,7 @@ public class VolumeCubeSelectionState : InteractionState
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        newOutline.tag = "highlightmesh";
         outlineObjectCount++;
 
         return newOutline;
