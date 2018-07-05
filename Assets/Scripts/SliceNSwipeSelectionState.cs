@@ -386,7 +386,7 @@ public class SliceNSwipeSelectionState : InteractionState
             int hitLayer = hit.collider.gameObject.layer;
             //ShowLaser(hit, laser, camera.transform.position, hitPoint);
             ShowReticle(hit);
-            if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane")
+            if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.tag != "highlightmesh")
             {
                 collidingMeshes.Add(hit.collider.gameObject);
             } 
@@ -434,11 +434,12 @@ public class SliceNSwipeSelectionState : InteractionState
                         ColorMesh(currObjMesh, "slice");
                         debugString += currObjMesh.name + "  ";
                         currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
+                        //sliceOutline was most recently updated in split mesh
                         GameObject savedSliceOutline = CopyObject(sliceOutlines[currObjMesh.name]); // save the highlights at the point of selection
                         lastSliceOutline[currObjMesh.name] = savedSliceOutline;
 
                         // process outlines and associate them with the original objects
-
+                        /*
                         if (savedOutlines.ContainsKey(currObjMesh.name))
                         {
                             foreach (GameObject outline in savedOutlines[currObjMesh.name])
@@ -479,6 +480,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
                         }
                         savedOutlines[currObjMesh.name].Add(savedSliceOutline);
+                        */
                     }
                 }
                 Debug.Log("SLICE: " + debugString);
@@ -494,21 +496,23 @@ public class SliceNSwipeSelectionState : InteractionState
                         selection1Indices.Remove(currObjMesh.name);
 
                         ColorMesh(currObjMesh, "slice");
-
+                        /*
                         string outlineCollection = "";
 
                         if(savedOutlines[currObjMesh.name].Remove(lastSliceOutline[currObjMesh.name]))
                         {
                             Debug.Log("~~~~~ removed: " + lastSliceOutline[currObjMesh.name].name);
                         }
+                        */
 
-
+                        /*
                         foreach (GameObject outline in savedOutlines[currObjMesh.name])
                         {
                             outlineCollection += outline.name + ", ";
                             ColorMesh(outline, "slice");
                         }
                         Debug.Log("outlines for removed SLICE: " + outlineCollection);
+                    */
                     }
                 }
                 else if (mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold - 0.02f) //Swipe with main trigger helf to select
@@ -554,37 +558,62 @@ public class SliceNSwipeSelectionState : InteractionState
                         ColorMesh(currObjMesh, "swipe");
 
                         string debugStr = "swipe: " + currObjMesh.name + " ";
+
+                        if (!savedOutlines.ContainsKey(currObjMesh.name))
+                        {
+                            savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                        }
+
                         foreach (GameObject outline in savedOutlines[currObjMesh.name])
                         {
-                            if (selection0Indices.ContainsKey(outline.name))
+
+                            if (!previousNumVertices.ContainsKey(outline.name))
                             {
-                                SplitMesh(outline);
-                                if (NormalSwipe(heading, slicePlane))
-                                {
-                                    previousSelectedIndices[outline.name] = selection1Indices[outline.name].ToList();
-                                }
-                                else
-                                {
-                                    PreviousSelectedIndices[outline.name] = selection0Indices[outline.name].ToList();
-                                }
+                                previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
+                                outline.GetComponent<MeshFilter>().mesh.MarkDynamic();
 
-                                if (outline.name == "highlight0")
+                                if (!previousSelectedIndices.ContainsKey(outline.name))
                                 {
-                                    Debug.Log(" At swipe " + previousSelectedIndices[outline.name].Count.ToString() + " selected Indices");
+                                    previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList());
+                                    previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
+
+                                    UVList = new List<Vector2>();
+                                    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                                    previousUVs.Add(outline.name, UVList.ToArray<Vector2>());
                                 }
-
-                                debugStr += outline.name + " ";
-                                //previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList();
-                                objWithSelections.Add(outline.name);
-                                previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                                previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
-
-                                UVList = new List<Vector2>();
-                                outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                                previousUVs[outline.name] = UVList.ToArray<Vector2>();
-                                ColorMesh(outline, "swipe");
                             }
+
+                            SplitMesh(outline);
+                            if (NormalSwipe(heading, slicePlane))
+                            {
+                                previousSelectedIndices[outline.name] = selection1Indices[outline.name].ToList();
+                            }
+                            else
+                            {
+                                PreviousSelectedIndices[outline.name] = selection0Indices[outline.name].ToList();
+                            }
+
+                            if (outline.name == "highlight0")
+                            {
+                                Debug.Log(" At swipe " + previousSelectedIndices[outline.name].Count.ToString() + " selected Indices");
+                            }
+
+                            debugStr += outline.name + " ";
+                            //previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList();
+                            //TODO: check whether objWithSelections is needed for outlines.
+                            objWithSelections.Add(outline.name);
+                            previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                            previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
+
+                            UVList = new List<Vector2>();
+                            outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                            previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                            ColorMesh(outline, "swipe");
+                            
                         }
+
+                        savedOutlines[currObjMesh.name].Add(lastSliceOutline[currObjMesh.name]);
+
                         Debug.Log(debugStr);
                     }
                     sliceStatus = 0;
@@ -610,11 +639,11 @@ public class SliceNSwipeSelectionState : InteractionState
 
         gObject.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        if (gObject.tag != "highlight")
+        if (gObject.tag != "highlightmesh")
         {
             if (!sliceOutlines.ContainsKey(gObject.name))                              //
             {                                                                             // Add an Outline for this mesh if there isn't one already
-                sliceOutlines.Add(gObject.name, MakeHandOutline(gObject.name));    //
+                sliceOutlines.Add(gObject.name, MakeHandOutline(gObject));    //
             }
             originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
         }
@@ -875,11 +904,11 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
-            Mesh outlineMesh = CreateOutlineMesh(outlinePoints, slicePlane, sliceOutlines[item.name].GetComponent<MeshFilter>().mesh);
+            CreateOutlineMesh(outlinePoints, slicePlane, sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
             //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-            sliceOutlines[item.name].transform.position = item.transform.position;
-            sliceOutlines[item.name].transform.localScale = item.transform.localScale;
-            sliceOutlines[item.name].transform.rotation = item.transform.rotation;
+            //sliceOutlines[item.name].transform.position = item.transform.position;
+            //sliceOutlines[item.name].transform.localScale = item.transform.localScale;
+            //sliceOutlines[item.name].transform.rotation = item.transform.rotation;
             //PreviousSelectedIndices[item.name] = outlineMesh.GetIndices(0).ToList();
         }
 
@@ -911,6 +940,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     materials[1] = Resources.Load("Green Material") as Material;
                 } else
                 {
+                    // This case handles backing out of a slice. In that case it is indicated by clearing selection0Indices for the object
                     if (objWithSelections.Contains(item.name))
                     {
                         Debug.Log("Remove slice with selections");
@@ -980,6 +1010,7 @@ public class SliceNSwipeSelectionState : InteractionState
         if (expectedNumVerts > 65000)
         {
             points = OrderMesh(points);
+            Debug.Log("Outline mesh was ordered: " + outlineMesh.name);
         }
 
        // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
@@ -1229,15 +1260,22 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     /// <param name="meshName"></param>
     /// <returns></returns>
-    private GameObject MakeHandOutline(string meshName)
+    private GameObject MakeHandOutline(GameObject item)
     {
+        string meshName = item.name;
         GameObject newOutline = new GameObject();
         newOutline.name = meshName + " highlight";
         newOutline.AddComponent<MeshRenderer>();
         newOutline.AddComponent<MeshFilter>();
+        newOutline.tag = "highlightmesh";
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+
+
+        newOutline.transform.position = item.transform.position;
+        newOutline.transform.localScale = item.transform.localScale;
+        newOutline.transform.rotation = item.transform.rotation;
 
         return newOutline;
     }
