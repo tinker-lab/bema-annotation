@@ -624,8 +624,9 @@ public class SliceNSwipeSelectionState : InteractionState
             {
                 collidingMesh = hit.collider.gameObject;
                 Material mat = collidingMesh.GetComponent<Renderer>().materials[0];
-
+                
                 collidingMesh.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.7f);
+                Debug.Log("material: " + collidingMesh.GetComponent<Renderer>().materials[0].name);
             } else{
                 collidingMesh.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 1f);
                 collidingMesh = null;
