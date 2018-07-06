@@ -620,15 +620,23 @@ public class SliceNSwipeSelectionState : InteractionState
             int hitLayer = hit.collider.gameObject.layer;
             //ShowLaser(hit, laser, camera.transform.position, hitPoint);
             ShowReticle(hit);
-            Color color;
             if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
             {
                 collidingMesh = hit.collider.gameObject;
-                collidingMesh.GetComponent<Renderer>().material = DetermineBaseMaterial(collidingMesh.GetComponent<Renderer>().material);                
-                color.a = 0.5f;
+                if (!originalMaterial.ContainsKey(collidingMesh.name))
+                {
+                    originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
+                }
+                collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);                
+                //color.a = 0.5f;
                 //Debug.Log("material: " + collidingMesh.GetComponent<Renderer>().materials[0].name);
             } else{
-                color.a =  1f;
+
+                if (originalMaterial.ContainsKey(collidingMesh.name))
+                {
+                    collidingMesh.GetComponent<Renderer>().material = originalMaterial[collidingMesh.name];
+                }
+                
                 collidingMesh = null;
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
@@ -655,7 +663,7 @@ public class SliceNSwipeSelectionState : InteractionState
             {                                                                             // Add an Outline for this mesh if there isn't one already
                 sliceOutlines.Add(gObject.name, MakeHandOutline(gObject));    //
             }
-            originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
+           // originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
         }
     }
 
@@ -1259,6 +1267,29 @@ public class SliceNSwipeSelectionState : InteractionState
             Material transparentBase = new Material(baseMaterial);
             transparentBase.name = "TransparentUnselected";
             transparentBase.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            transparentBase.SetFloat("_Mode", 3f);
+            transparentBase.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            transparentBase.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            transparentBase.SetInt("_ZWrite", 0);
+            transparentBase.DisableKeyword("_ALPHATEST_ON");
+            transparentBase.DisableKeyword("_ALPHABLEND_ON");
+            transparentBase.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            transparentBase.renderQueue = 3000;
+            return transparentBase;
+        }
+    }
+
+    Material GazeSelectedMaterial(Material baseMaterial)
+    {
+        if (baseMaterial.name == "TransparenSighted")
+        {
+            return baseMaterial;
+        }
+        else
+        {
+            Material transparentBase = new Material(baseMaterial);
+            transparentBase.name = "TransparentSighted";
+            transparentBase.color = new Color(1.0f, 0f, 1.0f, 0.5f);
             transparentBase.SetFloat("_Mode", 3f);
             transparentBase.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
             transparentBase.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
