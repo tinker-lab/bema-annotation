@@ -89,6 +89,8 @@ public class UIController : MonoBehaviour {
             firstUpdate = false;
         }
 
+        //Put an if statement that changes states based on a keyboard press
+
         determineLeftRightControllers();
         currentState.HandleEvents(controller0Info, controller1Info);
 	}

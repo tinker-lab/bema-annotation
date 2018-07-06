@@ -21,7 +21,7 @@ public class VolumeCubeCollision : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer != planeLayer)
+        if (other.gameObject.layer != planeLayer && other.gameObject.tag != "highlightmesh")
         {
             collidedObjects.Add(other.gameObject);
 
