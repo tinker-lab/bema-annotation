@@ -532,10 +532,13 @@ public class VolumeCubeSelectionState : InteractionState
                     }
 
                     List<int> ignorePassList = new List<int>();
-                    for(int j = i; j < 6; j++)
+                    /*
+                    for (int j = i; j >= 0; j--)
                     {
                         ignorePassList.Add(j);
                     }
+                    */
+                    ignorePassList.Add(i);
                     ProcessMesh(outlineObject, ignorePassList);
 
                     previousSelectedIndices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0);
@@ -887,7 +890,7 @@ public class VolumeCubeSelectionState : InteractionState
         List<Vector2> uvCoordinates = new List<Vector2>();
         outlineMesh.Clear();
 
-        float radius = .005f * 1.0/outline.transform.localScale;
+        float radius = .005f;// * 1.0/outline.transform.localScale;
         int numSections = 6;
 
         Assert.IsTrue(points.Count % 2 == 0);
