@@ -162,79 +162,80 @@ public class RayCastSelectionState : InteractionState
         outlinePlanes.Clear();
     }
 
-    ////when not colliding with an object
-    //public override void Deactivate()
-    //{
+    //when not colliding with an object
+    public override void Deactivate()
+    {
+        laser.SetActive(false);
     //    int[] indices;
 
-    //    foreach (GameObject collidingObj in collidingMeshes)
-    //    {
-    //        Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
-    //        mesh.subMeshCount = 2;
-    //        indices = previousSelectedIndices[collidingObj.name]; //the indices of last selection
-  
-    //        if (objWithSelections.Contains(collidingObj.name))    //If it previously had a piece selected (CLICKED) - revert to that selection
-    //        {
-    //            //Generate a mesh to fill the entire selected part of the collider
-    //            //Vector3[] verts = mesh.vertices;
-    //            Vector3[] verts = previousVertices[collidingObj.name];
+        //    foreach (GameObject collidingObj in collidingMeshes)
+        //    {
+        //        Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
+        //        mesh.subMeshCount = 2;
+        //        indices = previousSelectedIndices[collidingObj.name]; //the indices of last selection
 
-    //            List<Vector2> uvs = new List<Vector2>();
-    //            uvs = previousUVs[collidingObj.name].ToList();
-    //            //mesh.GetUVs(0, uvs);
+        //        if (objWithSelections.Contains(collidingObj.name))    //If it previously had a piece selected (CLICKED) - revert to that selection
+        //        {
+        //            //Generate a mesh to fill the entire selected part of the collider
+        //            //Vector3[] verts = mesh.vertices;
+        //            Vector3[] verts = previousVertices[collidingObj.name];
 
-    //            mesh.Clear();
-    //            mesh.vertices = verts;
-    //            mesh.SetUVs(0, uvs);
+        //            List<Vector2> uvs = new List<Vector2>();
+        //            uvs = previousUVs[collidingObj.name].ToList();
+        //            //mesh.GetUVs(0, uvs);
 
-    //            if (collidingObj.tag != "highlightmesh") //set unselected and selected regions back to what they were at the last click
-    //            {
-    //                mesh.subMeshCount = 2;
-    //                mesh.SetTriangles(previousUnselectedIndices[collidingObj.name], 0);
-    //                mesh.SetTriangles(indices, 1);
-    //            }
-    //            else //for meshes that are outlines, use only one material (unselected will not be drawn)
-    //            {
-    //                mesh.subMeshCount = 1;
-    //                mesh.SetTriangles(indices, 0);
-    //            }
+        //            mesh.Clear();
+        //            mesh.vertices = verts;
+        //            mesh.SetUVs(0, uvs);
 
-    //            mesh.RecalculateBounds();
-    //            mesh.RecalculateNormals();
+        //            if (collidingObj.tag != "highlightmesh") //set unselected and selected regions back to what they were at the last click
+        //            {
+        //                mesh.subMeshCount = 2;
+        //                mesh.SetTriangles(previousUnselectedIndices[collidingObj.name], 0);
+        //                mesh.SetTriangles(indices, 1);
+        //            }
+        //            else //for meshes that are outlines, use only one material (unselected will not be drawn)
+        //            {
+        //                mesh.subMeshCount = 1;
+        //                mesh.SetTriangles(indices, 0);
+        //            }
 
-    //            //Go through each outline associated with the current mesh object and reset it
-    //            foreach (GameObject outline in savedOutlines[collidingObj.name])
-    //            {
-    //                Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
-    //                //Vector3[] outlineVerts = outlineMesh.vertices;
-    //                Vector3[] outlineVerts = previousVertices[outline.name];
-    //                List<Vector2> outlineUVs = new List<Vector2>();
-    //                outlineUVs = previousUVs[outline.name].ToList();
-    //                //outlineMesh.GetUVs(0, outlineUVs);
+        //            mesh.RecalculateBounds();
+        //            mesh.RecalculateNormals();
 
-    //                outlineMesh.Clear();
-    //                outlineMesh.vertices = outlineVerts;
-    //                outlineMesh.SetUVs(0, outlineUVs);
+        //            //Go through each outline associated with the current mesh object and reset it
+        //            foreach (GameObject outline in savedOutlines[collidingObj.name])
+        //            {
+        //                Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
+        //                //Vector3[] outlineVerts = outlineMesh.vertices;
+        //                Vector3[] outlineVerts = previousVertices[outline.name];
+        //                List<Vector2> outlineUVs = new List<Vector2>();
+        //                outlineUVs = previousUVs[outline.name].ToList();
+        //                //outlineMesh.GetUVs(0, outlineUVs);
 
-    //                outlineMesh.subMeshCount = 1;
-    //                outlineMesh.SetTriangles(previousSelectedIndices[outline.name], 0);
+        //                outlineMesh.Clear();
+        //                outlineMesh.vertices = outlineVerts;
+        //                outlineMesh.SetUVs(0, outlineUVs);
 
-    //                outlineMesh.RecalculateBounds();
-    //                outlineMesh.RecalculateNormals();
-    //            }
-    //        }
-    //        else //NOT CLICKED 
-    //        {
-    //            //reset object to original state (before interaction)
-    //            if (collidingObj.tag != "highlightmesh")
-    //            {
-    //                Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
-    //                baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-    //                collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
-    //            }
-    //        }
-    //    }
-    //}
+        //                outlineMesh.subMeshCount = 1;
+        //                outlineMesh.SetTriangles(previousSelectedIndices[outline.name], 0);
+
+        //                outlineMesh.RecalculateBounds();
+        //                outlineMesh.RecalculateNormals();
+        //            }
+        //        }
+        //        else //NOT CLICKED 
+        //        {
+        //            //reset object to original state (before interaction)
+        //            if (collidingObj.tag != "highlightmesh")
+        //            {
+        //                Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
+        //                baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        //                collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
+        //            }
+        //        }
+        //    }
+        }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {

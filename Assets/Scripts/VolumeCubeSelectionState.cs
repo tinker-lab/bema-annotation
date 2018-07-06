@@ -388,7 +388,7 @@ public class VolumeCubeSelectionState : InteractionState
         {
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
             Deactivate();
-            return;    
+            return;
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
@@ -820,12 +820,12 @@ public class VolumeCubeSelectionState : InteractionState
                 if (!savedOutlinePoints[item.name].ContainsKey(planePass))
                 {
                     savedOutlinePoints[item.name].Add(planePass, outlinePoints);
-                    Debug.Log("Saving outline points for " + item.name + " ponts size=" + outlinePoints.Count+" first time");
+                    //Debug.Log("Saving outline points for " + item.name + " ponts size=" + outlinePoints.Count+" first time");
                 }
                 else
                 {
                     savedOutlinePoints[item.name][planePass] = outlinePoints;
-                    Debug.Log("Saving outline points for " + item.name + " ponts size=" + outlinePoints.Count);
+                    //Debug.Log("Saving outline points for " + item.name + " ponts size=" + outlinePoints.Count);
                 }
             }
 

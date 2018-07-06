@@ -340,7 +340,7 @@ public class HandSelectionState : InteractionState
 
         currentPos = controller0.controller.transform.position;
 
-        Debug.Log("Hand Motion " + Vector3.Distance(lastPos,currentPos).ToString());
+        //Debug.Log("Hand Motion " + Vector3.Distance(lastPos,currentPos).ToString());
 
         // Take input from cube about what it collides with
         cubeColliders = centerComponent.CollidedObjects;
