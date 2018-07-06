@@ -90,6 +90,22 @@ public class UIController : MonoBehaviour {
         }
 
         //Put an if statement that changes states based on a keyboard press
+        if(Input.GetKeyDown("1"))
+        {
+            currentState = new NavigationState(controller0Info, controller1Info);
+        }
+        else if(Input.GetKeyDown("2"))
+        {
+            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info);
+        }
+        else if(Input.GetKeyDown("3"))
+        {
+            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
+        }
+        else if(Input.GetKeyDown("4"))
+        {
+            currentState = new RayCastSelectionState(controller0Info, controller1Info);
+        }
 
         determineLeftRightControllers();
         currentState.HandleEvents(controller0Info, controller1Info);
