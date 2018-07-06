@@ -24,6 +24,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
     private Vector3 lastPos;
     private Vector3 lastOrientation;
+    private GameObject lastSeenObj;
 
     private GameObject slicePlane;   //
     //private GameObject rightPlane;  // Used to detect collision with meshes in the model
@@ -157,6 +158,7 @@ public class SliceNSwipeSelectionState : InteractionState
         selected1Indices = new List<int>();
         outlinePoints = new List<Vector3>();
         originalMaterial = new Dictionary<string, Material>();
+        lastSeenObj = new GameObject();
 
         selection0Indices = new Dictionary<string, int[]>();
         selection1Indices = new Dictionary<string, int[]>();
@@ -611,7 +613,6 @@ public class SliceNSwipeSelectionState : InteractionState
     {
         RaycastHit hit;
 
-
         if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000) && sliceStatus == 0)
         {
             //collidingMeshes.Clear();
@@ -620,23 +621,24 @@ public class SliceNSwipeSelectionState : InteractionState
             int hitLayer = hit.collider.gameObject.layer;
             //ShowLaser(hit, laser, camera.transform.position, hitPoint);
             ShowReticle(hit);
-            if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
+            if (hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.tag != "highlightmesh")
             {
                 collidingMesh = hit.collider.gameObject;
                 if (!originalMaterial.ContainsKey(collidingMesh.name))
                 {
                     originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
                 }
-                collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);                
-                //color.a = 0.5f;
-                //Debug.Log("material: " + collidingMesh.GetComponent<Renderer>().materials[0].name);
-            } else{
-
-                if (originalMaterial.ContainsKey(collidingMesh.name))
+                if (collidingMesh.name != lastSeenObj.name)
                 {
-                    collidingMesh.GetComponent<Renderer>().material = originalMaterial[collidingMesh.name];
+                    collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);
+                    if (originalMaterial.ContainsKey(lastSeenObj.name))
+                    {
+                        lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
+                    }
+                    lastSeenObj = hit.collider.gameObject;
                 }
-                
+
+            } else{
                 collidingMesh = null;
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
