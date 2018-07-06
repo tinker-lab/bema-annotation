@@ -620,14 +620,15 @@ public class SliceNSwipeSelectionState : InteractionState
             int hitLayer = hit.collider.gameObject.layer;
             //ShowLaser(hit, laser, camera.transform.position, hitPoint);
             ShowReticle(hit);
+            Color color;
             if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.name != "SwordLine" && hit.collider.tag != "highlightmesh")
             {
                 collidingMesh = hit.collider.gameObject;
-                Material mat = collidingMesh.GetComponent<Renderer>().materials[0];
-                //mat.EnableKeyword("_EMISSION");
-                collidingMesh.GetComponent<Renderer>().materials[0] = DetermineBaseMaterial(mat);
+                collidingMesh.GetComponent<Renderer>().material = DetermineBaseMaterial(collidingMesh.GetComponent<Renderer>().material);                
+                color.a = 0.5f;
+                //Debug.Log("material: " + collidingMesh.GetComponent<Renderer>().materials[0].name);
             } else{
-               // collidingMesh.GetComponent<Renderer>().materials[0].DisableKeyword("_EMISSION");
+                color.a =  1f;
                 collidingMesh = null;
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
