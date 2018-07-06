@@ -624,10 +624,10 @@ public class SliceNSwipeSelectionState : InteractionState
             {
                 collidingMesh = hit.collider.gameObject;
                 Material mat = collidingMesh.GetComponent<Renderer>().materials[0];
-                //mat.EnableKeyword("_EMISSION");
-                collidingMesh.GetComponent<Renderer>().materials[0] = DetermineBaseMaterial(mat);
+
+                collidingMesh.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.7f);
             } else{
-               // collidingMesh.GetComponent<Renderer>().materials[0].DisableKeyword("_EMISSION");
+                collidingMesh.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 1f);
                 collidingMesh = null;
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
