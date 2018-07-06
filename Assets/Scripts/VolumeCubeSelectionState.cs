@@ -510,7 +510,7 @@ public class VolumeCubeSelectionState : InteractionState
 
                 for (int i = 0; i < 6; i++)
                 {
-                    GameObject outlineObject = MakeOutline(currObjMesh.name);
+                    GameObject outlineObject = MakeOutline(currObjMesh);
                     Mesh outlineMesh = CreateOutlineMesh(SavedOutlinePoints[currObjMesh.name][i], rotationVectors[i], outlineObject.GetComponent<MeshFilter>().mesh);
                     savedOutlines[currObjMesh.name].Add(outlineObject);
                 }
@@ -1076,7 +1076,7 @@ public class VolumeCubeSelectionState : InteractionState
     /// </summary>
     /// <param name="meshName"></param>
     /// <returns></returns>
-    private GameObject MakeOutline(string meshName)
+    private GameObject MakeOutline(GameObject item)
     {
         GameObject newOutline = new GameObject();
         newOutline.name = "highlight" + outlineObjectCount;
@@ -1087,6 +1087,10 @@ public class VolumeCubeSelectionState : InteractionState
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
         newOutline.tag = "highlightmesh";
         outlineObjectCount++;
+
+        newOutline.transform.position = item.transform.position;
+        newOutline.transform.localScale = item.transform.localScale;
+        newOutline.transform.rotation = item.transform.rotation;
 
         return newOutline;
     }

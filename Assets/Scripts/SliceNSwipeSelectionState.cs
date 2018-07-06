@@ -626,6 +626,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 Material mat = collidingMesh.GetComponent<Renderer>().materials[0];
                 //mat.EnableKeyword("_EMISSION");
                 collidingMesh.GetComponent<Renderer>().materials[0] = DetermineBaseMaterial(mat);
+                Debug.Log("material: " + collidingMesh.GetComponent<Renderer>().materials[0].name);
             } else{
                // collidingMesh.GetComponent<Renderer>().materials[0].DisableKeyword("_EMISSION");
                 collidingMesh = null;
