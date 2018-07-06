@@ -51,6 +51,11 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller0Info;
     private ControllerInfo controller1Info;
 
+    //private InteractionState handSelectionState;
+    //private InteractionState volumeCubeSelectionState;
+    //private InteractionState sliceNSwipeSelectionState;
+    //private InteractionState rayCastSelectionState;
+
     private static int screenshotCount;
 
     bool firstUpdate = true;
@@ -62,17 +67,21 @@ public class UIController : MonoBehaviour {
 
 	// Use this for initialization
 	void Init () {
+        Debug.Log("init for UIController");
+
+        screenshotCount = 0;
 
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
 
-        screenshotCount = 0;
+        //handSelectionState = new NavigationState(controller0Info, controller1Info);
+        //volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info);
+        //sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
+        //rayCastSelectionState = new RayCastSelectionState(controller0Info, controller1Info);
+
 
         //currentState = new PickResourceState(controller0Info);
-        //currentState = new NavigationState(controller0Info, controller1Info);
-        currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
-        //currentState = new VolumeCubeSelectionState(controller0Info, controller1Info);
-        //currentState = new RayCastSelectionState(controller0Info, controller1Info);
+        currentState = new NavigationState(controller0Info, controller1Info);
     }
 
     // Update is called once per frame
@@ -92,19 +101,19 @@ public class UIController : MonoBehaviour {
         //Put an if statement that changes states based on a keyboard press
         if(Input.GetKeyDown("1"))
         {
-            currentState = new NavigationState(controller0Info, controller1Info);
+            ChangeState(new NavigationState(controller0Info, controller1Info));
         }
         else if(Input.GetKeyDown("2"))
         {
-            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info);
+            ChangeState(new VolumeCubeSelectionState(controller0Info, controller1Info));
         }
         else if(Input.GetKeyDown("3"))
         {
-            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
+            ChangeState(new SliceNSwipeSelectionState(controller0Info, controller1Info));
         }
         else if(Input.GetKeyDown("4"))
         {
-            currentState = new RayCastSelectionState(controller0Info, controller1Info);
+            ChangeState(new RayCastSelectionState(controller0Info, controller1Info));
         }
 
         determineLeftRightControllers();
