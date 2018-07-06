@@ -452,7 +452,7 @@ public class SliceNSwipeSelectionState : InteractionState
     {
         RaycastHit hit;
 
-        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000)) 
+        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000))
         {
             if (sliceStatus == 0)
             {
@@ -494,15 +494,10 @@ public class SliceNSwipeSelectionState : InteractionState
                 }
             }
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
-        } else if (originalMaterial.ContainsKey(lastSeenObj.name))
+        }
+        else if (originalMaterial.ContainsKey(lastSeenObj.name))
         {
             lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
-            string debug = lastSeenObj.name + " materials are ";
-            foreach (Material mat in lastSeenObj.GetComponent<Renderer>().materials)
-            {
-                debug += mat.name + ", ";
-            }
-            Debug.Log(debug);
         }
     }
 
