@@ -511,7 +511,7 @@ public class VolumeCubeSelectionState : InteractionState
                 for (int i = 0; i < 6; i++)
                 {
                     GameObject outlineObject = MakeOutline(currObjMesh);
-                    Mesh outlineMesh = CreateOutlineMesh(SavedOutlinePoints[currObjMesh.name][i], rotationVectors[i], outlineObject.GetComponent<MeshFilter>().mesh);
+                    Mesh outlineMesh = CreateOutlineMesh(SavedOutlinePoints[currObjMesh.name][i], rotationVectors[i], outlineObject);
                     savedOutlines[currObjMesh.name].Add(outlineObject);
 
                     if (!previousNumVertices.ContainsKey(outlineObject.name))
@@ -879,14 +879,15 @@ public class VolumeCubeSelectionState : InteractionState
     /**
      * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
      * */
-    private Mesh CreateOutlineMesh(List<Vector3> points, Vector3 plane, Mesh outlineMesh)
+    private Mesh CreateOutlineMesh(List<Vector3> points, Vector3 plane, GameObject outline)
     {
+        Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
         List<Vector3> verts = new List<Vector3>();
         List<int> faces = new List<int>();
         List<Vector2> uvCoordinates = new List<Vector2>();
         outlineMesh.Clear();
 
-        float radius = .005f;
+        float radius = .005f * 1.0/outline.transform.localScale;
         int numSections = 6;
 
         Assert.IsTrue(points.Count % 2 == 0);
@@ -898,10 +899,18 @@ public class VolumeCubeSelectionState : InteractionState
         }
 
         if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2)
+            List<Vector3> duplicatedPoints = new List<Vector3>();
+            duplicatedPoints.Add(points[0]);
+            for (int i=1;i < points.Count; i++)
             {
-                Vector3 centerStart = points[i];
-                Vector3 centerEnd = points[i + 1];
+                duplicatedPoints.Add(points[i]);
+                duplicatedPoints.Add(points[i]);
+            }
+
+            for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
+            {
+                Vector3 centerStart = duplicatedPoints[i];
+                Vector3 centerEnd = duplicatedPoints[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
                 Vector3 right = Vector3.Cross(plane, direction);
@@ -937,7 +946,6 @@ public class VolumeCubeSelectionState : InteractionState
             outlineMesh.SetUVs(0, uvCoordinates);
             outlineMesh.SetTriangles(faces, 0);
 
-            outlineMesh.RecalculateBounds();
             outlineMesh.RecalculateNormals();
         }
 
