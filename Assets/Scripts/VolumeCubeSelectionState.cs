@@ -24,6 +24,8 @@ public class VolumeCubeSelectionState : InteractionState
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
     VolumeCubeCollision centerComponent;            //Script on cube that we get the list of colliders from
 
+    SelectionData selectionData;
+     
     private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
     private Dictionary<string, int[]> previousUnselectedIndices;                //Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
@@ -105,7 +107,7 @@ public class VolumeCubeSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info) //, InteractionState stateToReturnTo) 
+    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData) 
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "VolumeCubeSelectionState";
@@ -137,8 +139,10 @@ public class VolumeCubeSelectionState : InteractionState
 
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
-     
+
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
+
+        selectionData = sharedData;
 
         objWithSelections = new HashSet<string>();
         previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have

@@ -38,17 +38,16 @@ public class NavigationState : InteractionState {
     //CubeCollision rightComponent;
     CubeCollision centerComponent;
 
-
     private HashSet<GameObject> cubeColliders;
 
 
-    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData)
     {
         desc = "NavigationState";
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        handSelectionState = new HandSelectionState(controller0, controller1, this);
+        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");

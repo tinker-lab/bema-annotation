@@ -16,6 +16,8 @@ public class RayCastSelectionState : InteractionState
     private List<GameObject> outlinePlanes;
     private GameObject tubeMesh;
 
+    private SelectionData selectionData;
+
     private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
     private Dictionary<string, int[]> previousUnselectedIndices;                //Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
@@ -77,7 +79,7 @@ public class RayCastSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public RayCastSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public RayCastSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData)
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "RayCastSelectionState";
@@ -88,6 +90,8 @@ public class RayCastSelectionState : InteractionState
 
         collidingMeshes = new List<GameObject>();
         outlinePlanes = new List<GameObject>();
+
+        selectionData = sharedData;
 
         objWithSelections = new HashSet<string>();
         previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have

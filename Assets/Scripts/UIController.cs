@@ -51,6 +51,8 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller0Info;
     private ControllerInfo controller1Info;
 
+    private SelectionData selectionData;
+
     private InteractionState handSelectionState;
     private InteractionState volumeCubeSelectionState;
     private InteractionState sliceNSwipeSelectionState;
@@ -74,14 +76,14 @@ public class UIController : MonoBehaviour {
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
 
-        volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info);
+        volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
         volumeCubeSelectionState.Deactivate();
-        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1Info);
+        sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData);
         sliceNSwipeSelectionState.Deactivate();
-        rayCastSelectionState = new RayCastSelectionState(controller0Info, controller1Info);
+        rayCastSelectionState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
         rayCastSelectionState.Deactivate();
 
-        handSelectionState = new NavigationState(controller0Info, controller1Info);
+        handSelectionState = new NavigationState(controller0Info, controller1Info, selectionData);
 
         //currentState = new PickResourceState(controller0Info);
         //currentState = new NavigationState(controller0Info, controller1Info);

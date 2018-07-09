@@ -33,13 +33,15 @@ public class SliceNSwipeSelectionState : InteractionState
     //private List<GameObject> collidingMeshes;       // List of meshes currently being collided with
     private GameObject collidingMesh;                   // The currently colliding object.
 
-    private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
-    private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
-    private Dictionary<string, List<int>> previousUnselectedIndices;                // Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
-    private static Dictionary<string, int> previousNumVertices;                 // Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
-    private static Dictionary<string, List<int>> previousSelectedIndices;           // key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
-    private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
-    private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
+    SelectionData selectionData;
+
+    //private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
+    //private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
+    //private Dictionary<string, List<int>> previousUnselectedIndices;                // Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
+    //private static Dictionary<string, int> previousNumVertices;                 // Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
+    //private static Dictionary<string, List<int>> previousSelectedIndices;           // key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
+    //private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
+    //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
     private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private Dictionary<string, Material> originalMaterial;
 
@@ -51,42 +53,42 @@ public class SliceNSwipeSelectionState : InteractionState
     List<int> selected0Indices;      // Reused for each mesh during ProcessMesh()
     List<int> selected1Indices;    // ^^^^
 
-    public static Dictionary<string, List<int>> PreviousSelectedIndices
-    {
-        get { return previousSelectedIndices; }
-    }
+    //public static Dictionary<string, List<int>> PreviousSelectedIndices
+    //{
+    //    get { return previousSelectedIndices; }
+    //}
 
-    public static Dictionary<string, Vector3[]> PreviousVertices
-    {
-        get { return previousVertices; }
-    }
+    //public static Dictionary<string, Vector3[]> PreviousVertices
+    //{
+    //    get { return previousVertices; }
+    //}
 
-    public static Dictionary<string, Vector2[]> PreviousUVs
-    {
-        get { return previousUVs;  }
-    }
+    //public static Dictionary<string, Vector2[]> PreviousUVs
+    //{
+    //    get { return previousUVs;  }
+    //}
 
-    public static Dictionary<string, int> PreviousNumVertices
-    {
-        get { return previousNumVertices; }
-    }
-    public static HashSet<string> ObjectsWithSelections
-    {
-        get { return objWithSelections; }
-    }
-    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    {
-        get { return savedOutlines; }
-        set { savedOutlines = value; }
-    }
-    public static Dictionary<string, GameObject> IntersectOutlines
-    {
-        get { return sliceOutlines; }
-    }
-    public static int SliceStatus
-    {
-        get { return sliceStatus;  }
-    }
+    //public static Dictionary<string, int> PreviousNumVertices
+    //{
+    //    get { return previousNumVertices; }
+    //}
+    //public static HashSet<string> ObjectsWithSelections
+    //{
+    //    get { return objWithSelections; }
+    //}
+    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    //{
+    //    get { return savedOutlines; }
+    //    set { savedOutlines = value; }
+    //}
+    //public static Dictionary<string, GameObject> IntersectOutlines
+    //{
+    //    get { return sliceOutlines; }
+    //}
+    //public static int SliceStatus
+    //{
+    //    get { return sliceStatus;  }
+    //}
 
     /// <summary>
     /// State that activates whenever there's a mesh between the user's controllers. Allows user to select surfaces and progressively refine their selection.
@@ -94,7 +96,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
-    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info) // InteractionState stateToReturnTo) 
+    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData)
     {
 
         Debug.Log("Constructing Slice State");
@@ -117,16 +119,18 @@ public class SliceNSwipeSelectionState : InteractionState
 
         collidingMesh = null;
         //cubeColliders = new HashSet<GameObject>();
-     
+
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
 
-        objWithSelections = new HashSet<string>();
-        previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
-        previousUnselectedIndices = new Dictionary<string, List<int>>();      // Keeps track of indices that were previously unselected
-        previousSelectedIndices = new Dictionary<string, List<int>>();
-        previousVertices = new Dictionary<string, Vector3[]>();
-        previousUVs = new Dictionary<string, Vector2[]>();
-        savedOutlines = new Dictionary<string, HashSet<GameObject>>();
+        selectionData = sharedData;
+
+        //objWithSelections = new HashSet<string>();
+        //previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
+        //previousUnselectedIndices = new Dictionary<string, List<int>>();      // Keeps track of indices that were previously unselected
+        //previousSelectedIndices = new Dictionary<string, List<int>>();
+        //previousVertices = new Dictionary<string, Vector3[]>();
+        //previousUVs = new Dictionary<string, Vector2[]>();
+        //savedOutlines = new Dictionary<string, HashSet<GameObject>>();
         selected0Indices = new List<int>();
         selected1Indices = new List<int>();
         outlinePoints = new List<Vector3>();
