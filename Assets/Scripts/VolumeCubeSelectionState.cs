@@ -26,13 +26,13 @@ public class VolumeCubeSelectionState : InteractionState
 
     SelectionData selectionData;
      
-    private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
-    private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
-    private Dictionary<string, int[]> previousUnselectedIndices;                //Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
-    private static Dictionary<string, int> previousNumVertices;                 //Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
-    private static Dictionary<string, int[]> previousSelectedIndices;           //key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
-    private static HashSet<string> objWithSelections;                           //Collection of the the names of all the meshes that have had pieces selected from them.
-    private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
+    //private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
+    //private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
+    //private Dictionary<string, int[]> previousUnselectedIndices;                //Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
+    //private static Dictionary<string, int> previousNumVertices;                 //Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
+    //private static Dictionary<string, int[]> previousSelectedIndices;           //key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
+    //private static HashSet<string> objWithSelections;                           //Collection of the the names of all the meshes that have had pieces selected from them.
+    //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
     private static Dictionary<string, Dictionary<int, List<Vector3>>> savedOutlinePoints;     //Key = name of the object in model, Value = all the sets of outline points
     //private static Dictionary<string, GameObject> leftOutlines;                 //left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     //private static Dictionary<string, GameObject> rightOutlines;                //right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
@@ -58,34 +58,34 @@ public class VolumeCubeSelectionState : InteractionState
     //Quaternion previousRotation;
 
     //getters for the dictionaries
-    public static Dictionary<string, int[]> PreviousSelectedIndices
-    {
-        get { return previousSelectedIndices; }
-    }
+    //public static Dictionary<string, int[]> PreviousSelectedIndices
+    //{
+    //    get { return previousSelectedIndices; }
+    //}
 
-    public static Dictionary<string, Vector3[]> PreviousVertices
-    {
-        get { return previousVertices; }
-    }
+    //public static Dictionary<string, Vector3[]> PreviousVertices
+    //{
+    //    get { return previousVertices; }
+    //}
 
-    public static Dictionary<string, Vector2[]> PreviousUVs
-    {
-        get { return previousUVs;  }
-    }
+    //public static Dictionary<string, Vector2[]> PreviousUVs
+    //{
+    //    get { return previousUVs;  }
+    //}
 
-    public static Dictionary<string, int> PreviousNumVertices
-    {
-        get { return previousNumVertices; }
-    }
-    public static HashSet<string> ObjectsWithSelections
-    {
-        get { return objWithSelections; }
-    }
-    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    {
-        get { return savedOutlines; }
-        set { savedOutlines = value; }
-    }
+    //public static Dictionary<string, int> PreviousNumVertices
+    //{
+    //    get { return previousNumVertices; }
+    //}
+    //public static HashSet<string> ObjectsWithSelections
+    //{
+    //    get { return objWithSelections; }
+    //}
+    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    //{
+    //    get { return savedOutlines; }
+    //    set { savedOutlines = value; }
+    //}
     public Dictionary<string, Dictionary<int, List<Vector3>>> SavedOutlinePoints
     {
         get { return savedOutlinePoints; }
@@ -144,13 +144,13 @@ public class VolumeCubeSelectionState : InteractionState
 
         selectionData = sharedData;
 
-        objWithSelections = new HashSet<string>();
-        previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have
-        previousUnselectedIndices = new Dictionary<string, int[]>();      //Keeps track of indices that were previously unselected
-        previousSelectedIndices = new Dictionary<string, int[]>();
-        previousVertices = new Dictionary<string, Vector3[]>();
-        previousUVs = new Dictionary<string, Vector2[]>();
-        savedOutlines = new Dictionary<string, HashSet<GameObject>>();
+        //objWithSelections = new HashSet<string>();
+        //previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have
+        //previousUnselectedIndices = new Dictionary<string, int[]>();      //Keeps track of indices that were previously unselected
+        //previousSelectedIndices = new Dictionary<string, int[]>();
+        //previousVertices = new Dictionary<string, Vector3[]>();
+        //previousUVs = new Dictionary<string, Vector2[]>();
+        //savedOutlines = new Dictionary<string, HashSet<GameObject>>();
         savedOutlinePoints = new Dictionary<string, Dictionary<int, List<Vector3>>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
@@ -296,16 +296,16 @@ public class VolumeCubeSelectionState : InteractionState
             mesh.subMeshCount = 2;
 
             //the indices of the last selection
-            indices = previousSelectedIndices[collidingObj.name];
+            indices = SelectionData.PreviousSelectedIndices[collidingObj.name];
 
             //If it previously had a piece selected (clicked) then revert to that selection
-            if (objWithSelections.Contains(collidingObj.name))
+            if (SelectionData.ObjectsWithSelections.Contains(collidingObj.name))
             {
                 //Generate a mesh to fill the entire selected part of the collider
-                Vector3[] verts = previousVertices[collidingObj.name];
+                Vector3[] verts = SelectionData.PreviousVertices[collidingObj.name];
 
                 List<Vector2> uvs = new List<Vector2>();
-                uvs = previousUVs[collidingObj.name].ToList();
+                uvs = SelectionData.PreviousUVs[collidingObj.name].ToList();
 
                 mesh.Clear();
                 mesh.vertices = verts;
@@ -315,7 +315,7 @@ public class VolumeCubeSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh")
                 {
                     mesh.subMeshCount = 2;
-                    mesh.SetTriangles(previousUnselectedIndices[collidingObj.name], 0);
+                    mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[collidingObj.name], 0);
                     mesh.SetTriangles(indices, 1);
                 }
                 else //for meshes that are outlines, use only one material (unselected will not be drawn)
