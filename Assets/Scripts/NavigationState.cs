@@ -206,11 +206,11 @@ public class NavigationState : InteractionState {
         RaycastHit hit;
         Vector3 laserStartPos = controllerInfo.trackedObj.transform.position;
 
-        var everythingExeceptPlaneLayer = LayerMask.NameToLayer("PlaneLayer");
-        everythingExeceptPlaneLayer = 1 << everythingExeceptPlaneLayer;
-        everythingExeceptPlaneLayer = ~everythingExeceptPlaneLayer;
+        //var everythingExeceptPlaneLayer = LayerMask.NameToLayer("PlaneLayer");
+        //everythingExeceptPlaneLayer = 1 << everythingExeceptPlaneLayer;
+        //everythingExeceptPlaneLayer = ~everythingExeceptPlaneLayer;
 
-        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000, everythingExeceptPlaneLayer))
+        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000)) //, everythingExeceptPlaneLayer))
         {
             // No matter what object is hit, show the laser pointing to it
             Debug.Log("raycast " + hit.collider.gameObject.name);

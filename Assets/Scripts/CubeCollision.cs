@@ -31,7 +31,7 @@ public class CubeCollision : MonoBehaviour {
         if (other.gameObject.layer != planeLayer)
         {
             //UnityEngine.Debug.Log("Collided with: " + other.name);
-            if (other.name != "SwordLine")
+            if (other.name != "SwordLine" && other.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
             {
                 collidedObjects.Add(other.gameObject);
             }

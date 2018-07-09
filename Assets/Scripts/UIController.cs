@@ -76,6 +76,8 @@ public class UIController : MonoBehaviour {
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
 
+        selectionData = new SelectionData();
+
         volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
         volumeCubeSelectionState.Deactivate();
         sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData);

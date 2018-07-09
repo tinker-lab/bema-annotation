@@ -42,38 +42,40 @@ public class HandSelectionState : InteractionState
 
     List<int> selectedIndices;      // Reused for each mesh during ProcessMesh()
     List<int> unselectedIndices;    // ^^^^
-    
+
     //Mesh leftOutlineMesh;       // Reused to draw highlights that move with left hand
     //Mesh rightOutlineMesh;      // Reused to draw highlights that move with right hand
 
-    //public static Dictionary<string, int[]> PreviousSelectedIndices
-    //{
-    //    get { return previousSelectedIndices; }
-    //}
+    public static Dictionary<string, int[]> PreviousSelectedIndices
+    {
+        get { return SelectionData.PreviousSelectedIndices; }
+    }
 
-    //public static Dictionary<string, Vector3[]> PreviousVertices
-    //{
-    //    get { return previousVertices; }
-    //}
+    public static Dictionary<string, Vector3[]> PreviousVertices
+    {
+        get { return SelectionData.PreviousVertices; }
+    }
 
-    //public static Dictionary<string, Vector2[]> PreviousUVs
-    //{
-    //    get { return previousUVs;  }
-    //}
+    public static Dictionary<string, Vector2[]> PreviousUVs
+    {
+        get { return SelectionData.PreviousUVs; }
+    }
 
-    //public static Dictionary<string, int> PreviousNumVertices
-    //{
-    //    get { return previousNumVertices; }
-    //}
-    //public static HashSet<string> ObjectsWithSelections
-    //{
-    //    get { return objWithSelections; }
-    //}
-    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    //{
-    //    get { return savedOutlines; }
-    //    set { savedOutlines = value; }
-    //}
+    public static Dictionary<string, int> PreviousNumVertices
+    {
+        get { return SelectionData.PreviousNumVertices; }
+    }
+    public static HashSet<string> ObjectsWithSelections
+    {
+        get { return SelectionData.ObjectsWithSelections; }
+    }
+    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    {
+        get { return SelectionData.SavedOutlines; }
+        set { SelectionData.SavedOutlines = value; }
+    }
+
+
     public static Dictionary<string, GameObject> LeftOutlines
     {
         get { return leftOutlines; }
@@ -433,12 +435,16 @@ public class HandSelectionState : InteractionState
 
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown()) // Clicked: a selection has been made
         {
+            Debug.Log("Hand. OnTriggerDown " + collidingMeshes.Count().ToString());
 
             foreach (GameObject currObjMesh in collidingMeshes)
             {
+                Debug.Log("Hand Selection: " + currObjMesh.name);
+
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); // save the highlights at the point of selection
                 GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
+                
 
                 ////test, the immediate if statement
                 //        bool divisBy3 = previousSelectedIndices[currObjMesh.name].Length % 3 == 0;
@@ -559,12 +565,13 @@ public class HandSelectionState : InteractionState
         original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
 
 
-        mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
+        //mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
         mesh.SetVertices(verts);
+        mesh.SetTriangles(ind, 0);
         mesh.SetUVs(0, uvs);
         copy.GetComponent<MeshFilter>().mesh = mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "highlight" + outlineObjectCount;
+        copy.name = "Hand highlight" + outlineObjectCount;
         outlineObjectCount++;
 
         return copy;
@@ -774,7 +781,7 @@ public class HandSelectionState : InteractionState
             {
                 if (planePass == 1)
                 {
-                    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
+                    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
                     //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
                     rightOutlines[item.name].transform.position = item.transform.position;
                     rightOutlines[item.name].transform.localScale = item.transform.localScale;
@@ -782,7 +789,7 @@ public class HandSelectionState : InteractionState
                 }
                 else
                 {
-                    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
+                    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
                     //leftOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
                     leftOutlines[item.name].transform.position = item.transform.position;
                     leftOutlines[item.name].transform.localScale = item.transform.localScale;
@@ -1094,6 +1101,7 @@ public class HandSelectionState : InteractionState
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
 
         return newOutline;
     }

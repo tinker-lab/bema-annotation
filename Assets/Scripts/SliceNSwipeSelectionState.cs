@@ -159,7 +159,7 @@ public class SliceNSwipeSelectionState : InteractionState
         swordLine.transform.parent = mainController.controller.transform;
         swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
         swordLine.transform.parent.rotation = Quaternion.Inverse(mainController.controller.transform.rotation);
-        swordLine.gameObject.transform.GetComponent<MeshRenderer>().enabled = true;
+        
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
         //  altController.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //enable rendering of controllers
@@ -209,7 +209,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         slicePlane.transform.up = mxf;
 
-        //swordLine.transform.rotation = mainController.controller.transform.rotation;
+        swordLine.gameObject.transform.GetComponent<MeshRenderer>().enabled = true;
 
     }
 
@@ -339,6 +339,10 @@ public class SliceNSwipeSelectionState : InteractionState
                 }
                 else
                 {
+                    if (!sliceOutlines.ContainsKey(collidingMesh.name))                              //
+                    {                                                                             // Add an Outline for this mesh if there isn't one already
+                        sliceOutlines.Add(collidingMesh.name, MakeHandOutline(collidingMesh));    //
+                    }
                     SplitMesh(collidingMesh);
                     ColorMesh(collidingMesh, "slice");
                     debugString += collidingMesh.name + "  ";
@@ -521,6 +525,8 @@ public class SliceNSwipeSelectionState : InteractionState
                     GameObject savedSliceOutline = CopyObject(sliceOutlines[collidingMesh.name]); // save the highlights at the point of selection
                     SelectionData.SavedOutlines[collidingMesh.name].Add(savedSliceOutline);
 
+                    Debug.Log("Slice Selection: " + collidingMesh.name);
+
                     Debug.Log(debugStr);
 
                     sliceStatus = 0;
@@ -653,7 +659,7 @@ public class SliceNSwipeSelectionState : InteractionState
         copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
         copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "highlight" + outlineObjectCount;
+        copy.name = "Slice highlight" + outlineObjectCount;
         outlineObjectCount++;
 
         return copy;
@@ -864,7 +870,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
-            sliceOutlines[item.name].GetComponent<MeshFilter>().mesh = new Mesh();
+            sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh = new Mesh();
             CreateOutlineMesh(outlinePoints, slicePlane, sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
         }
 
@@ -930,8 +936,8 @@ public class SliceNSwipeSelectionState : InteractionState
                 mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
 
                 Material baseMaterial = originalMaterial[item.name];
-                materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
-                //materials[0] = baseMaterial;
+                baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             }
             item.GetComponent<Renderer>().materials = materials;
@@ -1255,6 +1261,8 @@ public class SliceNSwipeSelectionState : InteractionState
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
+
 
 
         newOutline.transform.position = item.transform.position;

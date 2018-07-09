@@ -21,7 +21,7 @@ public class VolumeCubeCollision : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer != planeLayer && other.gameObject.tag != "highlightmesh" && other.gameObject.name != "SwordLine")
+        if (other.gameObject.layer != planeLayer && other.gameObject.tag != "highlightmesh" && other.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
         {
             collidedObjects.Add(other.gameObject);
 

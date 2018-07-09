@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+/*                                                                                                                                                              An old class we probably don't need.
 public class RejectController : MonoBehaviour {
 
 	// Use this for initialization
@@ -25,3 +25,4 @@ public class RejectController : MonoBehaviour {
 		
 	}
 }
+*/

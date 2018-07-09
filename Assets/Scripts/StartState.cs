@@ -1,12 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 
 /**
- *  Temporary class to help us debug states
+ *  Temporary class to help us debug states                                                                                                                 We're not using this class. The code is out of date so we're commenting it out. Can we just delete this??
  */ 
+ /*
 public class StartState : InteractionState {
 
     private readonly float SCALE = 3;
@@ -151,3 +151,5 @@ public class StartState : InteractionState {
         return laser;
     }
 }
+
+*/

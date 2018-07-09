@@ -58,34 +58,34 @@ public class VolumeCubeSelectionState : InteractionState
     //Quaternion previousRotation;
 
     //getters for the dictionaries
-    //public static Dictionary<string, int[]> PreviousSelectedIndices
-    //{
-    //    get { return previousSelectedIndices; }
-    //}
+    public static Dictionary<string, int[]> PreviousSelectedIndices
+    {
+        get { return SelectionData.PreviousSelectedIndices; }
+    }
 
-    //public static Dictionary<string, Vector3[]> PreviousVertices
-    //{
-    //    get { return previousVertices; }
-    //}
+    public static Dictionary<string, Vector3[]> PreviousVertices
+    {
+        get { return SelectionData.PreviousVertices; }
+    }
 
-    //public static Dictionary<string, Vector2[]> PreviousUVs
-    //{
-    //    get { return previousUVs;  }
-    //}
+    public static Dictionary<string, Vector2[]> PreviousUVs
+    {
+        get { return SelectionData.PreviousUVs; }
+    }
 
-    //public static Dictionary<string, int> PreviousNumVertices
-    //{
-    //    get { return previousNumVertices; }
-    //}
-    //public static HashSet<string> ObjectsWithSelections
-    //{
-    //    get { return objWithSelections; }
-    //}
-    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    //{
-    //    get { return savedOutlines; }
-    //    set { savedOutlines = value; }
-    //}
+    public static Dictionary<string, int> PreviousNumVertices
+    {
+        get { return SelectionData.PreviousNumVertices; }
+    }
+    public static HashSet<string> ObjectsWithSelections
+    {
+        get { return SelectionData.ObjectsWithSelections; }
+    }
+    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    {
+        get { return SelectionData.SavedOutlines; }
+        set { SelectionData.SavedOutlines = value; }
+    }
     public Dictionary<string, Dictionary<int, List<Vector3>>> SavedOutlinePoints
     {
         get { return savedOutlinePoints; }
@@ -237,6 +237,7 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 dominantCorner = controller1.controller.transform.position;
         Vector3 centerOfCube = Vector3.Lerp(nonDominantCorner, dominantCorner, 0.5f);
         centerCube.transform.position = centerOfCube; // + new Vector3(0, 0, -0.3f); //to push cube away from controllers
+        centerCube.gameObject.GetComponent<MeshRenderer>().enabled = true;
 
         //rotate cube to set the orientation
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
@@ -280,14 +281,8 @@ public class VolumeCubeSelectionState : InteractionState
     //    cube.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);
     //}
 
-    public override void Deactivate()
+    private void Uncollide()
     {
-        //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // Disable hand rendering
-        //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
-
-        //controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); // Enable rendering of controllers
-        //controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //
-
         int[] indices;
 
         foreach (GameObject collidingObj in collidingMeshes)
@@ -371,6 +366,21 @@ public class VolumeCubeSelectionState : InteractionState
         }
     }
 
+    public override void Deactivate()
+    {
+        //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // Disable hand rendering
+        //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
+
+        //controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); // Enable rendering of controllers
+        //controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //
+
+        centerCube.gameObject.GetComponent<MeshRenderer>().enabled = false;
+
+        Uncollide();
+
+        
+    }
+
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         List<Vector2> UVList = new List<Vector2>();
@@ -392,7 +402,7 @@ public class VolumeCubeSelectionState : InteractionState
         else //If not colliding with anything, change states
         {
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-            Deactivate();
+            Uncollide();
             return;
         }
 
@@ -435,6 +445,8 @@ public class VolumeCubeSelectionState : InteractionState
         {
             foreach (GameObject currObjMesh in collidingMeshes)
             {
+                Debug.Log("Cube Selection: " + currObjMesh.name);
+
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
                 //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
@@ -1136,18 +1148,23 @@ public class VolumeCubeSelectionState : InteractionState
     private GameObject MakeOutline(GameObject item)
     {
         GameObject newOutline = new GameObject();
-        newOutline.name = "highlight" + outlineObjectCount;
+        newOutline.name = "Cube highlight" + outlineObjectCount;
         newOutline.AddComponent<MeshRenderer>();
         newOutline.AddComponent<MeshFilter>();
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
         newOutline.tag = "highlightmesh";
+        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
+
         outlineObjectCount++;
 
         newOutline.transform.position = item.transform.position;
         newOutline.transform.localScale = item.transform.localScale;
         newOutline.transform.rotation = item.transform.rotation;
+
+        Debug.Log("Cube Selection makeOutline: " + item.name);
+
 
         return newOutline;
     }
