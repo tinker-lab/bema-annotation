@@ -43,8 +43,8 @@ public class SliceNSwipeSelectionState : InteractionState
     private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private Dictionary<string, Material> originalMaterial;
 
-    private static Dictionary<string, int[]> selection0Indices;
-    private static Dictionary<string, int[]> selection1Indices;
+    private static Dictionary<string, int[]> sliced0Indices;
+    private static Dictionary<string, int[]> sliced1Indices;
 
     private List<Vector3> outlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
 
@@ -115,7 +115,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         slicePlane = CreateHandPlane(mainController, "SliceNSwipeHandPlane");
 
-        collidingMesh = null; new GameObject();      
+        collidingMesh = null;
         //cubeColliders = new HashSet<GameObject>();
      
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
@@ -133,8 +133,8 @@ public class SliceNSwipeSelectionState : InteractionState
         originalMaterial = new Dictionary<string, Material>();
         lastSeenObj = new GameObject();
 
-        selection0Indices = new Dictionary<string, int[]>();
-        selection1Indices = new Dictionary<string, int[]>();
+        sliced0Indices = new Dictionary<string, int[]>();
+        sliced1Indices = new Dictionary<string, int[]>();
 
         sliceOutlines = new Dictionary<string, GameObject>();
     }
@@ -279,8 +279,8 @@ public class SliceNSwipeSelectionState : InteractionState
                     baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
                     collidingMesh.GetComponent<Renderer>().materials[1] = baseMaterial;
 
-                    selection0Indices.Remove(collidingMesh.name);
-                    selection1Indices.Remove(collidingMesh.name);
+                    sliced0Indices.Remove(collidingMesh.name);
+                    sliced1Indices.Remove(collidingMesh.name);
                     ColorMesh(collidingMesh, "slice");
 
                     sliceOutlines[collidingMesh.name].GetComponent<MeshFilter>().mesh.Clear();
@@ -393,8 +393,8 @@ public class SliceNSwipeSelectionState : InteractionState
                 {
                     sliceStatus = 0;
 
-                    selection0Indices.Remove(collidingMesh.name);
-                    selection1Indices.Remove(collidingMesh.name);
+                    sliced0Indices.Remove(collidingMesh.name);
+                    sliced1Indices.Remove(collidingMesh.name);
 
                     sliceOutlines[collidingMesh.name].GetComponent<MeshFilter>().mesh = new Mesh();
 
@@ -434,15 +434,15 @@ public class SliceNSwipeSelectionState : InteractionState
                         if (NormalSwipe(heading, slicePlane))
                         {
                             //Debug.Log("swipe " + collidingMesh.name);
-                            previousUnselectedIndices[collidingMesh.name] = previousUnselectedIndices[collidingMesh.name].Concat(selection0Indices[collidingMesh.name]).ToList();
-                            previousSelectedIndices[collidingMesh.name] = selection1Indices[collidingMesh.name].ToList();
+                            previousUnselectedIndices[collidingMesh.name] = previousUnselectedIndices[collidingMesh.name].Concat(sliced0Indices[collidingMesh.name]).ToList();
+                            previousSelectedIndices[collidingMesh.name] = sliced1Indices[collidingMesh.name].ToList();
                         }
                         else if (!NormalSwipe(heading, slicePlane))
                         {
 
                             //Debug.Log("swipe " + collidingMesh.name);
-                            previousSelectedIndices[collidingMesh.name] = selection0Indices[collidingMesh.name].ToList();
-                            previousUnselectedIndices[collidingMesh.name] = previousUnselectedIndices[collidingMesh.name].Concat(selection1Indices[collidingMesh.name]).ToList();
+                            previousSelectedIndices[collidingMesh.name] = sliced0Indices[collidingMesh.name].ToList();
+                            previousUnselectedIndices[collidingMesh.name] = previousUnselectedIndices[collidingMesh.name].Concat(sliced1Indices[collidingMesh.name]).ToList();
                         }
                         else
                         {
@@ -488,11 +488,11 @@ public class SliceNSwipeSelectionState : InteractionState
                         SplitMesh(outline);
                         if (NormalSwipe(heading, slicePlane))
                         {
-                            previousSelectedIndices[outline.name] = selection1Indices[outline.name].ToList();
+                            previousSelectedIndices[outline.name] = sliced1Indices[outline.name].ToList();
                         }
                         else
                         {
-                            PreviousSelectedIndices[outline.name] = selection0Indices[outline.name].ToList();
+                            PreviousSelectedIndices[outline.name] = sliced0Indices[outline.name].ToList();
                         }
 
                         if (outline.name == "highlight0")
@@ -850,12 +850,12 @@ public class SliceNSwipeSelectionState : InteractionState
 
         //selected0 and selected1 are the locally used lists of indices. selection 0 & 1 are global dictionaries storing arrays of indices for every object
         //i apologize for this
-        selection0Indices[item.name] = selected0Indices.ToArray();
-        selection1Indices[item.name] = selected1Indices.ToArray();
+        sliced0Indices[item.name] = selected0Indices.ToArray();
+        sliced1Indices[item.name] = selected1Indices.ToArray();
 
         if (item.name == "highlight0")
         {
-            Debug.Log(" At SPLIT " + previousSelectedIndices[item.name].Count.ToString() + " selected Indices. 0: " + selection0Indices[item.name].Count().ToString() + ", 1: " + selection1Indices.Count().ToString());
+            Debug.Log(" At SPLIT " + previousSelectedIndices[item.name].Count.ToString() + " selected Indices. 0: " + sliced0Indices[item.name].Count().ToString() + ", 1: " + sliced1Indices.Count().ToString());
         }
 
         if (item.gameObject.tag != "highlightmesh")
@@ -879,12 +879,12 @@ public class SliceNSwipeSelectionState : InteractionState
             if (mode == "slice")
             {
                 // Debug.Log(item.name + " 0: " + selection0Indices[item.name].Length.ToString() + " 1: " + selection1Indices[item.name].Length.ToString());
-                if (selection0Indices.ContainsKey(item.name))
+                if (sliced0Indices.ContainsKey(item.name))
                 {
                     mesh.subMeshCount = 3;
 
-                    mesh.SetTriangles(selection0Indices[item.name], 0);
-                    mesh.SetTriangles(selection1Indices[item.name], 1);
+                    mesh.SetTriangles(sliced0Indices[item.name], 0);
+                    mesh.SetTriangles(sliced1Indices[item.name], 1);
                     mesh.SetTriangles(previousUnselectedIndices[item.name], 2);
 
                     // materials[2] = item.GetComponent<Renderer>().materials[0];
