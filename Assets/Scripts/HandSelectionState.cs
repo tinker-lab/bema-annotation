@@ -113,7 +113,8 @@ public class HandSelectionState : InteractionState
         centerCube.AddComponent<Rigidbody>();
         centerCube.GetComponent<Rigidbody>().isKinematic = true;
         centerComponent = centerCube.AddComponent<CubeCollision>();
-        centerCube.layer = planeLayer;
+        //centerCube.layer = planeLayer;
+        centerCube.layer = LayerMask.NameToLayer("Ignore Raycast");
 
         if (!debug)
         {
@@ -166,7 +167,8 @@ public class HandSelectionState : InteractionState
         handPlane.transform.rotation = c.controller.transform.rotation;
         handPlane.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); //Previously 0.03
 
-        handPlane.layer = planeLayer;
+        //handPlane.layer = planeLayer;
+        handPlane.layer = LayerMask.NameToLayer("Ignore Raycast");
         if (!debug)
         {
             handPlane.GetComponent<MeshRenderer>().enabled = false;
@@ -553,7 +555,7 @@ public class HandSelectionState : InteractionState
         original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
 
 
-        mesh.SetTriangles(ind, 0);
+        mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
         mesh.SetVertices(verts);
         mesh.SetUVs(0, uvs);
         copy.GetComponent<MeshFilter>().mesh = mesh;

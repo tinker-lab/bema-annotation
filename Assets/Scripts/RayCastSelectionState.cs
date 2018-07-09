@@ -121,6 +121,7 @@ public class RayCastSelectionState : InteractionState
         if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000, everythingExeceptPlaneLayer))
         {
             //No matter what object is hit, show the laser pointing to it
+            Debug.Log("raycast ");// + hit.collider.gameObject.name);
             hitPoint = hit.point;
             hitLayer = hit.collider.gameObject.layer;
             ShowLaser(hit, laser, laserStartPos);

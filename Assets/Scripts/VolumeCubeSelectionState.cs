@@ -127,7 +127,8 @@ public class VolumeCubeSelectionState : InteractionState
         centerCube.AddComponent<Rigidbody>();
         centerCube.GetComponent<Rigidbody>().isKinematic = true;
         centerComponent = centerCube.AddComponent<VolumeCubeCollision>();
-        centerCube.layer = planeLayer;
+        //centerCube.layer = planeLayer;
+        centerCube.layer = LayerMask.NameToLayer("Ignore Raycast");
 
         //if (!debug)
         //{
