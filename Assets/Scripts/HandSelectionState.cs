@@ -28,13 +28,13 @@ public class HandSelectionState : InteractionState
 
     SelectionData selectionData;
 
-    private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
-    private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
-    private Dictionary<string, int[]> previousUnselectedIndices;                // Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
-    private static Dictionary<string, int> previousNumVertices;                 // Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
-    private static Dictionary<string, int[]> previousSelectedIndices;           // key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
-    private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
-    private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
+    //private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
+    //private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
+    //private Dictionary<string, int[]> previousUnselectedIndices;                // Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
+    //private static Dictionary<string, int> previousNumVertices;                 // Key = name of object with mesh, Value = original set of vertices (updated when user clicks and mesh is split)
+    //private static Dictionary<string, int[]> previousSelectedIndices;           // key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
+    //private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
+    //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
     private static Dictionary<string, GameObject> leftOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private static Dictionary<string, GameObject> rightOutlines;                // right hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
 
@@ -46,34 +46,34 @@ public class HandSelectionState : InteractionState
     //Mesh leftOutlineMesh;       // Reused to draw highlights that move with left hand
     //Mesh rightOutlineMesh;      // Reused to draw highlights that move with right hand
 
-    public static Dictionary<string, int[]> PreviousSelectedIndices
-    {
-        get { return previousSelectedIndices; }
-    }
+    //public static Dictionary<string, int[]> PreviousSelectedIndices
+    //{
+    //    get { return previousSelectedIndices; }
+    //}
 
-    public static Dictionary<string, Vector3[]> PreviousVertices
-    {
-        get { return previousVertices; }
-    }
+    //public static Dictionary<string, Vector3[]> PreviousVertices
+    //{
+    //    get { return previousVertices; }
+    //}
 
-    public static Dictionary<string, Vector2[]> PreviousUVs
-    {
-        get { return previousUVs;  }
-    }
+    //public static Dictionary<string, Vector2[]> PreviousUVs
+    //{
+    //    get { return previousUVs;  }
+    //}
 
-    public static Dictionary<string, int> PreviousNumVertices
-    {
-        get { return previousNumVertices; }
-    }
-    public static HashSet<string> ObjectsWithSelections
-    {
-        get { return objWithSelections; }
-    }
-    public static Dictionary<string, HashSet<GameObject>> SavedOutlines
-    {
-        get { return savedOutlines; }
-        set { savedOutlines = value; }
-    }
+    //public static Dictionary<string, int> PreviousNumVertices
+    //{
+    //    get { return previousNumVertices; }
+    //}
+    //public static HashSet<string> ObjectsWithSelections
+    //{
+    //    get { return objWithSelections; }
+    //}
+    //public static Dictionary<string, HashSet<GameObject>> SavedOutlines
+    //{
+    //    get { return savedOutlines; }
+    //    set { savedOutlines = value; }
+    //}
     public static Dictionary<string, GameObject> LeftOutlines
     {
         get { return leftOutlines; }
@@ -130,13 +130,13 @@ public class HandSelectionState : InteractionState
 
         selectionData = sharedData;
 
-        objWithSelections = new HashSet<string>();
-        previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
-        previousUnselectedIndices = new Dictionary<string, int[]>();      // Keeps track of indices that were previously unselected
-        previousSelectedIndices = new Dictionary<string, int[]>();
-        previousVertices = new Dictionary<string, Vector3[]>();
-        previousUVs = new Dictionary<string, Vector2[]>();
-        savedOutlines = new Dictionary<string, HashSet<GameObject>>();
+        //objWithSelections = new HashSet<string>();
+        //previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
+        //previousUnselectedIndices = new Dictionary<string, int[]>();      // Keeps track of indices that were previously unselected
+        //previousSelectedIndices = new Dictionary<string, int[]>();
+        //previousVertices = new Dictionary<string, Vector3[]>();
+        //previousUVs = new Dictionary<string, Vector2[]>();
+        //savedOutlines = new Dictionary<string, HashSet<GameObject>>();
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
         outlinePoints = new List<Vector3>();
@@ -255,18 +255,18 @@ public class HandSelectionState : InteractionState
         {
             Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
             mesh.subMeshCount = 2;
-            indices = previousSelectedIndices[collidingObj.name]; // the indices of last selection
+            indices = SelectionData.PreviousSelectedIndices[collidingObj.name]; // the indices of last selection
   
-            if (objWithSelections.Contains(collidingObj.name))    // If it previously had a piece selected (CLICKED) - revert to that selection
+            if (SelectionData.ObjectsWithSelections.Contains(collidingObj.name))    // If it previously had a piece selected (CLICKED) - revert to that selection
             {
                 // Generate a mesh to fill the entire selected part of the collider
                 //Vector3[] verts = mesh.vertices;
-                Vector3[] verts = previousVertices[collidingObj.name];
+                Vector3[] verts = SelectionData.PreviousVertices[collidingObj.name];
 
                         //Debug.Log( verts.Count().ToString() + ", " + previousNumVertices[collidingObj.name].ToString()  + "   deactivate");
 
                 List<Vector2> uvs = new List<Vector2>();
-                uvs = previousUVs[collidingObj.name].ToList();
+                uvs = SelectionData.PreviousUVs[collidingObj.name].ToList();
                 //mesh.GetUVs(0, uvs);
 
                 mesh.Clear();
@@ -276,7 +276,7 @@ public class HandSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh") // set unselected and selected regions back to what they were at the last click
                 {
                     mesh.subMeshCount = 2;
-                    mesh.SetTriangles(previousUnselectedIndices[collidingObj.name], 0);
+                    mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[collidingObj.name], 0);
                     mesh.SetTriangles(indices, 1);
                 }
                 else // for meshes that are outlines, use only one material (unselected will not be drawn)
@@ -289,15 +289,15 @@ public class HandSelectionState : InteractionState
                 mesh.RecalculateNormals();
 
                 // Go through each outline associated with the current mesh object and reset it
-                foreach (GameObject outline in savedOutlines[collidingObj.name])
+                foreach (GameObject outline in SelectionData.SavedOutlines[collidingObj.name])
                 {
                             //Debug.Log("Removing outlines for " + collidingObj.name);
 
                     Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
                     //Vector3[] outlineVerts = outlineMesh.vertices;
-                    Vector3[] outlineVerts = previousVertices[outline.name];
+                    Vector3[] outlineVerts = SelectionData.PreviousVertices[outline.name];
                     List<Vector2> outlineUVs = new List<Vector2>();
-                    outlineUVs = previousUVs[outline.name].ToList();
+                    outlineUVs = SelectionData.PreviousUVs[outline.name].ToList();
                     //outlineMesh.GetUVs(0, outlineUVs);
 
                     outlineMesh.Clear();
@@ -305,7 +305,7 @@ public class HandSelectionState : InteractionState
                     outlineMesh.SetUVs(0, outlineUVs);
 
                     outlineMesh.subMeshCount = 1;
-                    outlineMesh.SetTriangles(previousSelectedIndices[outline.name], 0);
+                    outlineMesh.SetTriangles(SelectionData.PreviousSelectedIndices[outline.name], 0);
 
                     outlineMesh.RecalculateBounds();
                     outlineMesh.RecalculateNormals();
@@ -364,37 +364,37 @@ public class HandSelectionState : InteractionState
 
         foreach (GameObject currObjMesh in collidingMeshes)
         {
-            if (!previousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
+            if (!SelectionData.PreviousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
             {
-                previousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
+                SelectionData.PreviousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
                 currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
-                previousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                previousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
+                SelectionData.PreviousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                SelectionData.PreviousVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices);
 
                 UVList = new List<Vector2>();
                 currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                previousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
+                SelectionData.PreviousUVs.Add(currObjMesh.name, UVList.ToArray<Vector2>());
 
                 currObjMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
 
-            if (savedOutlines.ContainsKey(currObjMesh.name)) // if this object has outlines associated with it, process the outlines
+            if (SelectionData.SavedOutlines.ContainsKey(currObjMesh.name)) // if this object has outlines associated with it, process the outlines
             {
-                foreach (GameObject outline in savedOutlines[currObjMesh.name])
+                foreach (GameObject outline in SelectionData.SavedOutlines[currObjMesh.name])
                 {
-                    if (!previousNumVertices.ContainsKey(outline.name))
+                    if (!SelectionData.PreviousNumVertices.ContainsKey(outline.name))
                     {
-                        previousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
+                        SelectionData.PreviousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);        // Maybe want to store vertices as array instead?
                         outline.GetComponent<MeshFilter>().mesh.MarkDynamic();
 
-                        if (!previousSelectedIndices.ContainsKey(outline.name))
+                        if (!SelectionData.PreviousSelectedIndices.ContainsKey(outline.name))
                         {
-                            previousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                            previousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
+                            SelectionData.PreviousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                            SelectionData.PreviousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
 
                             UVList = new List<Vector2>();
                             outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            previousUVs.Add(outline.name, UVList.ToArray<Vector2>());
+                            SelectionData.PreviousUVs.Add(outline.name, UVList.ToArray<Vector2>());
                         }
                     }
 
@@ -413,7 +413,7 @@ public class HandSelectionState : InteractionState
             }
             else
             {
-                savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
             }
 
             if (currObjMesh.tag != "highlight")
@@ -447,12 +447,12 @@ public class HandSelectionState : InteractionState
                 //    Debug.Log("old: " + previousSelectedIndices[currObjMesh.name].Length.ToString() + ". for " + currObjMesh.name);
                 //}
 
-                previousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
-                previousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
+                SelectionData.PreviousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
+                SelectionData.PreviousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
 
                 UVList = new List<Vector2>();
                 currObjMesh.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                previousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
+                SelectionData.PreviousUVs[currObjMesh.name] = UVList.ToArray<Vector2>();
 
                 //Debug.Log("old: " + oldVertNum.ToString() + ". New: " + previousNumVertices[currObjMesh.name].ToString() +". for " + currObjMesh.name);
 
@@ -467,7 +467,7 @@ public class HandSelectionState : InteractionState
                     }
                 }
 
-                previousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);     // updates original indices to store the the most recently selected portion
+                SelectionData.PreviousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);     // updates original indices to store the the most recently selected portion
 
                 //test, following foreach statement
                 //foreach (int index in previousSelectedIndices[currObjMesh.name])
@@ -487,13 +487,13 @@ public class HandSelectionState : InteractionState
                 //            Debug.Log("new: " + previousSelectedIndices[currObjMesh.name].Length.ToString() + ". for " + currObjMesh.name);
                 //        }
 
-                if (previousUnselectedIndices.ContainsKey(currObjMesh.name))
+                if (SelectionData.PreviousUnselectedIndices.ContainsKey(currObjMesh.name))
                 {
-                    previousUnselectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                    SelectionData.PreviousUnselectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0);
                 }
                 else
                 {
-                    previousUnselectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                    SelectionData.PreviousUnselectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
                 }
 
                 ////test, following foreach statement
@@ -506,27 +506,27 @@ public class HandSelectionState : InteractionState
                 //        }
 
 
-                objWithSelections.Add(currObjMesh.name);
+                SelectionData.ObjectsWithSelections.Add(currObjMesh.name);
 
-                if (!savedOutlines.ContainsKey(currObjMesh.name))
+                if (!SelectionData.SavedOutlines.ContainsKey(currObjMesh.name))
                 {
-                    savedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                    SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
                 }
                 
                 // process outlines and associate them with the original objects
-                savedOutlines[currObjMesh.name].Add(savedLeftOutline);
-                savedOutlines[currObjMesh.name].Add(savedRightOutline);
+                SelectionData.SavedOutlines[currObjMesh.name].Add(savedLeftOutline);
+                SelectionData.SavedOutlines[currObjMesh.name].Add(savedRightOutline);
 
-                foreach (GameObject outline in savedOutlines[currObjMesh.name]) 
+                foreach (GameObject outline in SelectionData.SavedOutlines[currObjMesh.name]) 
                 {
-                    previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                    objWithSelections.Add(outline.name);
-                    previousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                    previousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
+                    SelectionData.PreviousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                    SelectionData.ObjectsWithSelections.Add(outline.name);
+                    SelectionData.PreviousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                    SelectionData.PreviousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
 
                     UVList = new List<Vector2>();
                     outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                    previousUVs[outline.name] = UVList.ToArray<Vector2>();
+                    SelectionData.PreviousUVs[outline.name] = UVList.ToArray<Vector2>();
                 }
 
               
@@ -580,20 +580,20 @@ public class HandSelectionState : InteractionState
         Mesh mesh = item.GetComponent<MeshFilter>().mesh;
         selectedIndices.Clear();
 
-        if (!objWithSelections.Contains(item.name) || item.CompareTag("highlightmesh"))
+        if (!SelectionData.ObjectsWithSelections.Contains(item.name) || item.CompareTag("highlightmesh"))
         {
             unselectedIndices.Clear();
         }
         else
         {
-            unselectedIndices =  previousUnselectedIndices[item.name].ToList<int>();
+            unselectedIndices =  SelectionData.PreviousUnselectedIndices[item.name].ToList<int>();
         }
 
-        int[] indices = previousSelectedIndices[item.name];        // original indices is set to be JUST the selected part, that's why nothing else is drawn
-        List<Vector3> vertices = previousVertices[item.name].ToList();
+        int[] indices = SelectionData.PreviousSelectedIndices[item.name];        // original indices is set to be JUST the selected part, that's why nothing else is drawn
+        List<Vector3> vertices = SelectionData.PreviousVertices[item.name].ToList();
 
-        List<Vector2> UVs = previousUVs[item.name].ToList();
-        int numVertices = previousNumVertices[item.name];
+        List<Vector2> UVs = SelectionData.PreviousUVs[item.name].ToList();
+        int numVertices = SelectionData.PreviousNumVertices[item.name];
 
 
         // vertices.RemoveRange(numVertices, vertices.Count - numVertices);
