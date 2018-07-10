@@ -49,24 +49,41 @@ public class Vector3Plus
     public int sameTriangle;
     public int sameApproxPos;
 
-    public Vector3Plus(Vector3 pt, int ind)
+    public int chainID;
+    public int indexInChain;
+
+    public Vector3Plus(Vector3 pt, int ind, int triangle)
     {
         point = pt;
         index = ind;
-        sameTriangle = -1;
+        sameTriangle = triangle;
         sameApproxPos = -1;
+        chainID = -1;
+        indexInChain = -1;
+
     }
 
     public int SameTriangle
     {
         get { return sameTriangle; }
-        set { sameTriangle = value; }
     }
 
     public int SamePosition
     {
         get { return sameApproxPos; }
         set { sameApproxPos = value; }
+    }
+
+    public int ChainID
+    {
+        get { return chainID; }
+        set { chainID = value; }
+    }
+
+    public int IndexInChain
+    {
+        get { return indexInChain; }
+        set { indexInChain = value; }
     }
 }
 
