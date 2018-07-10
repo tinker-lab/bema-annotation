@@ -846,9 +846,9 @@ public class HandSelectionState : InteractionState
         Assert.IsTrue(points.Count % 2 == 0);
         int expectedNumVerts = (numSections + 1) * points.Count;
 
-      //  if (expectedNumVerts > 65000)
+        //if (expectedNumVerts > 65000)
         //{
-        points = OrderMesh(points);
+        //    points = OrderMesh(points);
         //}
 
         if (points.Count >= 2) {
@@ -990,22 +990,22 @@ public class HandSelectionState : InteractionState
     {
         alreadyVisited.Add(pt);
         orderedPoints.Add(pt.point);
-        
+
         // navigate connectedEdges using the .SameTriangle and .SamePosition methods that take you to different indeces. 
         //maybe run the loop while orderedPoints is < something else? maybe <connectedEdges?
 
 
-        while(pt.SameTriangle != -1)
-        { 
+        while (pt.SameTriangle != -1)
+        {
             if (!alreadyVisited.Contains(connectedEdges[pt.SameTriangle]))
-            {               
+            {
                 DFSVisit(connectedEdges[pt.SameTriangle], connectedEdges, ref alreadyVisited, ref orderedPoints);
             }
         }
-        
+
     }
 
-    // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
+    //Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
     private void AddToGraph(Vector3 point0, Vector3 point1, ref List<Vector3Plus> pointConnections, int index)
     {
         Vector3Plus p0 = new Vector3Plus(point0, index);
@@ -1068,7 +1068,7 @@ public class HandSelectionState : InteractionState
         */
     }
 
-    private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
+private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
     {
         List<Vector3> output = new List<Vector3>(points.Count);
         int i = 0;
