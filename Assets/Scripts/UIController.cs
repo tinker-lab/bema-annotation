@@ -42,6 +42,34 @@ public class ControllerInfo
     }
 }
 
+public class Vector3Plus
+{
+    public Vector3 point;
+    public int index;
+    public int sameTriangle;
+    public int sameApproxPos;
+
+    public Vector3Plus(Vector3 pt, int ind)
+    {
+        point = pt;
+        index = ind;
+        sameTriangle = -1;
+        sameApproxPos = -1;
+    }
+
+    public int SameTriangle
+    {
+        get { return sameTriangle; }
+        set { sameTriangle = value; }
+    }
+
+    public int SamePosition
+    {
+        get { return sameApproxPos; }
+        set { sameApproxPos = value; }
+    }
+}
+
 
 public class UIController : MonoBehaviour {
 

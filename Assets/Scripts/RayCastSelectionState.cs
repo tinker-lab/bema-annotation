@@ -25,7 +25,8 @@ public class RayCastSelectionState : InteractionState
     //private static Dictionary<string, int[]> previousSelectedIndices;           //key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
     //private static HashSet<string> objWithSelections;                           //Collection of the the names of all the meshes that have had pieces selected from them.
     //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       //Key = name of object in model, Value = all the SAVED outline game objects attached to it
-   
+    
+    //turn outlinePoints into a local variable within ProcessMesh
     private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
     private int drawnOutlinePointsCount;
     private List<Vector3> rayDirection;

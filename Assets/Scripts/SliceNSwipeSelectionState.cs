@@ -974,19 +974,28 @@ public class SliceNSwipeSelectionState : InteractionState
         Assert.IsTrue(points.Count % 2 == 0);
         int expectedNumVerts = (numSections + 1) * points.Count;
 
-        if (expectedNumVerts > 65000)
-        {
-            points = OrderMesh(points);
-            Debug.Log("Outline mesh was ordered: " + outlineMesh.name);
-        }
+        //if (expectedNumVerts > 65000)
+        //{
+        points = OrderMesh(points);
+        //    Debug.Log("Outline mesh was ordered: " + outlineMesh.name);
+        //}
 
        // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
 
         if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2)
+
+            List<Vector3> duplicatedPoints = new List<Vector3>();
+            duplicatedPoints.Add(points[0]);
+            for (int i = 1; i < points.Count; i++)
             {
-                Vector3 centerStart = points[i];
-                Vector3 centerEnd = points[i + 1];
+                duplicatedPoints.Add(points[i]);
+                duplicatedPoints.Add(points[i]);
+            }
+
+            for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
+            {
+                Vector3 centerStart = duplicatedPoints[i];
+                Vector3 centerEnd = duplicatedPoints[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
                 Vector3 right = Vector3.Cross(plane.transform.up, direction);
@@ -1147,6 +1156,13 @@ public class SliceNSwipeSelectionState : InteractionState
             pointConnections[point1].Add(point0);
         }
     }
+
+    //private bool ContainsV3Key(Dictionary<Vector3, HashSet<Vector3>> dict, Vector3 key)
+    //{
+    //    List<Vector3> keys = dict.Keys.ToList();
+
+
+    //}
 
     private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
     {

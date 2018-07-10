@@ -796,8 +796,10 @@ public class HandSelectionState : InteractionState
                     leftOutlines[item.name].transform.rotation = item.transform.rotation;
                 }
 
-                outlinePoints.Clear();
+                //outlinePoints.Clear();
             }
+
+            outlinePoints.Clear();
         }
 
         mesh.Clear();
@@ -844,16 +846,26 @@ public class HandSelectionState : InteractionState
         Assert.IsTrue(points.Count % 2 == 0);
         int expectedNumVerts = (numSections + 1) * points.Count;
 
-        if (expectedNumVerts > 65000)
-        {
-            points = OrderMesh(points);
-        }
+      //  if (expectedNumVerts > 65000)
+        //{
+        points = OrderMesh(points);
+        //}
 
         if (points.Count >= 2) {
-            for (int i = 0; i < points.Count-1; i += 2)
+
+            List<Vector3> duplicatedPoints = new List<Vector3>();
+            duplicatedPoints.Add(points[0]);
+            for (int i = 1; i < points.Count; i++)
             {
-                Vector3 centerStart = points[i];
-                Vector3 centerEnd = points[i + 1];
+                duplicatedPoints.Add(points[i]);
+                duplicatedPoints.Add(points[i]);
+            }
+
+
+            for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
+            {
+                Vector3 centerStart = duplicatedPoints[i];
+                Vector3 centerEnd = duplicatedPoints[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
                 Vector3 right = Vector3.Cross(plane.transform.up, direction);
@@ -901,14 +913,16 @@ public class HandSelectionState : InteractionState
      */
     private List<Vector3> OrderMesh(List<Vector3> meshVertices)
     {
-        Dictionary<Vector3, HashSet<Vector3>> vertexGraph = new Dictionary<Vector3, HashSet<Vector3>>();  // Each point should only be connected to two other points
+        //Dictionary<Vector3, HashSet<Vector3>> vertexGraph = new Dictionary<Vector3, HashSet<Vector3>>();  // Each point should only be connected to two other points
+
+        List<Vector3Plus> connectedMeshVertices = new List<Vector3Plus>();
 
         for (int i = 0; i < meshVertices.Count; i += 2)
         {
-            AddToGraph(meshVertices[i], meshVertices[i + 1], ref vertexGraph);
+            AddToGraph(meshVertices[i], meshVertices[i + 1], ref connectedMeshVertices, i);
         }
 
-        meshVertices = DFSOrderPoints(vertexGraph);
+        meshVertices = DFSOrderPoints(connectedMeshVertices);
         meshVertices = RemoveSequentialDuplicates(meshVertices);
 
         return meshVertices;
@@ -955,12 +969,12 @@ public class HandSelectionState : InteractionState
     }
 
     // Orders the points of one mesh. NOTE: currently just uses alreadyVisited HashSet, nothing else;
-    List<Vector3> DFSOrderPoints(Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    List<Vector3> DFSOrderPoints(List<Vector3Plus> pointConnections)
     {
-        HashSet<Vector3> alreadyVisited = new HashSet<Vector3>();
+        HashSet<Vector3Plus> alreadyVisited = new HashSet<Vector3Plus>();
         List<Vector3> orderedPoints = new List<Vector3>();
 
-        foreach (Vector3 pt in pointConnections.Keys)
+        foreach (Vector3Plus pt in pointConnections)                                                    //not sure if we need the for loop here AND in the visit method??? seems like we might just need one since iterating over pointConnections. maybe a for loop here and a different loop there. i dont think a while loop if we keep for here though...
         {
             if (!alreadyVisited.Contains(pt))
             {
@@ -972,24 +986,64 @@ public class HandSelectionState : InteractionState
     }
 
     // Basic DFS, adds the intersection points of edges in the order it visits them
-    void DFSVisit(Vector3 pt, Dictionary<Vector3, HashSet<Vector3>> connectedEdges, ref HashSet<Vector3> alreadyVisited, ref List<Vector3> orderedPoints)
+    void DFSVisit(Vector3Plus pt, List<Vector3Plus> connectedEdges, ref HashSet<Vector3Plus> alreadyVisited, ref List<Vector3> orderedPoints)
     {
         alreadyVisited.Add(pt);
-        orderedPoints.Add(pt);
+        orderedPoints.Add(pt.point);
         
-        foreach (Vector3 otherIndex in connectedEdges[pt])
-        {
-            if (!alreadyVisited.Contains(otherIndex))
+        // navigate connectedEdges using the .SameTriangle and .SamePosition methods that take you to different indeces. 
+        //maybe run the loop while orderedPoints is < something else? maybe <connectedEdges?
+
+
+        while(pt.SameTriangle != -1)
+        { 
+            if (!alreadyVisited.Contains(connectedEdges[pt.SameTriangle]))
             {               
-                DFSVisit(otherIndex, connectedEdges, ref alreadyVisited, ref orderedPoints);
+                DFSVisit(connectedEdges[pt.SameTriangle], connectedEdges, ref alreadyVisited, ref orderedPoints);
             }
         }
         
     }
 
     // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
-    private void AddToGraph(Vector3 point0, Vector3 point1, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    private void AddToGraph(Vector3 point0, Vector3 point1, ref List<Vector3Plus> pointConnections, int index)
     {
+        Vector3Plus p0 = new Vector3Plus(point0, index);
+        Vector3Plus p1 = new Vector3Plus(point1, index + 1);
+
+        if (PlaneCollision.ApproximatelyEquals(point0, point1))
+        {
+            Debug.Log("HandSelection AddToGraph - 2 points are equal, maybe not SameTriangle");
+        }
+
+
+        p0.SameTriangle = index + 1;
+        p1.SameTriangle = index;
+
+
+
+        foreach (Vector3Plus vertex in pointConnections)
+        {
+            if (PlaneCollision.ApproximatelyEquals(vertex.point, p0.point))
+            {
+                Debug.Log("Found a SameTriangle with p0 at " + vertex.point.ToString());
+                p0.SamePosition = vertex.index;
+                vertex.SamePosition = p0.index;
+            }
+            else if (PlaneCollision.ApproximatelyEquals(vertex.point, p1.point))
+            {
+
+                Debug.Log("Found a SameTriangle with p1 at " + vertex.point.ToString());
+                p1.SamePosition = vertex.index;
+                vertex.SamePosition = p1.index;
+            }
+        }
+
+
+        pointConnections.Add(p0);
+        pointConnections.Add(p1);
+
+        /*
         if (!pointConnections.ContainsKey(point0))
         {
             HashSet<Vector3> connections = new HashSet<Vector3>();
@@ -1011,6 +1065,7 @@ public class HandSelectionState : InteractionState
         {
             pointConnections[point1].Add(point0);
         }
+        */
     }
 
     private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
