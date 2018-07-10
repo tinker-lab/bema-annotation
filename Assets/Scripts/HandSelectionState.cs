@@ -76,6 +76,11 @@ public class HandSelectionState : InteractionState
     }
 
 
+    public static Dictionary<string, List<GameObject>> PreSelectionOutlines
+    {
+        get { return preSelectionOutlines; }
+    }
+
     //public static Dictionary<string, GameObject> LeftOutlines
     //{
     //    get { return leftOutlines; }
@@ -710,8 +715,8 @@ public class HandSelectionState : InteractionState
                         UVs.Add(intersectUV1);
 
                         //AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint0, i, i + 1));
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint1, i + 1, i));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint0, unsortedOutlinePts.Count, unsortedOutlinePts.Count+1));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint1, unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
                         {
@@ -743,8 +748,8 @@ public class HandSelectionState : InteractionState
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV2);
 
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint0, i, i + 1));
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint2, i + 1, i));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint0, unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint2, unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
                         {
@@ -772,8 +777,8 @@ public class HandSelectionState : InteractionState
                         UVs.Add(intersectUV1);
                         UVs.Add(intersectUV2);
 
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint1, i + 1, i));
-                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint2, i + 1, i));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint1, unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
+                        unsortedOutlinePts.Add(new OutlinePoint(intersectPoint2, unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], currentPlane))
                         {
@@ -799,7 +804,8 @@ public class HandSelectionState : InteractionState
                 {                                                                             // Add a highlight for this mesh if there isn't one already
                     preSelectionOutlines.Add(item.name, new List<GameObject>());    //
                 }
-                if (preSelectionOutlines[item.name].Count > sortedPoints.Count)
+
+                if (planePass == 0 && preSelectionOutlines[item.name].Count > sortedPoints.Count)
                 {
                     for (int i = preSelectionOutlines[item.name].Count - 1; i >= sortedPoints.Count; i--)
                     {
@@ -807,13 +813,22 @@ public class HandSelectionState : InteractionState
                         preSelectionOutlines[item.name].RemoveAt(i);
                     }
                 }
-                else if (preSelectionOutlines[item.name].Count < sortedPoints.Count)
+
+                int startingIndex = (planePass == 0 ? 0 :  preSelectionOutlines[item.name].Count);
+
+                if (preSelectionOutlines[item.name].Count < (planePass== 0? sortedPoints.Count : preSelectionOutlines[item.name].Count+sortedPoints.Count))
                 {
-                    preSelectionOutlines[item.name].Add(MakeHandOutline(item.name));
+                    int n = (planePass==0? sortedPoints.Count : preSelectionOutlines[item.name].Count + sortedPoints.Count) - preSelectionOutlines[item.name].Count;
+                    for (int i = 0; i < n; i++)
+                    {
+                        preSelectionOutlines[item.name].Add(MakeHandOutline(item.name));
+                    }
                 }
 
-                for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
+                
+                for (int chainIndex =  0; chainIndex < sortedPoints.Count; chainIndex++)
                 {
+                    int meshId = startingIndex + chainIndex;
                     //if (planePass == 1)
                     //{
                     //    Mesh outlineMesh = CreateOutlineMesh(chain, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
@@ -824,11 +839,20 @@ public class HandSelectionState : InteractionState
                     //}
                     //else
                     //{
-                    Mesh outlineMesh = CreateOutlineMesh(sortedPoints[chainIndex], currentPlane, preSelectionOutlines[item.name][chainIndex].GetComponent<MeshFilter>().sharedMesh);
+                    if (meshId >= preSelectionOutlines[item.name].Count)
+                    {
+                        Debug.Log("Well crap");
+                    }
+                    if (chainIndex < 0 || chainIndex >= sortedPoints.Count)
+                    {
+                        Debug.Log("yup");
+                    }
+
+                    Mesh outlineMesh = CreateOutlineMesh(sortedPoints[chainIndex], currentPlane, preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh);
                     //leftOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-                    preSelectionOutlines[item.name][chainIndex].transform.position = item.transform.position;
-                    preSelectionOutlines[item.name][chainIndex].transform.localScale = item.transform.localScale;
-                    preSelectionOutlines[item.name][chainIndex].transform.rotation = item.transform.rotation;
+                    preSelectionOutlines[item.name][meshId].transform.position = item.transform.position;
+                    preSelectionOutlines[item.name][meshId].transform.localScale = item.transform.localScale;
+                    preSelectionOutlines[item.name][meshId].transform.rotation = item.transform.rotation;
                     //}
                 }
             }
@@ -876,11 +900,11 @@ public class HandSelectionState : InteractionState
         float radius = .005f;
         int numSections = 6;
 
-        Assert.IsTrue(points.Count % 2 == 0);
+        //Assert.IsTrue(points.Count % 2 == 0);
         int expectedNumVerts = (numSections + 1) * points.Count;
 
 
-        //points = OrderPoints(points);
+        //TODO: should we remove duplicates here?
 
         if (points.Count >= 2)
         {
@@ -972,9 +996,9 @@ public class HandSelectionState : InteractionState
             int sign = 1;
             int indexOfConnection = -1;
 
-            while (connectingChainID == -1)
+            while (true)
             {
-                if (outlinePts[currIndex].chainID != -1)
+                if (outlinePts[currIndex].chainID == -1)
                 {
                     if (sign > 0)
                     {
@@ -1000,8 +1024,23 @@ public class HandSelectionState : InteractionState
                 }
                 else
                 {
-                    connectingChainID = outlinePts[currIndex].chainID;
-                    indexOfConnection = outlinePts[currIndex].indexInChain;
+                    if (outlinePts[currIndex].chainID != currChainID)
+                    {
+                        connectingChainID = outlinePts[currIndex].chainID;
+                        indexOfConnection = outlinePts[currIndex].indexInChain;
+                    }
+                    else
+                    {
+                        // got back to the starting one. 
+
+                        if (sign > 0)
+                        {
+                            currChain.Add(outlinePts[currIndex]);
+                            outlinePts[currIndex].chainID = currChainID;
+                            outlinePts[currIndex].indexInChain = currChain.Count - 1;
+                        }
+                    }
+                    break;
                 }
             }
 
@@ -1145,17 +1184,20 @@ public class HandSelectionState : InteractionState
     //Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
     private void FindSamePositions(ref List<OutlinePoint> pointConnections)
     {
-        foreach (OutlinePoint vertex in pointConnections)
+        for(int i = 0; i < pointConnections.Count; i++)
         {
-            if (vertex.samePosition != -1)
+            OutlinePoint vertex = pointConnections[i];
+            if (vertex.samePosition == -1)
             {
-                foreach (OutlinePoint otherVertex in pointConnections)
+                for (int j = i+1; j < pointConnections.Count; j++)
                 {
+                    OutlinePoint otherVertex = pointConnections[j];
                     if (PlaneCollision.ApproximatelyEquals(vertex.point, otherVertex.point))
                     {
                         Debug.Log("Found a SameTriangle at " + vertex.point.ToString());
                         otherVertex.samePosition = vertex.index;
                         vertex.samePosition = otherVertex.index;
+                        break;
                     }
                 }
             }

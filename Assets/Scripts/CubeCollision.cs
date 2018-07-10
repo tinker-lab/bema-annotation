@@ -35,10 +35,13 @@ public class CubeCollision : MonoBehaviour {
             {
                 collidedObjects.Add(other.gameObject);
             }
-            if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
+            if (HandSelectionState.PreSelectionOutlines.ContainsKey(other.name))// || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
             {
-                HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
-                HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
+                foreach (GameObject outline in HandSelectionState.PreSelectionOutlines[other.name])
+                {
+                    outline.GetComponent<MeshRenderer>().enabled = true;
+                }
+               // HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = true;
             }
         }
     }
@@ -87,10 +90,13 @@ public class CubeCollision : MonoBehaviour {
 
         collidedObjects.Remove(other.gameObject);
 
-        if (HandSelectionState.LeftOutlines.ContainsKey(other.name) || HandSelectionState.RightOutlines.ContainsKey(other.name))
+
+        if (HandSelectionState.PreSelectionOutlines.ContainsKey(other.name))// || HandSelectionState.RightOutlines.ContainsKey(other.name))    // If we already have an active outline 
         {
-            HandSelectionState.LeftOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
-            HandSelectionState.RightOutlines[other.name].GetComponent<MeshRenderer>().enabled = false;
+            foreach (GameObject outline in HandSelectionState.PreSelectionOutlines[other.name])
+            {
+                outline.GetComponent<MeshRenderer>().enabled = false;
+            }
         }
     }
 }
