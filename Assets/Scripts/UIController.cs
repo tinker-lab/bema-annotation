@@ -42,49 +42,49 @@ public class ControllerInfo
     }
 }
 
-public class Vector3Plus
+public class OutlinePoint
 {
     public Vector3 point;
     public int index;
     public int sameTriangle;
-    public int sameApproxPos;
+    public int samePosition;
 
     public int chainID;
     public int indexInChain;
 
-    public Vector3Plus(Vector3 pt, int ind, int triangle)
+    public OutlinePoint(Vector3 pt, int ind, int triangle)
     {
         point = pt;
         index = ind;
         sameTriangle = triangle;
-        sameApproxPos = -1;
+        samePosition = -1;
         chainID = -1;
         indexInChain = -1;
 
     }
 
-    public int SameTriangle
-    {
-        get { return sameTriangle; }
-    }
+    //public int SameTriangle
+    //{
+    //    get { return sameTriangle; }
+    //}
 
-    public int SamePosition
-    {
-        get { return sameApproxPos; }
-        set { sameApproxPos = value; }
-    }
+    //public int SamePosition
+    //{
+    //    get { return samePos; }
+    //    set { samePos = value; }
+    //}
 
-    public int ChainID
-    {
-        get { return chainID; }
-        set { chainID = value; }
-    }
+    //public int ChainID
+    //{
+    //    get { return chainID; }
+    //    set { chainID = value; }
+    //}
 
-    public int IndexInChain
-    {
-        get { return indexInChain; }
-        set { indexInChain = value; }
-    }
+    //public int IndexInChain
+    //{
+    //    get { return indexInChain; }
+    //    set { indexInChain = value; }
+    //}
 }
 
 
