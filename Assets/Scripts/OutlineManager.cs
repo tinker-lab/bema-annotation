@@ -20,12 +20,75 @@ public class OutlinePoint
         samePosition = -1;
         chainID = -1;
         indexInChain = -1;
-
     }
 }
 
 
 public class OutlineManager {
+
+    private static int outlineObjectCount;
+    public static Dictionary<string, List<GameObject>> preSelectionOutlines;
+
+    public OutlineManager()
+    {
+        outlineObjectCount = 0;
+        preSelectionOutlines = new Dictionary<string, List<GameObject>>();
+    }
+
+    public static void ResizePreselectedPoints(GameObject item, List<OutlinePoint> unsortedPoints, int planePass, GameObject currentPlane)
+    {
+        //Debug.Log("Order points for " + item.name);
+        List<List<OutlinePoint>> sortedPoints = OutlineManager.OrderPoints(unsortedPoints);
+        //    Debug.Log("Just called order points");
+
+        if (!preSelectionOutlines.ContainsKey(item.name))                              //
+        {                                                                             // Add a highlight for this mesh if there isn't one already
+            preSelectionOutlines.Add(item.name, new List<GameObject>());    //
+        }
+
+        if (planePass == 0 && preSelectionOutlines[item.name].Count > sortedPoints.Count)
+        {
+            for (int i = preSelectionOutlines[item.name].Count - 1; i >= sortedPoints.Count; i--)
+            {
+                UnityEngine.Object.Destroy(preSelectionOutlines[item.name][i]);
+                preSelectionOutlines[item.name].RemoveAt(i);
+            }
+        }
+
+        int startingIndex = (planePass == 0 ? 0 : preSelectionOutlines[item.name].Count);
+
+        if (preSelectionOutlines[item.name].Count < (planePass == 0 ? sortedPoints.Count : preSelectionOutlines[item.name].Count + sortedPoints.Count))
+        {
+            int n = (planePass == 0 ? sortedPoints.Count : preSelectionOutlines[item.name].Count + sortedPoints.Count) - preSelectionOutlines[item.name].Count;
+            for (int i = 0; i < n; i++)
+            {
+                preSelectionOutlines[item.name].Add(OutlineManager.MakeNewOutline(item)); //MakeHandOutline(item.name));
+            }
+        }
+
+
+        for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
+        {
+            int meshId = startingIndex + chainIndex;
+
+            if (meshId >= preSelectionOutlines[item.name].Count)
+            {
+                Debug.Log("meshID oob");
+            }
+            if (chainIndex < 0 || chainIndex >= sortedPoints.Count)
+            {
+                Debug.Log("chainIndex oob");
+            }
+
+            Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], currentPlane.transform.up, preSelectionOutlines[item.name][meshId]);
+            preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh = outlineMesh;
+            //preSelectionOutlines[item.name][meshId].transform.position = Vector3.zero;//item.transform.position;
+            //preSelectionOutlines[item.name][meshId].transform.localScale = Vector3.one;//item.transform.localScale;
+            //preSelectionOutlines[item.name][meshId].transform.rotation = Quaternion.identity;//item.transform.rotation;
+
+            //}
+        }
+    }
 
     public static List<List<OutlinePoint>> OrderPoints(List<OutlinePoint> outlinePts)
     {
@@ -286,8 +349,9 @@ public class OutlineManager {
     /**
  * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
  * */
-    public static Mesh CreateOutlineMesh(List<OutlinePoint> points, GameObject plane, Mesh outlineMesh)
+    public static Mesh CreateOutlineMesh(List<OutlinePoint> points, Vector3 plane, GameObject outline)
     {
+        Mesh outlineMesh = outline.GetComponent<MeshFilter>().sharedMesh;
         List<Vector3> verts = new List<Vector3>();
         List<int> faces = new List<int>();
         List<Vector2> uvCoordinates = new List<Vector2>();
@@ -320,7 +384,7 @@ public class OutlineManager {
                 Vector3 centerEnd = duplicatedPoints[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
-                Vector3 right = Vector3.Cross(plane.transform.up, direction);
+                Vector3 right = Vector3.Cross(plane, direction);
                 Vector3 up = Vector3.Cross(direction, right);
                 up = up.normalized * radius;
                 right = right.normalized * radius;
@@ -360,5 +424,65 @@ public class OutlineManager {
         return outlineMesh;
     }
 
+    /// <summary>
+    /// Make a Gameobject that will follow the user's hands
+    /// </summary>
+    /// <param name="meshName"></param>
+    /// <returns></returns>
+    public static GameObject MakeNewOutline(GameObject item)
+    {
+        GameObject newOutline = new GameObject();
+        newOutline.name = "highlight " + outlineObjectCount;
+        newOutline.AddComponent<MeshRenderer>();
+        newOutline.AddComponent<MeshFilter>();
+        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
+        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+        newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        newOutline.tag = "highlightmesh";
+        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
+
+        outlineObjectCount++;
+
+        newOutline.transform.position = Vector3.zero; //item.transform.position;
+        newOutline.transform.localScale = Vector3.one; //item.transform.localScale;
+        newOutline.transform.rotation = Quaternion.identity; //item.transform.rotation;
+
+        return newOutline;
+    }
+
+    /// <summary>
+    /// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
+    /// </summary>
+    /// <param name="original"></param>
+    /// <returns></returns>
+    public static GameObject CopyObject(GameObject original)
+    {
+        GameObject copy = new GameObject();
+        copy.AddComponent<MeshRenderer>();
+        copy.AddComponent<MeshFilter>();
+        copy.transform.position = original.transform.position;
+        copy.transform.rotation = original.transform.rotation;
+        copy.transform.localScale = original.transform.localScale;
+        copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
+        Mesh mesh = new Mesh();
+        List<Vector3> verts = new List<Vector3>();
+        List<int> ind = new List<int>();
+        List<Vector2> uvs = new List<Vector2>();
+        original.GetComponent<MeshFilter>().mesh.GetVertices(verts);
+        original.GetComponent<MeshFilter>().mesh.GetTriangles(ind, 0);
+        original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
+
+
+        //mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
+        mesh.SetVertices(verts);
+        mesh.SetTriangles(ind, 0);
+        mesh.SetUVs(0, uvs);
+        copy.GetComponent<MeshFilter>().mesh = mesh;
+        copy.tag = "highlightmesh"; // tag this object as a highlight
+        copy.name = "Hand highlight" + outlineObjectCount;
+        outlineObjectCount++;
+
+        return copy;
+    }
 
 }

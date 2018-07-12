@@ -150,7 +150,7 @@ public class HandSelectionState : InteractionState
 
         this.stateToReturnTo = stateToReturnTo;
 
-        preSelectionOutlines = new Dictionary<string, List<GameObject>>();
+        preSelectionOutlines = OutlineManager.preSelectionOutlines;
         //rightOutlines = new Dictionary<string, List<GameObject>>();
 
         //leftOutlineMesh = new Mesh();
@@ -347,8 +347,6 @@ public class HandSelectionState : InteractionState
                     preSelectionOutlines[collidingObj.name].RemoveAt(i);
                 }
             }
-
-
         }
     }
 
@@ -462,7 +460,9 @@ public class HandSelectionState : InteractionState
 
                 foreach (GameObject outline in preSelectionOutlines[currObjMesh.name])
                 {
-                    GameObject savedOutline = CopyObject(outline); // save the highlights at the point of selection
+                    GameObject savedOutline = OutlineManager.CopyObject(outline); // save the highlights at the point of selection
+
+                    //GameObject savedOutline = OutlineManager.MakeNewOutline(outline);
                     SelectionData.SavedOutlines[currObjMesh.name].Add(savedOutline);
                 }
                 //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
@@ -561,40 +561,7 @@ public class HandSelectionState : InteractionState
         lastPos = currentPos;
     }
 
-    /// <summary>
-    /// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
-    /// </summary>
-    /// <param name="original"></param>
-    /// <returns></returns>
-    private GameObject CopyObject(GameObject original)
-    {
-        GameObject copy = new GameObject();
-        copy.AddComponent<MeshRenderer>();
-        copy.AddComponent<MeshFilter>();
-        copy.transform.position = original.transform.position;
-        copy.transform.rotation = original.transform.rotation;
-        copy.transform.localScale = original.transform.localScale;
-        copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
-        Mesh mesh = new Mesh();
-        List<Vector3> verts = new List<Vector3>();
-        List<int> ind = new List<int>();
-        List<Vector2> uvs = new List<Vector2>();
-        original.GetComponent<MeshFilter>().mesh.GetVertices(verts);
-        original.GetComponent<MeshFilter>().mesh.GetTriangles(ind, 0);
-        original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
-
-
-        //mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
-        mesh.SetVertices(verts);
-        mesh.SetTriangles(ind, 0);
-        mesh.SetUVs(0, uvs);
-        copy.GetComponent<MeshFilter>().mesh = mesh;
-        copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "Hand highlight" + outlineObjectCount;
-        outlineObjectCount++;
-
-        return copy;
-    }
+   
 
     private bool OnNormalSideOfPlane(Vector3 pt, GameObject plane)
     {
@@ -715,7 +682,7 @@ public class HandSelectionState : InteractionState
                         UVs.Add(intersectUV1);
 
                         //AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
-                        unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePts.Count, unsortedOutlinePts.Count+1));
+                        unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
                         unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
                         if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], currentPlane))
@@ -798,67 +765,7 @@ public class HandSelectionState : InteractionState
 
             if (item.gameObject.tag != "highlightmesh")
             {
-                //Debug.Log("Order points for " + item.name);
-                List<List<OutlinePoint>> sortedPoints = OutlineManager.OrderPoints(unsortedOutlinePts);
-            //    Debug.Log("Just called order points");
-
-                if (!preSelectionOutlines.ContainsKey(item.name))                              //
-                {                                                                             // Add a highlight for this mesh if there isn't one already
-                    preSelectionOutlines.Add(item.name, new List<GameObject>());    //
-                }
-
-                if (planePass == 0 && preSelectionOutlines[item.name].Count > sortedPoints.Count)
-                {
-                    for (int i = preSelectionOutlines[item.name].Count - 1; i >= sortedPoints.Count; i--)
-                    {
-                        UnityEngine.Object.Destroy(preSelectionOutlines[item.name][i]);
-                        preSelectionOutlines[item.name].RemoveAt(i);
-                    }
-                }
-
-                int startingIndex = (planePass == 0 ? 0 :  preSelectionOutlines[item.name].Count);
-
-                if (preSelectionOutlines[item.name].Count < (planePass== 0? sortedPoints.Count : preSelectionOutlines[item.name].Count+sortedPoints.Count))
-                {
-                    int n = (planePass==0? sortedPoints.Count : preSelectionOutlines[item.name].Count + sortedPoints.Count) - preSelectionOutlines[item.name].Count;
-                    for (int i = 0; i < n; i++)
-                    {
-                        preSelectionOutlines[item.name].Add(MakeHandOutline(item.name));
-                    }
-                }
-
-                
-                for (int chainIndex =  0; chainIndex < sortedPoints.Count; chainIndex++)
-                {
-                    int meshId = startingIndex + chainIndex;
-                    //if (planePass == 1)
-                    //{
-                    //    Mesh outlineMesh = CreateOutlineMesh(chain, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
-                    //    //rightOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-                    //    rightOutlines[item.name].transform.position = item.transform.position;
-                    //    rightOutlines[item.name].transform.localScale = item.transform.localScale;
-                    //    rightOutlines[item.name].transform.rotation = item.transform.rotation;
-                    //}
-                    //else
-                    //{
-                    if (meshId >= preSelectionOutlines[item.name].Count)
-                    {
-                        Debug.Log("Well crap");
-                    }
-                    if (chainIndex < 0 || chainIndex >= sortedPoints.Count)
-                    {
-                        Debug.Log("yup");
-                    }
-
-                    Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], currentPlane, preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh);
-                    //leftOutlines[item.name].GetComponent<MeshFilter>().mesh = outlineMesh;
-                    preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh = outlineMesh;
-                    preSelectionOutlines[item.name][meshId].transform.position = Vector3.zero;//item.transform.position;
-                    preSelectionOutlines[item.name][meshId].transform.localScale = Vector3.one;//item.transform.localScale;
-                    preSelectionOutlines[item.name][meshId].transform.rotation = Quaternion.identity;//item.transform.rotation;
-
-                    //}
-                }
+                OutlineManager.ResizePreselectedPoints(item, unsortedOutlinePts, planePass, currentPlane);
             }
             unsortedOutlinePts.Clear();                                                                                                                                                                  //should this be sorted or unsorted points??
         }
@@ -890,6 +797,8 @@ public class HandSelectionState : InteractionState
         //mesh.RecalculateBounds();
         mesh.RecalculateNormals();
     }
+
+    
 
     // returns value of latest index added and adds to list
     private void AddNewIndices(List<int> indices, int numToAdd)
@@ -959,22 +868,22 @@ public class HandSelectionState : InteractionState
         }
     }
 
-    /// <summary>
-    /// Make a Gameobject that will follow the user's hands
-    /// </summary>
-    /// <param name="meshName"></param>
-    /// <returns></returns>
-    private GameObject MakeHandOutline(String meshName)
-    {
-        GameObject newOutline = new GameObject();
-        newOutline.name = meshName + " highlight";
-        newOutline.AddComponent<MeshRenderer>();
-        newOutline.AddComponent<MeshFilter>();
-        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
-        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
-        newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
-        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
+    ///// <summary>
+    ///// Make a Gameobject that will follow the user's hands
+    ///// </summary>
+    ///// <param name="meshName"></param>
+    ///// <returns></returns>
+    //private GameObject MakeHandOutline(String meshName)
+    //{
+    //    GameObject newOutline = new GameObject();
+    //    newOutline.name = meshName + " highlight";
+    //    newOutline.AddComponent<MeshRenderer>();
+    //    newOutline.AddComponent<MeshFilter>();
+    //    newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
+    //    newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+    //    newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+    //    newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
 
-        return newOutline;
-    }
+    //    return newOutline;
+    //}
 }

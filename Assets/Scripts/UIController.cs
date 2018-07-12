@@ -52,6 +52,7 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller1Info;
 
     private SelectionData selectionData;
+    public OutlineManager outlineManager;
 
 
     private InteractionState handSelectionState;
@@ -78,6 +79,7 @@ public class UIController : MonoBehaviour {
         controller1Info = new ControllerInfo(controller1);
 
         selectionData = new SelectionData();
+        outlineManager = new OutlineManager();
 
         volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
         volumeCubeSelectionState.Deactivate();

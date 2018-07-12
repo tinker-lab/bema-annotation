@@ -153,7 +153,7 @@ public class NavigationState : InteractionState {
             //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
             //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
-            foreach (List<GameObject> activeHighlightList in HandSelectionState.PreSelectionOutlines.Values)
+            foreach (List<GameObject> activeHighlightList in OutlineManager.preSelectionOutlines.Values)
             {
                 foreach (GameObject activeHighlight in activeHighlightList)
                 {
