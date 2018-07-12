@@ -484,7 +484,6 @@ public class OutlineManager {
         original.GetComponent<MeshFilter>().mesh.GetTriangles(ind, 0);
         original.GetComponent<MeshFilter>().mesh.GetUVs(0, uvs);
 
-
         //mesh.SetTriangles(ind, 0);    //this one fails to set triangles.
         mesh.SetVertices(verts);
         mesh.SetTriangles(ind, 0);
@@ -492,6 +491,7 @@ public class OutlineManager {
         copy.GetComponent<MeshFilter>().mesh = mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
         copy.name = "Hand highlight" + outlineObjectCount;
+        copy.layer = LayerMask.NameToLayer("Ignore Raycast");
         outlineObjectCount++;
 
         return copy;

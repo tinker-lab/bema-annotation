@@ -60,6 +60,8 @@ public class CubeCollision : MonoBehaviour {
                 //mesh.GetVertices(vertices);
                 //mesh.GetUVs(0, UVs);
 
+                Debug.Log("cube exiting for Yea Big)");
+
                 mesh.Clear();
                 mesh.subMeshCount = 1;
 

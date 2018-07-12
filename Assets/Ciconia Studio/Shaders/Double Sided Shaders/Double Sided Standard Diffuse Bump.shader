@@ -4,8 +4,8 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
         _SpecColor ("Specular Color", Color) = (1,1,1,1)
         _SpecularIntensity ("Specular Intensity", Range(0, 2)) = 0.2
         _Glossiness ("Glossiness", Range(0, 1)) = 0.5
-        _MainTex ("Diffuse map (Spec A)", 2D) = "white" {}
-        _BumpMap ("Normal map", 2D) = "bump" {}
+////        _MainTex ("Diffuse map (Spec A)", 2D) = "white" {}
+////        _BumpMap ("Normal map", 2D) = "bump" {}
         _NormalIntensity ("Normal Intensity", Range(0, 2)) = 1
     }
     SubShader {
@@ -37,9 +37,9 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
             #pragma multi_compile_fog
             #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal d3d11_9x xboxone ps4 psp2 n3ds wiiu 
             #pragma target 3.0
-            uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
+////            uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
             uniform float4 _Color;
-            uniform sampler2D _BumpMap; uniform float4 _BumpMap_ST;
+////            uniform sampler2D _BumpMap; uniform float4 _BumpMap_ST;
             uniform float _NormalIntensity;
             uniform float _SpecularIntensity;
             uniform float _Glossiness;
@@ -95,9 +95,9 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
                 i.normalDir *= faceSign;
                 float3x3 tangentTransform = float3x3( i.tangentDir, i.bitangentDir, i.normalDir);
                 float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
-                float3 _BumpMap_var = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
-                float3 normalLocal = lerp(float3(0,0,1),_BumpMap_var.rgb,_NormalIntensity);
-                float3 normalDirection = normalize(mul( normalLocal, tangentTransform )); // Perturbed normals
+////                float3 _BumpMap_var = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
+////                float3 normalLocal = lerp(float3(0,0,1),_BumpMap_var.rgb,_NormalIntensity);
+                float3 normalDirection = i.normalDir;////normalize(mul( normalLocal, tangentTransform )); // Perturbed normals
                 float3 viewReflectDirection = reflect( -viewDirection, normalDirection );
                 float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
                 float3 lightColor = _LightColor0.rgb;
@@ -155,10 +155,10 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
 ////// Specular:
                 float NdotL = saturate(dot( normalDirection, lightDirection ));
                 float LdotH = saturate(dot(lightDirection, halfDirection));
-                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
-                float3 specularColor = ((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
+////                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
+                float3 specularColor = _SpecularIntensity*_SpecColor.rgb;////((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
                 float specularMonochrome;
-                float3 diffuseColor = (_MainTex_var.rgb*_Color.rgb); // Need this for specular when using metallic
+                float3 diffuseColor = _Color.rgb;////(_MainTex_var.rgb*_Color.rgb); // Need this for specular when using metallic
                 diffuseColor = EnergyConservationBetweenDiffuseAndSpecular(diffuseColor, specularColor, specularMonochrome);
                 specularMonochrome = 1.0-specularMonochrome;
                 float NdotV = abs(dot( normalDirection, viewDirection ));
@@ -231,9 +231,9 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
             #pragma multi_compile_fog
             #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal d3d11_9x xboxone ps4 psp2 n3ds wiiu 
             #pragma target 3.0
-            uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
+ ////           uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
             uniform float4 _Color;
-            uniform sampler2D _BumpMap; uniform float4 _BumpMap_ST;
+////            uniform sampler2D _BumpMap; uniform float4 _BumpMap_ST;
             uniform float _NormalIntensity;
             uniform float _SpecularIntensity;
             uniform float _Glossiness;
@@ -279,9 +279,9 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
                 i.normalDir *= faceSign;
                 float3x3 tangentTransform = float3x3( i.tangentDir, i.bitangentDir, i.normalDir);
                 float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
-                float3 _BumpMap_var = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
-                float3 normalLocal = lerp(float3(0,0,1),_BumpMap_var.rgb,_NormalIntensity);
-                float3 normalDirection = normalize(mul( normalLocal, tangentTransform )); // Perturbed normals
+////                float3 _BumpMap_var = UnpackNormal(tex2D(_BumpMap,TRANSFORM_TEX(i.uv0, _BumpMap)));
+////                float3 normalLocal = lerp(float3(0,0,1),_BumpMap_var.rgb,_NormalIntensity);
+                float3 normalDirection = i.normalDir;////normalize(mul( normalLocal, tangentTransform )); // Perturbed normals
                 float3 lightDirection = normalize(lerp(_WorldSpaceLightPos0.xyz, _WorldSpaceLightPos0.xyz - i.posWorld.xyz,_WorldSpaceLightPos0.w));
                 float3 lightColor = _LightColor0.rgb;
                 float3 halfDirection = normalize(viewDirection+lightDirection);
@@ -298,10 +298,10 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
 ////// Specular:
                 float NdotL = saturate(dot( normalDirection, lightDirection ));
                 float LdotH = saturate(dot(lightDirection, halfDirection));
-                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
-                float3 specularColor = ((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
+////                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
+                float3 specularColor = _SpecularIntensity*_SpecColor.rgb;////((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
                 float specularMonochrome;
-                float3 diffuseColor = (_MainTex_var.rgb*_Color.rgb); // Need this for specular when using metallic
+                float3 diffuseColor = _Color.rgb;////(_MainTex_var.rgb*_Color.rgb); // Need this for specular when using metallic
                 diffuseColor = EnergyConservationBetweenDiffuseAndSpecular(diffuseColor, specularColor, specularMonochrome);
                 specularMonochrome = 1.0-specularMonochrome;
                 float NdotV = abs(dot( normalDirection, viewDirection ));
@@ -414,7 +414,7 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
             #pragma multi_compile_fog
             #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal d3d11_9x xboxone ps4 psp2 n3ds wiiu 
             #pragma target 3.0
-            uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
+////            uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
             uniform float4 _Color;
             uniform float _SpecularIntensity;
             uniform float _Glossiness;
@@ -449,9 +449,9 @@ Shader "Ciconia Studio/Double Sided/Standard/Diffuse Bump" {
                 
                 o.Emission = 0;
                 
-                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
-                float3 diffColor = (_MainTex_var.rgb*_Color.rgb);
-                float3 specColor = ((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
+////                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX(i.uv0, _MainTex));
+                float3 diffColor = _Color.rgb;////(_MainTex_var.rgb*_Color.rgb);
+                float3 specColor = _SpecularIntensity*_SpecColor.rgb;////((_MainTex_var.a*_SpecularIntensity)*_SpecColor.rgb);
                 float specularMonochrome = max(max(specColor.r, specColor.g),specColor.b);
                 diffColor *= (1.0-specularMonochrome);
                 float roughness = 1.0 - _Glossiness;

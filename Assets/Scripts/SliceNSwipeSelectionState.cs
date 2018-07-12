@@ -42,13 +42,13 @@ public class SliceNSwipeSelectionState : InteractionState
     //private static Dictionary<string, List<int>> previousSelectedIndices;           // key = name of object with mesh, Value = original set of selected indices (updated when user clicks)
     //private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
     //private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
-    private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
+    //private static Dictionary<string, GameObject> sliceOutlines;                 // left hand outlines per model that are currently being manipulated (KEY = name of model object, VALUE = outline object)
     private Dictionary<string, Material> originalMaterial;
 
     private static Dictionary<string, int[]> sliced0Indices;
     private static Dictionary<string, int[]> sliced1Indices;
 
-    private List<Vector3> outlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
+    private List<OutlinePoint> unsortedOutlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
 
     List<int> selected0Indices;      // Reused for each mesh during ProcessMesh()
     List<int> selected1Indices;    // ^^^^
@@ -133,14 +133,14 @@ public class SliceNSwipeSelectionState : InteractionState
         //savedOutlines = new Dictionary<string, HashSet<GameObject>>();
         selected0Indices = new List<int>();
         selected1Indices = new List<int>();
-        outlinePoints = new List<Vector3>();
+        unsortedOutlinePoints = new List<OutlinePoint>();
         originalMaterial = new Dictionary<string, Material>();
         lastSeenObj = new GameObject();
 
         sliced0Indices = new Dictionary<string, int[]>();
         sliced1Indices = new Dictionary<string, int[]>();
 
-        sliceOutlines = new Dictionary<string, GameObject>();
+        //sliceOutlines = new Dictionary<string, GameObject>();
     }
 
     private void DetermineDominantController(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -229,7 +229,14 @@ public class SliceNSwipeSelectionState : InteractionState
                 sliced1Indices.Remove(collidingMesh.name);
                 ColorMesh(collidingMesh, "slice");
 
-                sliceOutlines[collidingMesh.name].GetComponent<MeshFilter>().mesh.Clear();
+                if (OutlineManager.preSelectionOutlines.ContainsKey(collidingMesh.name)) //|| rightOutlines.ContainsKey(collidingObj.name))
+                {
+                    for (int i = OutlineManager.preSelectionOutlines[collidingMesh.name].Count - 1; i >= 0; i--)
+                    {
+                        UnityEngine.Object.Destroy(OutlineManager.preSelectionOutlines[collidingMesh.name][i]);
+                        OutlineManager.preSelectionOutlines[collidingMesh.name].RemoveAt(i);
+                    }
+                }
             }
             else
             {
@@ -263,7 +270,10 @@ public class SliceNSwipeSelectionState : InteractionState
 
         List<Vector2> UVList = new List<Vector2>();
 
-        GazeSelection();
+        if (sliceStatus == 0)
+        {
+            GazeSelection();
+        }
 
         if (collidingMesh != null)
         { 
@@ -290,13 +300,16 @@ public class SliceNSwipeSelectionState : InteractionState
                 {
                     FirstContactProcess(collidingMesh, UVList);
                     debugString += collidingMesh.name + "  ";
+                } else if (!SelectionData.PreviousUnselectedIndices.ContainsKey(collidingMesh.name))
+                {
+                    SelectionData.PreviousUnselectedIndices.Add(collidingMesh.name, new int[0]);
                 }
                 else
                 {
-                    if (!sliceOutlines.ContainsKey(collidingMesh.name))                              //
-                    {                                                                             // Add an Outline for this mesh if there isn't one already
-                        sliceOutlines.Add(collidingMesh.name, MakeHandOutline(collidingMesh));    //
-                    }
+                    //if (!sliceOutlines.ContainsKey(collidingMesh.name))                              //
+                    //{                                                                             // Add an Outline for this mesh if there isn't one already
+                    //    sliceOutlines.Add(collidingMesh.name, OutlineManager.MakeHandOutline(collidingMesh));    //
+                    //}
                     SplitMesh(collidingMesh);
                     ColorMesh(collidingMesh, "slice");
                     debugString += collidingMesh.name + "  ";
@@ -315,7 +328,11 @@ public class SliceNSwipeSelectionState : InteractionState
                     sliced0Indices.Remove(collidingMesh.name);
                     sliced1Indices.Remove(collidingMesh.name);
 
-                    sliceOutlines[collidingMesh.name].GetComponent<MeshFilter>().mesh = new Mesh();
+                    foreach (GameObject outline in OutlineManager.preSelectionOutlines[collidingMesh.name])
+                    {
+                        UnityEngine.Object.Destroy(outline);
+                    }
+                    OutlineManager.preSelectionOutlines[collidingMesh.name].Clear();
 
                     ColorMesh(collidingMesh, "slice");
                     /*
@@ -433,8 +450,13 @@ public class SliceNSwipeSelectionState : InteractionState
                         
                     }
 
-                    GameObject savedSliceOutline = CopyObject(sliceOutlines[collidingMesh.name]); // save the highlights at the point of selection
-                    SelectionData.SavedOutlines[collidingMesh.name].Add(savedSliceOutline);
+                    foreach (GameObject outline in OutlineManager.preSelectionOutlines[collidingMesh.name])
+                    {
+                        GameObject savedOutline = OutlineManager.CopyObject(outline); // save the highlights at the point of selection
+
+                        //GameObject savedOutline = OutlineManager.MakeNewOutline(outline);
+                        SelectionData.SavedOutlines[collidingMesh.name].Add(savedOutline);
+                    }
 
                     Debug.Log("Slice Selection: " + collidingMesh.name);
 
@@ -453,54 +475,58 @@ public class SliceNSwipeSelectionState : InteractionState
     {
         RaycastHit hit;
 
-        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1000))
+        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1.7f))
         {
-            if (sliceStatus == 0)
-            {
+           
                 //Vector3 hitPoint = hit.point;
                 //int hitLayer = hit.collider.gameObject.layer;
                 //ShowLaser(hit, laser, camera.transform.position, hitPoint);
                 //ShowReticle(hit);
-                if (hit.collider.name != "floor" && hit.collider.name != "SliceNSwipeHandPlane" && hit.collider.tag != "highlightmesh")
+                //if (hit.collider.name != "floor")
+                //{
+                collidingMesh = hit.collider.gameObject;
+                if (!originalMaterial.ContainsKey(collidingMesh.name))
                 {
-                    collidingMesh = hit.collider.gameObject;
-                    if (!originalMaterial.ContainsKey(collidingMesh.name))
-                    {
-                        originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
-                    }
-
-                    if (collidingMesh.name != lastSeenObj.name)
-                    {
-                        collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);
-                        if (originalMaterial.ContainsKey(lastSeenObj.name))
-                        {
-                            lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
-                        }
-                        lastSeenObj = collidingMesh;
-                        Debug.Log("lastSeenObj is reassigned (collidingMesh): " + collidingMesh.name);
-                    }
-
+                    originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
                 }
-                else
+
+                if (lastSeenObj == null || collidingMesh.name != lastSeenObj.name)
                 {
-                    if (originalMaterial.ContainsKey(lastSeenObj.name))
+                    collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);
+                    if (lastSeenObj != null && originalMaterial.ContainsKey(lastSeenObj.name))
                     {
                         lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
                     }
-                    if (hit.collider.name == "floor")
-                    {
-                        lastSeenObj = hit.collider.gameObject;
-                        //Debug.Log("lastSeenObj is reassigned (hit collider): " + hit.collider.name);
-                    }
-                    collidingMesh = null;
-
+                    lastSeenObj = collidingMesh;
+                    Debug.Log("lastSeenObj is reassigned: " + collidingMesh.name);
                 }
-            }
+
+                //}
+                //else
+                //{
+                //    if (originalMaterial.ContainsKey(lastSeenObj.name))
+                //    {
+                //        lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
+                //    }
+                //    if (hit.collider.name == "floor")
+                //    {
+                //        lastSeenObj = hit.collider.gameObject;
+                //        //Debug.Log("lastSeenObj is reassigned (hit collider): " + hit.collider.name);
+                //    }
+                //    collidingMesh = null;
+
+                //}
+            
             //Debug.Log("collide: " + hit.collider.name + ", " + collidingMeshes.Count + ", state " + sliceStatus.ToString());
         }
-        else if (originalMaterial.ContainsKey(lastSeenObj.name))
+        else
         {
-            lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
+            if (lastSeenObj != null && originalMaterial.ContainsKey(lastSeenObj.name))
+            {
+                lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
+                lastSeenObj = null;
+            }
+            collidingMesh = null;
         }
     }
 
@@ -518,14 +544,14 @@ public class SliceNSwipeSelectionState : InteractionState
 
         gObject.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        if (gObject.tag != "highlightmesh")
-        {
-            if (!sliceOutlines.ContainsKey(gObject.name))                              //
-            {                                                                             // Add an Outline for this mesh if there isn't one already
-                sliceOutlines.Add(gObject.name, MakeHandOutline(gObject));    //
-            }
-           // originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
-        }
+        //if (gObject.tag != "highlightmesh")
+        //{
+        //    //if (!sliceOutlines.ContainsKey(gObject.name))                              //
+        //    //{                                                                             // Add an Outline for this mesh if there isn't one already
+        //    //    sliceOutlines.Add(gObject.name, MakeHandOutline(gObject));    //
+        //    //}
+        //   // originalMaterial.Add(gObject.name, gObject.GetComponent<Renderer>().materials[0]);
+        //}
     }
 
     //private void ShowLaser(RaycastHit hit, GameObject laser, Vector3 laserStartPos, Vector3 hitPoint)
@@ -556,27 +582,27 @@ public class SliceNSwipeSelectionState : InteractionState
     //        //m_ReticleTransform.localRotation = m_OriginalRotation;
     //}
 
-    /// <summary>
-    /// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
-    /// </summary>
-    /// <param name="original"></param>
-    /// <returns></returns>
-    private GameObject CopyObject(GameObject original)
-    {
-        GameObject copy = new GameObject();
-        copy.AddComponent<MeshRenderer>();
-        copy.AddComponent<MeshFilter>();
-        copy.transform.position = original.transform.position;
-        copy.transform.rotation = original.transform.rotation;
-        copy.transform.localScale = original.transform.localScale;
-        copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
-        copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
-        copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "Slice highlight" + outlineObjectCount;
-        outlineObjectCount++;
+    ///// <summary>
+    ///// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
+    ///// </summary>
+    ///// <param name="original"></param>
+    ///// <returns></returns>
+    //private GameObject CopyObject(GameObject original)
+    //{
+    //    GameObject copy = new GameObject();
+    //    copy.AddComponent<MeshRenderer>();
+    //    copy.AddComponent<MeshFilter>();
+    //    copy.transform.position = original.transform.position;
+    //    copy.transform.rotation = original.transform.rotation;
+    //    copy.transform.localScale = original.transform.localScale;
+    //    copy.GetComponent<MeshRenderer>().material = original.GetComponent<MeshRenderer>().material;
+    //    copy.GetComponent<MeshFilter>().mesh = original.GetComponent<MeshFilter>().mesh;
+    //    copy.tag = "highlightmesh"; // tag this object as a highlight
+    //    copy.name = "Slice highlight" + outlineObjectCount;
+    //    outlineObjectCount++;
 
-        return copy;
-    }
+    //    return copy;
+    //}
 
     private bool OnNormalSideOfPlane(Vector3 pt, GameObject plane)
     {
@@ -684,9 +710,9 @@ public class SliceNSwipeSelectionState : InteractionState
                     UVs.Add(intersectUV0);
                     UVs.Add(intersectUV1);
 
-                    //AddToGraph(intersectPoint0, intersectPoint1, ref pointGraph);
-                    outlinePoints.Add(intersectPoint0);
-                    outlinePoints.Add(intersectPoint1);
+
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                     {
@@ -718,8 +744,8 @@ public class SliceNSwipeSelectionState : InteractionState
                     UVs.Add(intersectUV0);
                     UVs.Add(intersectUV2);
 
-                    outlinePoints.Add(intersectPoint0);
-                    outlinePoints.Add(intersectPoint2);
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                     {
@@ -747,8 +773,8 @@ public class SliceNSwipeSelectionState : InteractionState
                     UVs.Add(intersectUV1);
                     UVs.Add(intersectUV2);
 
-                    outlinePoints.Add(intersectPoint1);
-                    outlinePoints.Add(intersectPoint2);
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
                     {
@@ -783,11 +809,12 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (item.gameObject.tag != "highlightmesh")
         {
-            sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh = new Mesh();
-            CreateOutlineMesh(outlinePoints, slicePlane, sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh);
+            OutlineManager.ResizePreselectedPoints(item, unsortedOutlinePoints, 0, slicePlane);
+           // sliceOutlines[item.name].GetComponent<MeshFilter>().sharedMesh = new Mesh();
+          //  OutlineManager.CreateOutlineMesh(outlinePoints, slicePlane.transform.up, sliceOutlines[item.name]);
         }
 
-        outlinePoints.Clear();
+        unsortedOutlinePoints.Clear();
 
     }
 
@@ -814,7 +841,14 @@ public class SliceNSwipeSelectionState : InteractionState
                     materials[1] = Resources.Load("Green Material") as Material;
 
                     Material baseMaterial = originalMaterial[item.name];
-                    materials[2] = DetermineBaseMaterial(baseMaterial);
+                    if (lastSeenObj != null && lastSeenObj.name == item.name)
+                    {
+                        materials[2] = GazeSelectedMaterial(baseMaterial);
+                    }
+                    else
+                    {
+                        materials[2] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                    }
                 } else
                 {
                     // This case handles backing out of a slice. In that case it is indicated by clearing selection0Indices for the object
@@ -826,7 +860,14 @@ public class SliceNSwipeSelectionState : InteractionState
                         mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
 
                         Material baseMaterial = originalMaterial[item.name];
-                        materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                        if (lastSeenObj != null && lastSeenObj.name == item.name)
+                        {
+                            materials[0] = GazeSelectedMaterial(baseMaterial);
+                        }
+                        else
+                        {
+                            materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                        }
                         materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
                         //Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
                     }
@@ -848,7 +889,17 @@ public class SliceNSwipeSelectionState : InteractionState
                 mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
 
                 Material baseMaterial = originalMaterial[item.name];
-                baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+               
+
+                if (lastSeenObj != null && item.name == lastSeenObj.name)
+                {
+                    baseMaterial = GazeSelectedMaterial(baseMaterial);
+                }
+                else
+                {
+                    baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                }
+                
                 materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             }
@@ -870,105 +921,105 @@ public class SliceNSwipeSelectionState : InteractionState
         mesh.RecalculateNormals();
     }
 
-    /**
-     * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
-     * */
-    private Mesh CreateOutlineMesh(List<Vector3> points, GameObject plane, Mesh outlineMesh)
-    {
-        List<Vector3> verts = new List<Vector3>();
-        List<int> faces = new List<int>();
-        List<Vector2> uvCoordinates = new List<Vector2>();
-        outlineMesh.Clear();
+    ///**
+    // * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
+    // * */
+    //private Mesh CreateOutlineMesh(List<Vector3> points, GameObject plane, Mesh outlineMesh)
+    //{
+    //    List<Vector3> verts = new List<Vector3>();
+    //    List<int> faces = new List<int>();
+    //    List<Vector2> uvCoordinates = new List<Vector2>();
+    //    outlineMesh.Clear();
 
-        float radius = .005f;
-        int numSections = 6;
+    //    float radius = .005f;
+    //    int numSections = 6;
 
-        Assert.IsTrue(points.Count % 2 == 0);
-        int expectedNumVerts = (numSections + 1) * points.Count;
+    //    Assert.IsTrue(points.Count % 2 == 0);
+    //    int expectedNumVerts = (numSections + 1) * points.Count;
 
-        //if (expectedNumVerts > 65000)
-        //{
-        points = OrderMesh(points);
-        //    Debug.Log("Outline mesh was ordered: " + outlineMesh.name);
-        //}
+    //    //if (expectedNumVerts > 65000)
+    //    //{
+    //    points = OrderMesh(points);
+    //    //    Debug.Log("Outline mesh was ordered: " + outlineMesh.name);
+    //    //}
 
-       // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
+    //   // points.Add(points.ElementAt(0)); //Add the first point again at the end to make a loop.
 
-        if (points.Count >= 2) {
+    //    if (points.Count >= 2) {
 
-            List<Vector3> duplicatedPoints = new List<Vector3>();
-            duplicatedPoints.Add(points[0]);
-            for (int i = 1; i < points.Count; i++)
-            {
-                duplicatedPoints.Add(points[i]);
-                duplicatedPoints.Add(points[i]);
-            }
+    //        List<Vector3> duplicatedPoints = new List<Vector3>();
+    //        duplicatedPoints.Add(points[0]);
+    //        for (int i = 1; i < points.Count; i++)
+    //        {
+    //            duplicatedPoints.Add(points[i]);
+    //            duplicatedPoints.Add(points[i]);
+    //        }
 
-            for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
-            {
-                Vector3 centerStart = duplicatedPoints[i];
-                Vector3 centerEnd = duplicatedPoints[i + 1];
-                Vector3 direction = centerEnd - centerStart;
-                direction = direction.normalized;
-                Vector3 right = Vector3.Cross(plane.transform.up, direction);
-                Vector3 up = Vector3.Cross(direction, right);
-                up = up.normalized * radius;
-                right = right.normalized * radius;
+    //        for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
+    //        {
+    //            Vector3 centerStart = duplicatedPoints[i];
+    //            Vector3 centerEnd = duplicatedPoints[i + 1];
+    //            Vector3 direction = centerEnd - centerStart;
+    //            direction = direction.normalized;
+    //            Vector3 right = Vector3.Cross(plane.transform.up, direction);
+    //            Vector3 up = Vector3.Cross(direction, right);
+    //            up = up.normalized * radius;
+    //            right = right.normalized * radius;
 
-                for (int slice = 0; slice <= numSections; slice++)
-                {
-                    float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
-                    Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
-                    Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+    //            for (int slice = 0; slice <= numSections; slice++)
+    //            {
+    //                float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
+    //                Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
+    //                Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
 
-                    verts.Add(p0);
-                    verts.Add(p1);
-                    uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
-                    uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
+    //                verts.Add(p0);
+    //                verts.Add(p1);
+    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
+    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
 
-                    if (slice > 0)
-                    {
-                        faces.Add((slice * 2 + 1) + ((numSections + 1) * i));
-                        faces.Add((slice * 2) + ((numSections + 1) * i));
-                        faces.Add((slice * 2 - 2) + ((numSections + 1) * i));
+    //                if (slice > 0)
+    //                {
+    //                    faces.Add((slice * 2 + 1) + ((numSections + 1) * i));
+    //                    faces.Add((slice * 2) + ((numSections + 1) * i));
+    //                    faces.Add((slice * 2 - 2) + ((numSections + 1) * i));
 
-                        faces.Add(slice * 2 + 1 + ((numSections + 1) * i));
-                        faces.Add(slice * 2 - 2 + ((numSections + 1) * i));
-                        faces.Add(slice * 2 - 1 + ((numSections + 1) * i));
-                    }
-                }
-            }
+    //                    faces.Add(slice * 2 + 1 + ((numSections + 1) * i));
+    //                    faces.Add(slice * 2 - 2 + ((numSections + 1) * i));
+    //                    faces.Add(slice * 2 - 1 + ((numSections + 1) * i));
+    //                }
+    //            }
+    //        }
 
-            outlineMesh.SetVertices(verts);
-            outlineMesh.SetUVs(0, uvCoordinates);
-            outlineMesh.SetTriangles(faces, 0);
+    //        outlineMesh.SetVertices(verts);
+    //        outlineMesh.SetUVs(0, uvCoordinates);
+    //        outlineMesh.SetTriangles(faces, 0);
 
-            outlineMesh.RecalculateBounds();
-            outlineMesh.RecalculateNormals();
-        }
+    //        outlineMesh.RecalculateBounds();
+    //        outlineMesh.RecalculateNormals();
+    //    }
 
-        return outlineMesh;
-    }
+    //    return outlineMesh;
+    //}
 
-    /**
-     * Make a graph of mesh vertices, order it, remove sequential duplicates and return new set of vertices
-     */
-    private List<Vector3> OrderMesh(List<Vector3> meshVertices)
-    {
-        Dictionary<Vector3, HashSet<Vector3>> vertexGraph = new Dictionary<Vector3, HashSet<Vector3>>();  // Each point should only be connected to two other points
+    ///**
+    // * Make a graph of mesh vertices, order it, remove sequential duplicates and return new set of vertices
+    // */
+    //private List<Vector3> OrderMesh(List<Vector3> meshVertices)
+    //{
+    //    Dictionary<Vector3, HashSet<Vector3>> vertexGraph = new Dictionary<Vector3, HashSet<Vector3>>();  // Each point should only be connected to two other points
 
-        for (int i = 0; i < meshVertices.Count; i += 2)
-        {
-            AddToGraph(meshVertices[i], meshVertices[i + 1], ref vertexGraph);
-        }
+    //    for (int i = 0; i < meshVertices.Count; i += 2)
+    //    {
+    //        AddToGraph(meshVertices[i], meshVertices[i + 1], ref vertexGraph);
+    //    }
 
-        meshVertices = DFSOrderPoints(vertexGraph);
+    //    meshVertices = DFSOrderPoints(vertexGraph);
 
-        meshVertices.Add(meshVertices[0]);
-        meshVertices = RemoveSequentialDuplicates(meshVertices);
+    //    meshVertices.Add(meshVertices[0]);
+    //    meshVertices = RemoveSequentialDuplicates(meshVertices);
 
-        return meshVertices;
-    }
+    //    return meshVertices;
+    //}
 
     // returns value of latest index added and adds to list
     private void AddNewIndices(List<int> indices, int numToAdd)
@@ -1010,64 +1061,64 @@ public class SliceNSwipeSelectionState : InteractionState
         return false;
     }
 
-    // Orders the points of one mesh. NOTE: currently just uses alreadyVisited HashSet, nothing else;
-    List<Vector3> DFSOrderPoints(Dictionary<Vector3, HashSet<Vector3>> pointConnections)
-    {
-        HashSet<Vector3> alreadyVisited = new HashSet<Vector3>();
-        List<Vector3> orderedPoints = new List<Vector3>();
+    //// Orders the points of one mesh. NOTE: currently just uses alreadyVisited HashSet, nothing else;
+    //List<Vector3> DFSOrderPoints(Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    //{
+    //    HashSet<Vector3> alreadyVisited = new HashSet<Vector3>();
+    //    List<Vector3> orderedPoints = new List<Vector3>();
 
-        foreach (Vector3 pt in pointConnections.Keys)
-        {
-            if (!alreadyVisited.Contains(pt))
-            {
-                //TODO: make a new list for ordered points here to pass in
-                DFSVisit(pt, pointConnections, ref alreadyVisited, ref orderedPoints);
-            }
-        }
-        return orderedPoints;
-    }
+    //    foreach (Vector3 pt in pointConnections.Keys)
+    //    {
+    //        if (!alreadyVisited.Contains(pt))
+    //        {
+    //            //TODO: make a new list for ordered points here to pass in
+    //            DFSVisit(pt, pointConnections, ref alreadyVisited, ref orderedPoints);
+    //        }
+    //    }
+    //    return orderedPoints;
+    //}
 
-    // Basic DFS, adds the intersection points of edges in the order it visits them
-    void DFSVisit(Vector3 pt, Dictionary<Vector3, HashSet<Vector3>> connectedEdges, ref HashSet<Vector3> alreadyVisited, ref List<Vector3> orderedPoints)
-    {
-        alreadyVisited.Add(pt);
-        orderedPoints.Add(pt);
+    //// Basic DFS, adds the intersection points of edges in the order it visits them
+    //void DFSVisit(Vector3 pt, Dictionary<Vector3, HashSet<Vector3>> connectedEdges, ref HashSet<Vector3> alreadyVisited, ref List<Vector3> orderedPoints)
+    //{
+    //    alreadyVisited.Add(pt);
+    //    orderedPoints.Add(pt);
         
-        foreach (Vector3 otherIndex in connectedEdges[pt])
-        {
-            if (!alreadyVisited.Contains(otherIndex))
-            {               
-                DFSVisit(otherIndex, connectedEdges, ref alreadyVisited, ref orderedPoints);
-            }
-        }
+    //    foreach (Vector3 otherIndex in connectedEdges[pt])
+    //    {
+    //        if (!alreadyVisited.Contains(otherIndex))
+    //        {               
+    //            DFSVisit(otherIndex, connectedEdges, ref alreadyVisited, ref orderedPoints);
+    //        }
+    //    }
         
-    }
+    //}
 
-    // Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
-    private void AddToGraph(Vector3 point0, Vector3 point1, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
-    {
-        if (!pointConnections.ContainsKey(point0))
-        {
-            HashSet<Vector3> connections = new HashSet<Vector3>();
-            connections.Add(point1);
-            pointConnections.Add(point0, connections);
-        }
-        else
-        {
-            pointConnections[point0].Add(point1);
-        }
+    //// Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
+    //private void AddToGraph(Vector3 point0, Vector3 point1, ref Dictionary<Vector3, HashSet<Vector3>> pointConnections)
+    //{
+    //    if (!pointConnections.ContainsKey(point0))
+    //    {
+    //        HashSet<Vector3> connections = new HashSet<Vector3>();
+    //        connections.Add(point1);
+    //        pointConnections.Add(point0, connections);
+    //    }
+    //    else
+    //    {
+    //        pointConnections[point0].Add(point1);
+    //    }
 
-        if (!pointConnections.ContainsKey(point1))
-        {
-            HashSet<Vector3> connections = new HashSet<Vector3>();
-            connections.Add(point0);
-            pointConnections.Add(point1, connections);
-        }
-        else
-        {
-            pointConnections[point1].Add(point0);
-        }
-    }
+    //    if (!pointConnections.ContainsKey(point1))
+    //    {
+    //        HashSet<Vector3> connections = new HashSet<Vector3>();
+    //        connections.Add(point0);
+    //        pointConnections.Add(point1, connections);
+    //    }
+    //    else
+    //    {
+    //        pointConnections[point1].Add(point0);
+    //    }
+    //}
 
     //private bool ContainsV3Key(Dictionary<Vector3, HashSet<Vector3>> dict, Vector3 key)
     //{
@@ -1076,51 +1127,51 @@ public class SliceNSwipeSelectionState : InteractionState
 
     //}
 
-    private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
-    {
-        List<Vector3> output = new List<Vector3>(points.Count);
-        int i = 0;
-        output.Add(points[i]);
-        while (i < points.Count - 1)
-        {
-            int j = i+1;
-            while(j < points.Count && PlaneCollision.ApproximatelyEquals(points[i], points[j])){
-                j++;
-            }
-            if (j < points.Count)
-            {
-                output.Add(points[j]);
-            }
-            i = j;
-        }
-            /*
-        {
-            bool firstTwoEqual = PlaneCollision.ApproximatelyEquals(points[i-1], points[i]);
-            bool secondTwoEqual = PlaneCollision.ApproximatelyEquals(points[i], points[i + 1]);
+    //private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
+    //{
+    //    List<Vector3> output = new List<Vector3>(points.Count);
+    //    int i = 0;
+    //    output.Add(points[i]);
+    //    while (i < points.Count - 1)
+    //    {
+    //        int j = i+1;
+    //        while(j < points.Count && PlaneCollision.ApproximatelyEquals(points[i], points[j])){
+    //            j++;
+    //        }
+    //        if (j < points.Count)
+    //        {
+    //            output.Add(points[j]);
+    //        }
+    //        i = j;
+    //    }
+    //        /*
+    //    {
+    //        bool firstTwoEqual = PlaneCollision.ApproximatelyEquals(points[i-1], points[i]);
+    //        bool secondTwoEqual = PlaneCollision.ApproximatelyEquals(points[i], points[i + 1]);
             
-            if (firstTwoEqual && secondTwoEqual)
-            {
-                output.Add(points[i - 1]);
-                output.Add(points[i + 2]);
-                i += 3;  
-            }
-            else if ((firstTwoEqual && !secondTwoEqual) || (!firstTwoEqual && secondTwoEqual))  // If only two are the same
-            {
-                output.Add(points[i-1]);      // Add one of the equal points
-                output.Add(points[i + 1]);
-                i += 3;
-            }
+    //        if (firstTwoEqual && secondTwoEqual)
+    //        {
+    //            output.Add(points[i - 1]);
+    //            output.Add(points[i + 2]);
+    //            i += 3;  
+    //        }
+    //        else if ((firstTwoEqual && !secondTwoEqual) || (!firstTwoEqual && secondTwoEqual))  // If only two are the same
+    //        {
+    //            output.Add(points[i-1]);      // Add one of the equal points
+    //            output.Add(points[i + 1]);
+    //            i += 3;
+    //        }
             
-            else  // All are distinct
-            {
-                output.Add(points[i - 1]);      // Add first two
-                output.Add(points[i]);  
-                i += 2;
-            }
-        }
-        */
-        return output;
-    }
+    //        else  // All are distinct
+    //        {
+    //            output.Add(points[i - 1]);      // Add first two
+    //            output.Add(points[i]);  
+    //            i += 2;
+    //        }
+    //    }
+    //    */
+    //    return output;
+    //}
     
     /// <summary>
     /// Given a material, returns a transparent version if it's not already transparent
@@ -1173,28 +1224,28 @@ public class SliceNSwipeSelectionState : InteractionState
         }
     }
 
-    /// <summary>
-    /// Make a Gameobject that will follow the user's hands
-    /// </summary>
-    /// <param name="item"></param>
-    /// <returns></returns>
-    private GameObject MakeHandOutline(GameObject item)
-    {
-        string meshName = item.name;
-        GameObject newOutline = new GameObject();
-        newOutline.name = meshName + " highlight";
-        newOutline.AddComponent<MeshRenderer>();
-        newOutline.AddComponent<MeshFilter>();
-        newOutline.tag = "highlightmesh";
-        newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
-        newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
-        newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
-        newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
+    ///// <summary>
+    ///// Make a Gameobject that will follow the user's hands
+    ///// </summary>
+    ///// <param name="item"></param>
+    ///// <returns></returns>
+    //private GameObject MakeHandOutline(GameObject item)
+    //{
+    //    string meshName = item.name;
+    //    GameObject newOutline = new GameObject();
+    //    newOutline.name = meshName + " highlight";
+    //    newOutline.AddComponent<MeshRenderer>();
+    //    newOutline.AddComponent<MeshFilter>();
+    //    newOutline.tag = "highlightmesh";
+    //    newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
+    //    newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
+    //    newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+    //    newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
 
-        newOutline.transform.position = item.transform.position;
-        newOutline.transform.localScale = item.transform.localScale;
-        newOutline.transform.rotation = item.transform.rotation;
+    //    newOutline.transform.position = item.transform.position;
+    //    newOutline.transform.localScale = item.transform.localScale;
+    //    newOutline.transform.rotation = item.transform.rotation;
 
-        return newOutline;
-    }
+    //    return newOutline;
+    //}
 }
