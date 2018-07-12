@@ -188,8 +188,44 @@ public class OutlineManager {
     //Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
     private static void FindSamePositions(ref List<OutlinePoint> pointConnections)
     {
-        //KDTree kdTree = KDTree.MakeFromPoints(pointConnections.ToArray());
+        List<OutlinePoint> sorted = new List<OutlinePoint>(pointConnections);
+        sorted.Sort(delegate (OutlinePoint pt0, OutlinePoint pt1)
+        {
+            int xComp = pt0.point.x.CompareTo(pt1.point.x);
+            if (xComp != 0)
+            {
+                return xComp;
+            }
+            else
+            {
+                int yComp = pt0.point.y.CompareTo(pt1.point.y);
+                if (yComp != 0)
+                {
+                    return yComp;
+                }
+                else
+                {
+                    return pt0.point.z.CompareTo(pt1.point.z);
+                }
+            }
+        });
 
+        for(int i=0; i < sorted.Count-1; i++)
+        {
+            OutlinePoint vertex = sorted[i];
+            if (vertex.samePosition == -1)
+            {
+                OutlinePoint otherVertex = sorted[i+1];
+                if (PlaneCollision.ApproximatelyEquals(vertex.point, otherVertex.point))
+                {
+                    otherVertex.samePosition = vertex.index;
+                    vertex.samePosition = otherVertex.index;
+                }
+            }
+        }
+
+
+        /*
         for (int i = 0; i < pointConnections.Count; i++)
         {
             OutlinePoint vertex = pointConnections[i];
@@ -207,33 +243,9 @@ public class OutlineManager {
                         break;
                     }
                 }
-
-
-                /*
-                int[] nearest = kdTree.FindNearestsK(vertex.point, 2);
-                OutlinePoint otherVertex = null;
-                if(nearest[0] == vertex.index)
-                {
-                    otherVertex = pointConnections[nearest[1]];
-                    
-                }
-                else if (nearest[1] == vertex.index)
-                {
-                    otherVertex = pointConnections[nearest[0]];
-                }
-                else
-                {
-                    Debug.Log("ERROR: Did not find point in kd tree. Testing point "+vertex.index+" found "+nearest[0]+", "+nearest[1]);
-                }
-
-                if (PlaneCollision.ApproximatelyEquals(vertex.point, otherVertex.point))
-                {
-                    otherVertex.samePosition = vertex.index;
-                    vertex.samePosition = otherVertex.index;
-                }
-                */
             }
         }
+        */
     }
 
     private List<Vector3> RemoveSequentialDuplicates(List<Vector3> points)
