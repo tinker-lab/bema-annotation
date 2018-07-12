@@ -251,7 +251,7 @@ public class RayCastSelectionState : InteractionState
         //button has been clicked, begin selection
         if(controller0.device.GetHairTriggerDown() && collided && !buttonPressed)
         {
-            Debug.Log("Trigger down!");
+            //Debug.Log("Trigger down!");
             outlinePoints.Clear();
             ClearOldPlanes();
             rayDirection.Clear();
@@ -281,7 +281,7 @@ public class RayCastSelectionState : InteractionState
         //button has been released, end selection
         if(controller0.device.GetHairTriggerUp() && buttonPressed)
         {
-            Debug.Log("        Trigger Up");
+            //Debug.Log("        Trigger Up");
             buttonPressed = false;
             outlinePoints.Add(hitPoint);
             rayDirection.Add(controller0Info.trackedObj.transform.forward);
@@ -492,7 +492,7 @@ public class RayCastSelectionState : InteractionState
 
     private void CreateOutlinePlanes()
     {
-        Debug.Log("About to make planes");
+        //Debug.Log("About to make planes");
         //make planes for each set of points
         int planeCount = 0;
 
@@ -504,7 +504,7 @@ public class RayCastSelectionState : InteractionState
 
             //make a plane connecting the last point, where release happens, back to the first point
             outlinePlanes.Add(makePlane(outlinePoints[outlinePoints.Count - 1], outlinePoints[0], rayDirection[rayDirection.Count - 1]));
-            Debug.Log("made planes: " + planeCount.ToString());
+            //Debug.Log("made planes: " + planeCount.ToString());
 
     }
 

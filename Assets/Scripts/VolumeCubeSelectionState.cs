@@ -247,7 +247,7 @@ public class VolumeCubeSelectionState : InteractionState
         //Quaternion.AngleAxis(40, currentDiagonal.normalized) *
         centerCube.transform.rotation = Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw;
 
-        Debug.DrawRay(nonDominantCorner, 0.25f * currentDiagonal.normalized, Color.cyan);
+        //Debug.DrawRay(nonDominantCorner, 0.25f * currentDiagonal.normalized, Color.cyan);
 
         //Quaternion.FromToRotation(startingDiagonal.normalized, currentDiagonal.normalized);
         //centerCube.transform.rotation = Quaternion.LookRotation(currentDiagonal.normalized, Vector3.up) * startingRotation;
@@ -377,8 +377,6 @@ public class VolumeCubeSelectionState : InteractionState
         centerCube.gameObject.GetComponent<MeshRenderer>().enabled = false;
 
         Uncollide();
-
-        
     }
 
     public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -445,7 +443,7 @@ public class VolumeCubeSelectionState : InteractionState
         {
             foreach (GameObject currObjMesh in collidingMeshes)
             {
-                Debug.Log("Cube Selection: " + currObjMesh.name);
+                //Debug.Log("Cube Selection: " + currObjMesh.name);
 
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
@@ -660,13 +658,13 @@ public class VolumeCubeSelectionState : InteractionState
         rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
         rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
 
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue);
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red);
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green);
 
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta);
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow);
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black);
 
         for (int planePass = 0; planePass < 6; planePass++)
         {
@@ -1163,8 +1161,7 @@ public class VolumeCubeSelectionState : InteractionState
         newOutline.transform.localScale = item.transform.localScale;
         newOutline.transform.rotation = item.transform.rotation;
 
-        Debug.Log("Cube Selection makeOutline: " + item.name);
-
+        //Debug.Log("Cube Selection makeOutline: " + item.name);
 
         return newOutline;
     }

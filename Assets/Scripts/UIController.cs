@@ -42,51 +42,6 @@ public class ControllerInfo
     }
 }
 
-public class OutlinePoint
-{
-    public Vector3 point;
-    public int index;
-    public int sameTriangle;
-    public int samePosition;
-
-    public int chainID;
-    public int indexInChain;
-
-    public OutlinePoint(Vector3 pt, int ind, int triangle)
-    {
-        point = pt;
-        index = ind;
-        sameTriangle = triangle;
-        samePosition = -1;
-        chainID = -1;
-        indexInChain = -1;
-
-    }
-
-    //public int SameTriangle
-    //{
-    //    get { return sameTriangle; }
-    //}
-
-    //public int SamePosition
-    //{
-    //    get { return samePos; }
-    //    set { samePos = value; }
-    //}
-
-    //public int ChainID
-    //{
-    //    get { return chainID; }
-    //    set { chainID = value; }
-    //}
-
-    //public int IndexInChain
-    //{
-    //    get { return indexInChain; }
-    //    set { indexInChain = value; }
-    //}
-}
-
 
 public class UIController : MonoBehaviour {
 
@@ -97,6 +52,7 @@ public class UIController : MonoBehaviour {
     private ControllerInfo controller1Info;
 
     private SelectionData selectionData;
+
 
     private InteractionState handSelectionState;
     private InteractionState volumeCubeSelectionState;
