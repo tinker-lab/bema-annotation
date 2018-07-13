@@ -841,21 +841,23 @@ public class SliceNSwipeSelectionState : InteractionState
                     materials[1] = Resources.Load("Green Material") as Material;
 
                     Material baseMaterial = originalMaterial[item.name];
-                    if (lastSeenObj != null && lastSeenObj.name == item.name)
-                    {
-                        materials[2] = GazeSelectedMaterial(baseMaterial);
-                    }
-                    else
-                    {
-                        materials[2] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
-                    }
+                    //if (lastSeenObj != null && lastSeenObj.name == item.name)
+                    //{
+                    materials[2] = GazeSelectedMaterial(baseMaterial);
+                    //Debug.Log("after a slice has been made, should still be purple");
+                    //}
+                    //else
+                    //{
+                    //    materials[2] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                    //    Debug.Log("after a slice has been made, turns transparent material");
+                    //}
                 } else
                 {
                     // This case handles backing out of a slice. In that case it is indicated by clearing selection0Indices for the object
                     if (SelectionData.ObjectsWithSelections.Contains(item.name))
                     {
                         mesh.subMeshCount = 2;
-                        Debug.Log("Remove slice with selections");
+                       // Debug.Log("Remove slice with selections");
                         mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 1);
                         mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
 
@@ -863,21 +865,32 @@ public class SliceNSwipeSelectionState : InteractionState
                         if (lastSeenObj != null && lastSeenObj.name == item.name)
                         {
                             materials[0] = GazeSelectedMaterial(baseMaterial);
+                            //Debug.Log("removed a slice, should be purple");
                         }
                         else
                         {
                             materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                            //Debug.Log("removed a slice, should be transparent");
                         }
                         materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
                         //Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
                     }
                     else
                     {
-                        Debug.Log("Remove first slice");
+                        //Debug.Log("Remove first slice");
                         mesh.subMeshCount = 1;
                         mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 0);
 
-                        materials[0] = originalMaterial[item.name];
+                        if(lastSeenObj != null && lastSeenObj.name == item.name)
+                        {
+                            materials[0] = GazeSelectedMaterial(originalMaterial[item.name]);
+                            Debug.Log("removed first slice, should be purple");
+                        }
+                        else
+                        {
+                            materials[0] = originalMaterial[item.name];         // Sets unselected as transparent
+                            //Debug.Log("removed first slice, should be transparent");
+                        }
                     }
                 }
             }
@@ -894,28 +907,38 @@ public class SliceNSwipeSelectionState : InteractionState
                 if (lastSeenObj != null && item.name == lastSeenObj.name)
                 {
                     baseMaterial = GazeSelectedMaterial(baseMaterial);
+                    //Debug.Log("have swiped, should be purple");
                 }
                 else
                 {
                     baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                    //Debug.Log("have swiped, transparent");
                 }
                 
                 materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             }
-            item.GetComponent<Renderer>().materials = materials;
+
+            if (mesh.subMeshCount > 1)
+            {
+                item.GetComponent<Renderer>().materials = materials;
+            }
+            else
+            {
+                item.GetComponent<Renderer>().material = materials[0];
+            }
             //Debug.Log(item.name + " M0: " + materials[0].name + " M1: " + materials[1].name);
         }
         else if (item.gameObject.tag == "highlightmesh" ) //&& mode == "slice")
         {
             if (item.name == "highlight0")
             {
-                Debug.Log(" At Color " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " selected Indices");
+                //Debug.Log(" At Color " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " selected Indices");
             }
 
             mesh.subMeshCount = 1;
             mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 0);
-            Debug.Log("                  coloring: " + item.name);
+            //Debug.Log("                  coloring: " + item.name);
 
         }
         mesh.RecalculateNormals();
@@ -1203,7 +1226,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
     Material GazeSelectedMaterial(Material baseMaterial)
     {
-        if (baseMaterial.name == "TransparenSighted")
+        if (baseMaterial.name == "TransparentSighted")
         {
             return baseMaterial;
         }

@@ -123,13 +123,13 @@ public class RayCastSelectionState : InteractionState
         //everythingExeceptPlaneLayer = 1 << everythingExeceptPlaneLayer;
         //everythingExeceptPlaneLayer = ~everythingExeceptPlaneLayer;
 
-        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 1000)) //, everythingExeceptPlaneLayer))
+        if (Physics.Raycast(laserStartPos, controllerInfo.trackedObj.transform.forward, out hit, 4f)) //, everythingExeceptPlaneLayer))
         {
             //No matter what object is hit, show the laser pointing to it
-          //  Debug.Log("raycast ");// + hit.collider.gameObject.name);
+            //Debug.Log("raycast ");// + hit.collider.gameObject.name);
             hitPoint = hit.point;
             hitLayer = hit.collider.gameObject.layer;
-            ShowLaser(hit, laser, laserStartPos);
+            ShowLaser(hit.point, laser, laserStartPos);
 
             if(!collidingMeshes.Contains(hit.collider.gameObject))
             {
@@ -144,19 +144,20 @@ public class RayCastSelectionState : InteractionState
         }
         else
         {
-            laser.SetActive(false);
+            //laser.SetActive(false);
+            ShowLaser(laserStartPos + 4f * controllerInfo.trackedObj.transform.forward, laser, laserStartPos);
             return false;
         }
     }
 
-    private void ShowLaser(RaycastHit hit, GameObject laser, Vector3 laserStartPos)
+    private void ShowLaser(Vector3 hitPoint, GameObject laser, Vector3 laserStartPos)
     {
         laser.SetActive(true);
         Transform laserTransform = laser.transform;
 
         laserTransform.position = Vector3.Lerp(laserStartPos, hitPoint, .5f);
         laserTransform.LookAt(hitPoint);
-        laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, hit.distance);
+        laserTransform.localScale = new Vector3(laserTransform.localScale.x, laserTransform.localScale.y, Vector3.Distance(hitPoint, laserStartPos));
     }
 
     private void ClearOldPlanes()
