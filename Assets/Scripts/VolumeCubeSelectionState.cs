@@ -490,7 +490,7 @@ public class VolumeCubeSelectionState : InteractionState
                 //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
                 //savedOutlines[currObjMesh.name].Add(savedRightOutline);
 
-
+                List<GameObject> removeOutlines = new List<GameObject>();
                 //if this object has outlines associated with it, process the outlines
                 foreach (GameObject outline in SelectionData.SavedOutlines[currObjMesh.name])
                 {
@@ -512,6 +512,11 @@ public class VolumeCubeSelectionState : InteractionState
                     }
 
                     ProcessMesh(outline, new List<int>());
+                   
+                    if (outline.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
+                    {
+                        removeOutlines.Add(outline);
+                    }
 
                     SelectionData.PreviousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
                     SelectionData.ObjectsWithSelections.Add(outline.name);
@@ -523,6 +528,17 @@ public class VolumeCubeSelectionState : InteractionState
                     SelectionData.PreviousUVs[outline.name] = UVList.ToArray<Vector2>();
                 }
 
+                for (int i = 0; i < removeOutlines.Count(); i++)
+                {
+                    Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
+                    SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[i]);
+                    UnityEngine.Object.Destroy(removeOutlines[i]);
+
+                }
+                removeOutlines.Clear();
+                //Debug.Break();
+
+                //List<GameObject> backOutlines = new List<GameObject>();
                 for (int i = 0; i < 6; i++)
                 {
                     List<List<OutlinePoint>> sortedPoints = OutlineManager.OrderPoints(SavedOutlinePoints[currObjMesh.name][i]);
@@ -532,6 +548,7 @@ public class VolumeCubeSelectionState : InteractionState
                     {
                         GameObject outlineObject = OutlineManager.MakeNewOutline(currObjMesh);
                         Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
+
                         SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
 
                         if (!SelectionData.PreviousNumVertices.ContainsKey(outlineObject.name))
@@ -559,7 +576,22 @@ public class VolumeCubeSelectionState : InteractionState
                         }
                         */
                         ignorePassList.Add(i);
+                        //if (i == 0)
+                        //{
+                        //    backOutlines.Add(OutlineManager.CopyObject(outlineObject));
+                        //}
                         ProcessMesh(outlineObject, ignorePassList);
+
+                        if (outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
+                        {
+                           // Debug.Break();
+                           if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
+                            {
+                                Debug.Log("selection went to 0 for back plane" + outlineObject.name);
+                                //Debug.Break();
+                            }
+                            removeOutlines.Add(outlineObject);
+                        }
 
                         SelectionData.PreviousSelectedIndices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0);
                         SelectionData.ObjectsWithSelections.Add(outlineObject.name);
@@ -571,6 +603,15 @@ public class VolumeCubeSelectionState : InteractionState
                         SelectionData.PreviousUVs[outlineObject.name] = UVList.ToArray<Vector2>();
                     }
                 }
+
+                for (int j = 0; j < removeOutlines.Count(); j++)
+                {
+                    Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
+                    SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
+                    UnityEngine.Object.Destroy(removeOutlines[j]);
+
+                }
+                //Debug.Break();
 
             }
         }
@@ -676,7 +717,18 @@ public class VolumeCubeSelectionState : InteractionState
         {
             if (passSkipList.Contains(planePass))
             {
+                //This handles the case where if plane pass is zero then the next condition will break since selectedindices was never set.
+                if (planePass == 0)
+                {
+                    selectedIndices = indices.ToList<int>();
+                }
                 continue;
+            }
+
+            if (planePass != 0)
+            {
+                indices = selectedIndices.ToArray();
+                selectedIndices.Clear();
             }
 
             List<OutlinePoint> unsortedOutlinePts = new List<OutlinePoint>();
@@ -702,11 +754,7 @@ public class VolumeCubeSelectionState : InteractionState
                 planePoint = controller0.controller.transform.position;
             }
 
-            if (planePass != 0)
-            {
-                indices = selectedIndices.ToArray();
-                selectedIndices.Clear();
-            }
+           
 
             for (int i = 0; i < indices.Length / 3 ; i++)
             {
@@ -727,6 +775,11 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                     else
                     {
+                        if (item.name == "highlight 6")
+                        {
+                            Debug.Log("planePass: " + planePass.ToString());
+                            Debug.Break();
+                        }
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
                 }
@@ -861,7 +914,8 @@ public class VolumeCubeSelectionState : InteractionState
             } else{
                 if (selectedIndices.Count() < 1)
                 {
-                    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection")
+                    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection on " + item.name);
+                  //  Debug.Break();
                 }
             }
         }
@@ -893,99 +947,6 @@ public class VolumeCubeSelectionState : InteractionState
         mesh.RecalculateNormals();
     }
 
-    /**
-     * points contains a list of points where each successive pair of points gets a tube drawn between them, sets to mesh called selectorMesh
-     * */
-    //private Mesh CreateOutlineMesh(List<Vector3> points, Vector3 plane, GameObject outline)
-    //{
-    //    Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
-    //    List<Vector3> verts = new List<Vector3>();
-    //    List<int> faces = new List<int>();
-    //    List<Vector2> uvCoordinates = new List<Vector2>();
-    //    outlineMesh.Clear();
-
-    //    float radius = .005f;// * 1.0/outline.transform.localScale;
-    //    int numSections = 6;
-
-    //    Assert.IsTrue(points.Count % 2 == 0);
-    //    int expectedNumVerts = (numSections + 1) * points.Count;
-
-    //    if (expectedNumVerts > 65000)
-    //    {
-    //        points = OutlineManager.OrderPoints(points);
-    //    }
-
-    //    if (points.Count >= 2) {
-    //        List<Vector3> duplicatedPoints = new List<Vector3>();
-    //        duplicatedPoints.Add(points[0]);
-    //        for (int i=1;i < points.Count; i++)
-    //        {
-    //            duplicatedPoints.Add(points[i]);
-    //            duplicatedPoints.Add(points[i]);
-    //        }
-
-    //        for (int i = 0; i < duplicatedPoints.Count-1; i += 2)
-    //        {
-    //            Vector3 centerStart = duplicatedPoints[i];
-    //            Vector3 centerEnd = duplicatedPoints[i + 1];
-    //            Vector3 direction = centerEnd - centerStart;
-    //            direction = direction.normalized;
-    //            Vector3 right = Vector3.Cross(plane, direction);
-    //            Vector3 up = Vector3.Cross(direction, right);
-    //            up = up.normalized * radius;
-    //            right = right.normalized * radius;
-
-    //            for (int slice = 0; slice <= numSections; slice++)
-    //            {
-    //                float theta = (float)slice / (float)numSections * 2.0f * Mathf.PI;
-    //                Vector3 p0 = centerStart + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
-    //                Vector3 p1 = centerEnd + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
-
-    //                verts.Add(p0);
-    //                verts.Add(p1);
-    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 0));
-    //                uvCoordinates.Add(new Vector2((float)slice / (float)numSections, 1));
-
-    //                if (slice > 0)
-    //                {
-    //                    faces.Add((slice * 2 + 1) + ((numSections + 1) * i));
-    //                    faces.Add((slice * 2) + ((numSections + 1) * i));
-    //                    faces.Add((slice * 2 - 2) + ((numSections + 1) * i));
-
-    //                    faces.Add(slice * 2 + 1 + ((numSections + 1) * i));
-    //                    faces.Add(slice * 2 - 2 + ((numSections + 1) * i));
-    //                    faces.Add(slice * 2 - 1 + ((numSections + 1) * i));
-    //                }
-    //            }
-    //        }
-
-    //        outlineMesh.SetVertices(verts);
-    //        outlineMesh.SetUVs(0, uvCoordinates);
-    //        outlineMesh.SetTriangles(faces, 0);
-
-    //        outlineMesh.RecalculateNormals();
-    //    }
-
-    //    return outlineMesh;
-    //}
-
-    /**
-     * Make a graph of mesh vertices, order it, remove sequential duplicates and return new set of vertices
-     */
-    //private List<Vector3> OrderMesh(List<Vector3> meshVertices)
-    //{
-    //    Dictionary<Vector3, HashSet<Vector3>> vertexGraph = new Dictionary<Vector3, HashSet<Vector3>>();  // Each point should only be connected to two other points
-
-    //    for (int i = 0; i < meshVertices.Count; i += 2)
-    //    {
-    //        AddToGraph(meshVertices[i], meshVertices[i + 1], ref vertexGraph);
-    //    }
-
-    //    meshVertices = DFSOrderPoints(vertexGraph);
-    //    meshVertices = RemoveSequentialDuplicates(meshVertices);
-
-    //    return meshVertices;
-    //}
 
     //returns value of latest index added and adds to list
     private void AddNewIndices(List<int> indices, int numToAdd)

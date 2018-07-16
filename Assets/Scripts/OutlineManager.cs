@@ -490,9 +490,10 @@ public class OutlineManager {
         mesh.SetUVs(0, uvs);
         copy.GetComponent<MeshFilter>().mesh = mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
-        copy.name = "Hand highlight" + outlineObjectCount;
+        //copy.name = "highlight" + outlineObjectCount;
+        copy.name = original.name;
         copy.layer = LayerMask.NameToLayer("Ignore Raycast");
-        outlineObjectCount++;
+        //outlineObjectCount++;
 
         return copy;
     }
