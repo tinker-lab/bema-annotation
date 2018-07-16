@@ -664,13 +664,13 @@ public class VolumeCubeSelectionState : InteractionState
         rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
         rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
 
-        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue);
-        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red);
-        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue,0f,false);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red, 0f, false);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green, 0f, false);
 
-        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta);
-        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow);
-        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black);
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta, 0f, false);
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow, 0f, false);
+        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black, 0f, false);
 
         for (int planePass = 0; planePass < 6; planePass++)
         {

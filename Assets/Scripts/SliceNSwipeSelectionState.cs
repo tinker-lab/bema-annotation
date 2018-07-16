@@ -456,7 +456,10 @@ public class SliceNSwipeSelectionState : InteractionState
 
                         //GameObject savedOutline = OutlineManager.MakeNewOutline(outline);
                         SelectionData.SavedOutlines[collidingMesh.name].Add(savedOutline);
+
+                        UnityEngine.Object.Destroy(outline);
                     }
+                    OutlineManager.preSelectionOutlines[collidingMesh.name].Clear();
 
                     Debug.Log("Slice Selection: " + collidingMesh.name);
 
