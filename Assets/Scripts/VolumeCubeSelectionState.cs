@@ -858,29 +858,12 @@ public class VolumeCubeSelectionState : InteractionState
                 }
 
                 //unsortedOutlinePts.Clear();
+            } else{
+                if (selectedIndices.Count() < 1)
+                {
+                    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection")
+                }
             }
-
-            //if (item.gameObject.tag != "highlightmesh")
-            //{
-            //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, rotationVectors[planePass], item.gameObject.GetComponent<MeshFilter>().mesh);
-
-            //    //if (planePass == 1)
-            //    //{
-            //    //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, rightOutlines[item.name].GetComponent<MeshFilter>().mesh);
-            //    //    //rightOutlines[item.name].transform.position = item.transform.position;
-            //    //    //rightOutlines[item.name].transform.localScale = item.transform.localScale;
-            //    //    //rightOutlines[item.name].transform.rotation = item.transform.rotation;
-            //    //}
-            //    //else
-            //    //{
-            //    //    Mesh outlineMesh = CreateOutlineMesh(outlinePoints, currentPlane, leftOutlines[item.name].GetComponent<MeshFilter>().mesh);
-            //    //    //leftOutlines[item.name].transform.position = item.transform.position;
-            //    //    //leftOutlines[item.name].transform.localScale = item.transform.localScale;
-            //    //    //leftOutlines[item.name].transform.rotation = item.transform.rotation;
-            //    //}
-
-            //    outlinePoints.Clear();
-            //}
         }
 
         mesh.Clear();
