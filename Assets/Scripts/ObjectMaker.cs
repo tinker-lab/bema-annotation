@@ -8,7 +8,7 @@ using UnityEditor;
 public class ObjectMaker : MonoBehaviour
 {
 
-    public GameObject baseObject;
+    public GameObject baseObject; //the object the planes are cutting into
     public GameObject planeParent;
 
     int[] previousSelectedIndices;
@@ -32,7 +32,7 @@ public class ObjectMaker : MonoBehaviour
         foreach (Transform planeChild in planeParent.transform)
         {
             GameObject plane = planeChild.gameObject;
-            SplitMesh(baseObject, plane);
+            SplitMesh(baseObject, plane); //cuts the mesh where the plane is placed
             previousVertices = baseObject.GetComponent<MeshFilter>().mesh.vertices;
             baseObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
             previousUVs = UVList;
@@ -263,6 +263,7 @@ public class ObjectMaker : MonoBehaviour
         return Vector3.Dot(plane.transform.up, pt) >= Vector3.Dot(plane.transform.up, plane.transform.position);
     }
 
+    //not used?
     private bool NormalSwipe(Vector3 swipeDirection, GameObject slicePlane)
     {
         return Vector3.Dot(swipeDirection, slicePlane.transform.up) <= 0;
@@ -276,6 +277,7 @@ public class ObjectMaker : MonoBehaviour
         indices.Add(index2);
     }
 
+    //tests if an intersection with one of the planes is made
     private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, GameObject plane) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     {
         Vector3 lineSegmentLocal = lineVertexLocal1 - lineVertexLocal0;
