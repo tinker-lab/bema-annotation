@@ -5,6 +5,7 @@ using UnityEngine;
 public class NavigationState : InteractionState {
 
     public static readonly float MIN_DISTANCE = 0.25f;    // How close controllers need to be to plane
+    private bool allowNavigation;
 
     private int doNotTeleportLayer;
     private int worldUILayer;
@@ -41,13 +42,13 @@ public class NavigationState : InteractionState {
     private HashSet<GameObject> cubeColliders;
 
 
-    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData)
+    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false)
     {
         desc = "NavigationState";
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData);
+        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, experiment);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");
@@ -60,6 +61,8 @@ public class NavigationState : InteractionState {
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+
+        allowNavigation = !experiment;
 
         teleportReticleOffset = new Vector3(0, 0.005f, 0);
         doNotTeleportLayer = LayerMask.NameToLayer("Do not teleport");
@@ -160,43 +163,52 @@ public class NavigationState : InteractionState {
                     activeHighlight.GetComponent<MeshRenderer>().enabled = true;
                 }
             }
-           
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            if (allowNavigation)
+            {
+                GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            }
+            else
+            {
+                GameObject.Find("ExperimentController").GetComponent<RunExperiment>().ChangeState(handSelectionState);
+            }
 
         }
-
-        // Teleport
-        if (controller0.device.GetHairTrigger()) {
-
-            laser1.SetActive(false);
-            DoRayCast(controller0, laser0);
-        }
-        else if (controller1.device.GetHairTrigger())
+        if (allowNavigation)
         {
-            laser0.SetActive(false);
-            DoRayCast(controller1, laser1);
-           
-        }
-        else if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
-        {
-            if (shouldTeleport)
+            // Teleport
+            if (controller0.device.GetHairTrigger())
+            {
+
+                laser1.SetActive(false);
+                DoRayCast(controller0, laser0);
+            }
+            else if (controller1.device.GetHairTrigger())
+            {
+                laser0.SetActive(false);
+                DoRayCast(controller1, laser1);
+
+            }
+            else if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+            {
+                if (shouldTeleport)
+                {
+                    laser0.SetActive(false);
+                    laser1.SetActive(false);
+                    Teleport();
+                }
+            }
+            /*
+            else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
+            {
+                GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
+            }
+            */
+            else
             {
                 laser0.SetActive(false);
                 laser1.SetActive(false);
-                Teleport();
+                reticle.SetActive(false);
             }
-        }
-        /*
-        else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
-        {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
-        }
-        */
-        else
-        {
-            laser0.SetActive(false);
-            laser1.SetActive(false);
-            reticle.SetActive(false);
         }
     }
 

@@ -38,13 +38,13 @@ public class RunExperiment : MonoBehaviour {
         bool achieved = false;
         while(!achieved){
             if(Input.GetKeyDown(KeyCode.Alpha1)){
-                currentState = new HandSelectionState(controller0Info, controller1Info, null, selectionData); //TODO: make an alternate constructor for HandSelectionState that never tries to switch to NavigationState and doesn't need a stateToReturnTo parameter
+                currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); //outlines/selection are following hands around after a selection when you pull them out of an object, as well as the white cube and z-fighting problems
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha2)){
-                currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
+                currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData); //transparent cube turns white when you collide
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha3)){
-                currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData);
+                currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData); //z-fighting between the overlayed cube, gaze selection too opaque, swordLine at weird rotation
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha4)){
                 currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
@@ -103,5 +103,11 @@ public class RunExperiment : MonoBehaviour {
             controller0Info.isLeft = true;
             controller1Info.isLeft = false;
         }
+    }
+
+    public void ChangeState(InteractionState newState)
+    {
+        currentState.Deactivate();
+        currentState = newState;
     }
 }

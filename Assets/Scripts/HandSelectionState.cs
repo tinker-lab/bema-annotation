@@ -7,6 +7,7 @@ using UnityEngine.Assertions;
 public class HandSelectionState : InteractionState
 {
     private const bool debug = false;
+    private bool allowNavigation;
 
     InteractionState stateToReturnTo;
     private ControllerInfo controller0;
@@ -97,7 +98,7 @@ public class HandSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo, SelectionData sharedData)
+    public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo, SelectionData sharedData, bool experiment)
     {
         // NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "HandSelectionState";
@@ -149,6 +150,7 @@ public class HandSelectionState : InteractionState
         unsortedOutlinePts = new List<OutlinePoint>();
 
         this.stateToReturnTo = stateToReturnTo;
+        allowNavigation = !experiment;
 
         preSelectionOutlines = OutlineManager.preSelectionOutlines;
         //rightOutlines = new Dictionary<string, List<GameObject>>();
@@ -370,8 +372,15 @@ public class HandSelectionState : InteractionState
         }
         else // If not colliding with anything, change states
         {
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-            return;
+            if (allowNavigation)
+            {
+                GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+                return;
+            }
+            else
+            {
+                GameObject.Find("ExperimentController").GetComponent<RunExperiment>().ChangeState(stateToReturnTo);
+            }
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
