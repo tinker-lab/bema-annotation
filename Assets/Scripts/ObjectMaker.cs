@@ -94,8 +94,8 @@ public class ObjectMaker : MonoBehaviour
         mesh.SetTriangles(previousUnselectedIndices, 0);
 
 
-        materials[0] = Resources.Load("Green Material") as Material;
-        materials[1] = Resources.Load("Blue Material") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+        materials[0] = Resources.Load("GrayConcrete") as Material;
+        materials[1] = Resources.Load("BlueConcrete") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
 
         baseObject.GetComponent<Renderer>().materials = materials;
         mesh.RecalculateNormals();
