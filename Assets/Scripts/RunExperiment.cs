@@ -66,14 +66,17 @@ public class RunExperiment : MonoBehaviour {
             Init();
             firstUpdate = false;
         }
-        determineLeftRightControllers();
-        currentState.HandleEvents(controller0Info, controller1Info);
-        //TODO: make all HandleEvents calls return an event name or empty string
-        recorder.updateLists(new Time());
-        //  call RecordData.updateLists(timeStamp, optional str eventName)
-        //wait for the stopTimer action
-        //  call RecordData.writeToFile(selectedArea, startTime - endTime)
-        //go back to landing zone w new scene on deck.
+        if (currentState != null)
+        {
+            determineLeftRightControllers();
+            currentState.HandleEvents(controller0Info, controller1Info);
+            //TODO: make all HandleEvents calls return an event name or empty string
+            recorder.updateLists(new Time());
+            //  call RecordData.updateLists(timeStamp, optional str eventName)
+            //wait for the stopTimer action
+            //  call RecordData.writeToFile(selectedArea, startTime - endTime)
+            //go back to landing zone w new scene on deck.
+        }
 	}
 
     void determineLeftRightControllers()
