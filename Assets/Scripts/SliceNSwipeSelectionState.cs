@@ -799,16 +799,8 @@ public class SliceNSwipeSelectionState : InteractionState
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, UVs);
 
-
-        //selected0 and selected1 are the locally used lists of indices. selection 0 & 1 are global dictionaries storing arrays of indices for every object
-        //i apologize for this
         sliced0Indices[item.name] = selected0Indices.ToArray();
         sliced1Indices[item.name] = selected1Indices.ToArray();
-
-        //if (item.name == "highlight0")
-        //{
-        //    Debug.Log(" At SPLIT " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " selected Indices. 0: " + sliced0Indices[item.name].Count().ToString() + ", 1: " + sliced1Indices.Count().ToString());
-        //}
 
         if (item.gameObject.tag != "highlightmesh")
         {
