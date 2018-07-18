@@ -530,7 +530,7 @@ public class VolumeCubeSelectionState : InteractionState
 
                 for (int i = 0; i < removeOutlines.Count(); i++)
                 {
-                    Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
+                  //  Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
                     SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[i]);
                     UnityEngine.Object.Destroy(removeOutlines[i]);
 
@@ -585,11 +585,11 @@ public class VolumeCubeSelectionState : InteractionState
                         if (outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
                         {
                            // Debug.Break();
-                           if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
-                            {
-                                Debug.Log("selection went to 0 for back plane" + outlineObject.name);
-                                //Debug.Break();
-                            }
+                           //if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
+                           // {
+                           //     Debug.Log("selection went to 0 for back plane" + outlineObject.name);
+                           //     //Debug.Break();
+                           // }
                             removeOutlines.Add(outlineObject);
                         }
 
@@ -775,11 +775,7 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                     else
                     {
-                        if (item.name == "highlight 6")
-                        {
-                            Debug.Log("planePass: " + planePass.ToString());
-                            Debug.Break();
-                        }
+                     
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
                 }
@@ -912,11 +908,11 @@ public class VolumeCubeSelectionState : InteractionState
 
                 //unsortedOutlinePts.Clear();
             } else{
-                if (selectedIndices.Count() < 1)
-                {
-                    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection on " + item.name);
-                  //  Debug.Break();
-                }
+                //if (selectedIndices.Count() < 1)
+                //{
+                //    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection on " + item.name);
+                //  //  Debug.Break();
+                //}
             }
         }
 

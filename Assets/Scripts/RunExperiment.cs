@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RunExperiment : MonoBehaviour {
 
-    RecordData recorder;
+   // RecordData recorder;
 
     private InteractionState currentState;
     public GameObject controller0;
@@ -27,7 +27,7 @@ public class RunExperiment : MonoBehaviour {
 
         StartCoroutine("SelectInterface");
 
-        recorder = new RecordData(controller0Info, controller1Info, currentState);
+        //recorder = new RecordData(controller0Info, controller1Info, currentState);
 
         //init landing zone, scene changer
 		//into between state where you start timer by pressing a button -> "landing zone"
@@ -38,7 +38,7 @@ public class RunExperiment : MonoBehaviour {
         bool achieved = false;
         while(!achieved){
             if(Input.GetKeyDown(KeyCode.Alpha1)){
-                currentState = new NavigationState(controller0Info, controller1Info, selectionData);
+                currentState = new HandSelectionState(controller0Info, controller1Info, null, selectionData); //TODO: make an alternate constructor for HandSelectionState that never tries to switch to NavigationState and doesn't need a stateToReturnTo parameter
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha2)){
                 currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
@@ -66,14 +66,17 @@ public class RunExperiment : MonoBehaviour {
             Init();
             firstUpdate = false;
         }
-        determineLeftRightControllers();
-        currentState.HandleEvents(controller0Info, controller1Info);
-        //TODO: make all HandleEvents calls return an event name or empty string
-        recorder.updateLists(new Time());
-        //  call RecordData.updateLists(timeStamp, optional str eventName)
-        //wait for the stopTimer action
-        //  call RecordData.writeToFile(selectedArea, startTime - endTime)
-        //go back to landing zone w new scene on deck.
+        if (currentState != null)
+        {
+            determineLeftRightControllers();
+            currentState.HandleEvents(controller0Info, controller1Info);
+            //TODO: make all HandleEvents calls return an event name or empty string
+            //recorder.updateLists(new Time());
+            //  call RecordData.updateLists(timeStamp, optional str eventName)
+            //wait for the stopTimer action
+            //  call RecordData.writeToFile(selectedArea, startTime - endTime)
+            //go back to landing zone w new scene on deck.
+        }
 	}
 
     void determineLeftRightControllers()
