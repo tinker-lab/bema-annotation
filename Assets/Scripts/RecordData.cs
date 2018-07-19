@@ -32,19 +32,19 @@ public class TrialData
     public string selectionInterface;
     public float selectedArea;                  // total selected area -> updated to hold final amount
     public float timeElapsed;                   // total duration spent on a trial
-    public List<Time> timeStamps;               // recorded time at every HandleEvents call
+    public List<long> timeStamps;               // recorded time at every HandleEvents call. its System.DateTime.Now.Ticks, which measures the instant of time in segments of 100 nanoseconds.
     public List<Vector3> controller1Locations;  // left controller location at every HandleEvents call
     public List<Vector3> controller2Locations;  // right controller location at every HandleEvents call
-    public Dictionary<Time, string> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
+    public Dictionary<long, string> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
                                                 // and value is the name of the event
     public TrialData(){
         selectionInterface = "";                //should selectionInterface be saved here attached to every trial number or once in experimentData. would it ever be overwritten there?
         selectedArea = 0f;
         timeElapsed = 0f;
-        timeStamps = new List<Time>();
+        timeStamps = new List<long>();
         controller1Locations = new List<Vector3>();
         controller2Locations = new List<Vector3>();
-        events = new Dictionary<Time, string>();
+        events = new Dictionary<long, string>();
     }
 }
 
@@ -73,7 +73,7 @@ public class RecordData {
         myData = new ExperimentData();
     }
 
-    public void writeToFile( float area, float duration){
+    public void WriteToFile( float area, float duration){
         myData.trialData[trialID].selectedArea = area;
         myData.trialData[trialID].timeElapsed = duration;
         myData.trialData[trialID].selectionInterface = currentState.Desc;
@@ -86,7 +86,7 @@ public class RecordData {
         Debug.Log(_data);
     }
 
-    public void updateLists(Time timeStamp, string eventStr = ""){
+    public void UpdateLists(long timeStamp, string eventStr = ""){
         myData.trialData[trialID].timeStamps.Add(timeStamp);
         myData.trialData[trialID].controller1Locations.Add(controller1.trackedObj.transform.position);
         myData.trialData[trialID].controller2Locations.Add(controller2.trackedObj.transform.position);

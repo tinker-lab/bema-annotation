@@ -244,7 +244,7 @@ public class RayCastSelectionState : InteractionState
         //    }
         }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         //update ray cast as well as find out if it is colliding with something
         bool collided = DoRayCast(controller0Info, laser);
@@ -443,6 +443,7 @@ public class RayCastSelectionState : InteractionState
         //    }
 
         //}
+        return "";
     }
 
     public List<Vector3> Resample(List<Vector3> pts, float sampleDistance)
