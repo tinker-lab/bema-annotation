@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class RunExperiment : MonoBehaviour {
 
-   // RecordData recorder;
+    RecordData recorder;
 
     private InteractionState currentState;
     public GameObject controller0;
@@ -16,6 +17,13 @@ public class RunExperiment : MonoBehaviour {
     public OutlineManager outlineManager;
 
     bool firstUpdate = true;
+    bool trialStarted = false;
+
+    long startTrialTicks;
+    long endTrialTicks;
+
+    List<int> sceneIndices;
+    int nextSceneIndex;
 
 	// Use this for initialization
 	void Init () {
@@ -25,14 +33,30 @@ public class RunExperiment : MonoBehaviour {
         selectionData = new SelectionData();
         outlineManager = new OutlineManager();
 
-        StartCoroutine("SelectInterface");
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++){
+            sceneIndices.Add(i);
+        }
+        nextSceneIndex = 0;                 //????????? we need to figure out how we want to randomize these.
 
-        //recorder = new RecordData(controller0Info, controller1Info, currentState);
+        StartCoroutine("SelectInterface");
+        StartCoroutine("WaitForTimer");
+
+        recorder = new RecordData(controller0Info, controller1Info, currentState);
 
         //init landing zone, scene changer
 		//into between state where you start timer by pressing a button -> "landing zone"
         //landing zone starts measurements and the scene. landing zone could be in this class??
 	}
+
+    IEnumerator WaitForTimer(){
+        while(!trialStarted){
+            if(controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad)){
+                startTrialTicks = System.DateTime.Now.Ticks;
+                trialStarted = true;
+            }
+            yield return null;
+        }
+    }
 
     IEnumerator SelectInterface(){
         bool achieved = false;
@@ -66,26 +90,33 @@ public class RunExperiment : MonoBehaviour {
             Init();
             firstUpdate = false;
         }
-        if (currentState != null)
+        if (currentState != null && trialStarted)
         {
             determineLeftRightControllers();
             currentState.HandleEvents(controller0Info, controller1Info);
             //TODO: make all HandleEvents calls return an event name or empty string
-            //recorder.updateLists(new Time());
-            //  call RecordData.updateLists(timeStamp, optional str eventName)
-            //wait for the stopTimer action
-            //  call RecordData.writeToFile(selectedArea, startTime - endTime)
-            //go back to landing zone w new scene on deck.
+            recorder.UpdateLists(System.DateTime.Now.Ticks, eventName);
+            if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+            {
+                endTrialTicks = System.DateTime.Now.Ticks;
+                recorder.WriteToFile(selectedArea, endTrialTicks - startTrialTicks);
+                ChangeTrialScene();
+                trialStarted = false;
+            }
+            //TODO: Get selectedArea
         }
 	}
+
+    void ChangeTrialScene(){
+        nextSceneIndex = nextSceneIndex++;
+        SceneManager.LoadScene(sceneIndices[nextSceneIndex]);
+        StartCoroutine("WaitForTimer");
+    }
 
     void determineLeftRightControllers()
     {
         try
         {
-            //print("Leftmost device index" + SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Leftmost));
-            //print("Tracked controller index: " + controller0Info.device.index);
-
             if ((int)controller0Info.device.index == (SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Leftmost)))
             {
                 controller0Info.isLeft = true;
