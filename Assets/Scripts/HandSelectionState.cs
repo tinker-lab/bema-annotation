@@ -8,6 +8,7 @@ public class HandSelectionState : InteractionState
 {
     private const bool debug = false;
     private bool allowNavigation;
+    private int selectionCount;
 
     InteractionState stateToReturnTo;
     private ControllerInfo controller0;
@@ -151,6 +152,7 @@ public class HandSelectionState : InteractionState
 
         this.stateToReturnTo = stateToReturnTo;
         allowNavigation = !experiment;
+        selectionCount = 0;
 
         preSelectionOutlines = OutlineManager.preSelectionOutlines;
         //rightOutlines = new Dictionary<string, List<GameObject>>();
@@ -352,8 +354,10 @@ public class HandSelectionState : InteractionState
         }
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        string eventString = "";
+
         List<Vector2> UVList = new List<Vector2>();
 
         UpdatePlanes();
@@ -375,7 +379,7 @@ public class HandSelectionState : InteractionState
             if (allowNavigation)
             {
                 GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
-                return;
+                return "";
             }
             else
             {
@@ -387,6 +391,7 @@ public class HandSelectionState : InteractionState
         {
             if (!SelectionData.PreviousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
             {
+                eventString = "first collision with " + currObjMesh.name;
                 SelectionData.PreviousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
                 currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
                 SelectionData.PreviousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
@@ -454,8 +459,9 @@ public class HandSelectionState : InteractionState
 
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown()) // Clicked: a selection has been made
         {
-           // Debug.Log("Hand. OnTriggerDown " + collidingMeshes.Count().ToString());
-
+            // Debug.Log("Hand. OnTriggerDown " + collidingMeshes.Count().ToString());
+            selectionCount++;
+            eventString = "selection " + selectionCount.ToString();
             foreach (GameObject currObjMesh in collidingMeshes)
             {
               //  Debug.Log("Hand Selection: " + currObjMesh.name);
@@ -568,6 +574,7 @@ public class HandSelectionState : InteractionState
 
         }
         lastPos = currentPos;
+        return eventString;
     }
 
    

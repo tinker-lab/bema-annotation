@@ -58,7 +58,7 @@ public class ResourceEditState : InteractionState {
         canvas.SetActive(false);
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         DoRayCast(activeController);
 
@@ -74,6 +74,7 @@ public class ResourceEditState : InteractionState {
                 //GameObject.Find("UIController").GetComponent<UIController>().changeState(new NavigationState());
             }
         }
+        return "";
     }
 
     void PositionCanvas()

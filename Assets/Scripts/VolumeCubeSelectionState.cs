@@ -7,6 +7,7 @@ using UnityEngine.Assertions;
 public class VolumeCubeSelectionState : InteractionState
 {
     //private const bool debug = false;
+    private int selectionCount = 0;
 
     //InteractionState stateToReturnTo;
     private ControllerInfo controller0;
@@ -379,8 +380,9 @@ public class VolumeCubeSelectionState : InteractionState
         Uncollide();
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        string eventString = "";
         List<Vector2> UVList = new List<Vector2>();
 
         //Update cube (method has position, rotation, and scale in it)
@@ -401,7 +403,7 @@ public class VolumeCubeSelectionState : InteractionState
         {
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
             Uncollide();
-            return;
+            return "";
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
@@ -409,6 +411,7 @@ public class VolumeCubeSelectionState : InteractionState
             //first time seeing object, if the original vertices are not stored already, store them
             if (!SelectionData.PreviousNumVertices.ContainsKey(currObjMesh.name))
             {
+                eventString = "first collision with " + currObjMesh.name;
                 SelectionData.PreviousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
                 currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
                 SelectionData.PreviousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
@@ -441,6 +444,8 @@ public class VolumeCubeSelectionState : InteractionState
         //and save the outlines and new meshes
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
         {
+            selectionCount++;
+            eventString = "selection " + selectionCount.ToString();
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 //Debug.Log("Cube Selection: " + currObjMesh.name);
@@ -615,6 +620,7 @@ public class VolumeCubeSelectionState : InteractionState
 
             }
         }
+        return eventString;
     }
     
     /// <summary>

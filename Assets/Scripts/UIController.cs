@@ -22,7 +22,7 @@ public class InteractionState
     /*
      * Called every frame from the UIController update method if this interaction state is currently active. This should interpret the events and update any visual feedback.
      */
-    public virtual void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info) { }
+    public virtual string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info) { return ""; }
 
 }
 

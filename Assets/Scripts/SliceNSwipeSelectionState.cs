@@ -6,6 +6,8 @@ using UnityEngine.Assertions;
 
 public class SliceNSwipeSelectionState : InteractionState
 {
+    private int selectionCount = 1;
+
     public GameObject camera;// = new GameObject();
     private GameObject laser;
     private GameObject reticle;
@@ -255,8 +257,9 @@ public class SliceNSwipeSelectionState : InteractionState
         }
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        string eventString = "";
         Vector3 currentPos = mainController.trackedObj.transform.position;
         Vector3 currentOrientation = mainController.trackedObj.transform.forward;
 
@@ -283,6 +286,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
                 if (!SelectionData.PreviousNumVertices.ContainsKey(collidingMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
                 {
+                    eventString = "first collision with " + collidingMesh.name;
                     FirstContactProcess(collidingMesh, UVList);
                 }
 
@@ -290,16 +294,17 @@ public class SliceNSwipeSelectionState : InteractionState
             }
             else if (sliceStatus == 0 && !mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold ) // you just made a big slicing movement
             {
-
-                string debugString = "";
+                eventString = "slice for selection " + selectionCount.ToString();
+                //string debugString = "";
                 UpdatePlane(lastPos - currentPos);
 
                 /* to make a cut plane you need to get the transform.forward and also the difference between last and current positions*/
 
                 if (!SelectionData.PreviousNumVertices.ContainsKey(collidingMesh.name))
                 {
+                    eventString = "first collision with " + collidingMesh.name;
                     FirstContactProcess(collidingMesh, UVList);
-                    debugString += collidingMesh.name + "  ";
+                    //debugString += collidingMesh.name + "  ";
                 } else if (!SelectionData.PreviousUnselectedIndices.ContainsKey(collidingMesh.name))
                 {
                     SelectionData.PreviousUnselectedIndices.Add(collidingMesh.name, new int[0]);
@@ -312,7 +317,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     //}
                     SplitMesh(collidingMesh);
                     ColorMesh(collidingMesh, "slice");
-                    debugString += collidingMesh.name + "  ";
+                    //debugString += collidingMesh.name + "  ";
                     collidingMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 }
                 //Debug.Log("SLICE: " + debugString);
@@ -323,6 +328,8 @@ public class SliceNSwipeSelectionState : InteractionState
             {
                 if (altController.device.GetHairTrigger())          //remove last swipe
                 {
+                    eventString = "swipe selection " + selectionCount.ToString();
+                    selectionCount++;
                     sliceStatus = 0;
 
                     sliced0Indices.Remove(collidingMesh.name);
@@ -395,7 +402,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     SelectionData.ObjectsWithSelections.Add(collidingMesh.name);
                     ColorMesh(collidingMesh, "swipe");
 
-                    string debugStr = "swipe: " + collidingMesh.name + " ";
+                    //string debugStr = "swipe: " + collidingMesh.name + " ";
 
                     if (!SelectionData.SavedOutlines.ContainsKey(collidingMesh.name))
                     {
@@ -431,12 +438,12 @@ public class SliceNSwipeSelectionState : InteractionState
                             SelectionData.PreviousSelectedIndices[outline.name] = sliced0Indices[outline.name];
                         }
 
-                        if (outline.name == "highlight0")
-                        {
-                            Debug.Log(" At swipe " + SelectionData.PreviousSelectedIndices[outline.name].Count().ToString() + " selected Indices");
-                        }
+                        //if (outline.name == "highlight0")
+                        //{
+                        //    Debug.Log(" At swipe " + SelectionData.PreviousSelectedIndices[outline.name].Count().ToString() + " selected Indices");
+                        //}
 
-                        debugStr += outline.name + " ";
+                        //debugStr += outline.name + " ";
                         //previousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0).ToList();
                         //TODO: check whether objWithSelections is needed for outlines.
                         SelectionData.ObjectsWithSelections.Add(outline.name);
@@ -461,9 +468,9 @@ public class SliceNSwipeSelectionState : InteractionState
                     }
                     OutlineManager.preSelectionOutlines[collidingMesh.name].Clear();
 
-                    Debug.Log("Slice Selection: " + collidingMesh.name);
+                    //Debug.Log("Slice Selection: " + collidingMesh.name);
 
-                    Debug.Log(debugStr);
+                    //Debug.Log(debugStr);
 
                     sliceStatus = 0;
                 }
@@ -472,6 +479,8 @@ public class SliceNSwipeSelectionState : InteractionState
 
         lastPos = currentPos;
         lastOrientation = currentOrientation;
+
+        return eventString;
     }
 
     private void GazeSelection()

@@ -126,7 +126,7 @@ public class NavigationState : InteractionState {
     }
 
     // Update is called once per frame
-    override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    override public string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         /*
         // Check if controllers are close to plane
@@ -210,6 +210,7 @@ public class NavigationState : InteractionState {
                 reticle.SetActive(false);
             }
         }
+        return "";
     }
 
     void DoRayCast(ControllerInfo controllerInfo, GameObject laser)
