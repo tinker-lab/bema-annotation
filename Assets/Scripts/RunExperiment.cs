@@ -37,6 +37,7 @@ public class RunExperiment : MonoBehaviour {
         selectionData = new SelectionData();
         outlineManager = new OutlineManager();
 
+        sceneIndices = new List<int>();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++){
             sceneIndices.Add(i);
         }
@@ -47,7 +48,7 @@ public class RunExperiment : MonoBehaviour {
         StartCoroutine("SelectInterface");
         StartCoroutine("WaitForTimer");
 
-        recorder = new RecordData(controller0Info, controller1Info, currentState);
+        recorder = new RecordData(controller0Info, controller1Info, currentState, SceneManager.sceneCountInBuildSettings);
 
         //init landing zone, scene changer
 		//into between state where you start timer by pressing a button -> "landing zone"
@@ -56,7 +57,9 @@ public class RunExperiment : MonoBehaviour {
 
     IEnumerator WaitForTimer(){
         while(!trialStarted){
-            if(controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad)){
+            if(controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad)){
+                Debug.Log("timer started");
+                recorder.SetTrialID(SceneManager.GetActiveScene().buildIndex);
                 startTrialTicks = System.DateTime.Now.Ticks;
                 trialStarted = true;
             }
@@ -103,6 +106,7 @@ public class RunExperiment : MonoBehaviour {
             recorder.UpdateLists(System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
             if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
             {
+                Debug.Log("timer stopped");
                 endTrialTicks = System.DateTime.Now.Ticks;
                 float selectedArea = CalculateSelectedArea();
                 recorder.WriteToFile(selectedArea, endTrialTicks - startTrialTicks);
@@ -188,5 +192,6 @@ public class RunExperiment : MonoBehaviour {
     {
         currentState.Deactivate();
         currentState = newState;
+        RecordData.CurrentState = newState;
     }
 }

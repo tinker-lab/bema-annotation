@@ -798,10 +798,10 @@ public class HandSelectionState : InteractionState
             mesh.SetTriangles(selectedIndices, 1);
 
             Material[] materials = new Material[2];
-            Material baseMaterial = item.GetComponent<Renderer>().materials[0];
+            Material baseMaterial = item.GetComponent<Renderer>().sharedMaterials[0];
             materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
             materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
-            item.GetComponent<Renderer>().materials = materials;
+            item.GetComponent<Renderer>().sharedMaterials = materials;
         }
 
         else // set highlight meshes foreach (int index in selectedIndices)
