@@ -34,6 +34,9 @@ public class RunExperiment : MonoBehaviour {
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
 
+        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(1));  //scene 0 is the BasicScene which is in the project all the time bc it has the floor and the camera and this script. other scenes w test objects are loaded and unloaded.
+        testObjectParent = GameObject.Find("TestObj");
+
         selectionData = new SelectionData();
         outlineManager = new OutlineManager();
 
@@ -41,7 +44,7 @@ public class RunExperiment : MonoBehaviour {
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++){
             sceneIndices.Add(i);
         }
-        nextSceneIndex = 0;                 //????????? we need to figure out how we want to randomize these.
+        nextSceneIndex = 1;                 //????????? we need to figure out how we want to randomize these.
 
         selectionEvent = "";
 
@@ -56,6 +59,7 @@ public class RunExperiment : MonoBehaviour {
 	}
 
     IEnumerator WaitForTimer(){
+        trialStarted = false;
         while(!trialStarted){
             if(controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad)){
                 Debug.Log("timer started");
@@ -71,15 +75,19 @@ public class RunExperiment : MonoBehaviour {
         bool achieved = false;
         while(!achieved){
             if(Input.GetKeyDown(KeyCode.Alpha1)){
+                Debug.Log("Init Yea-Big");
                 currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); //outlines/selection are following hands around after a selection when you pull them out of an object, as well as the white cube and z-fighting problems
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha2)){
+                Debug.Log("Init Volume Cube");
                 currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData); //transparent cube turns white when you collide
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha3)){
+                Debug.Log("Init SliceNSwipe");
                 currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData); //z-fighting between the overlayed cube, gaze selection too opaque, swordLine at weird rotation
                 achieved = true;
             } else if (Input.GetKeyDown(KeyCode.Alpha4)){
+                Debug.Log("Init Raycast");
                 currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
                 achieved = true;
             }
@@ -104,14 +112,15 @@ public class RunExperiment : MonoBehaviour {
             DetermineLeftRightControllers();
             selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
             recorder.UpdateLists(System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
-            if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+            if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
             {
-                Debug.Log("timer stopped");
+                StopAllCoroutines();
+                trialStarted = false;
+                Debug.Log("timer stopped " + currentState.Desc);
                 endTrialTicks = System.DateTime.Now.Ticks;
                 float selectedArea = CalculateSelectedArea();
-                recorder.WriteToFile(selectedArea, endTrialTicks - startTrialTicks);
+                recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
                 ChangeTrialScene();
-                trialStarted = false;
             }
         }
 	}
@@ -160,9 +169,22 @@ public class RunExperiment : MonoBehaviour {
     }
 
     void ChangeTrialScene(){
-        nextSceneIndex = nextSceneIndex++;
-        SceneManager.LoadScene(sceneIndices[nextSceneIndex]);
+        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndices[0]));
+        SceneManager.UnloadSceneAsync(sceneIndices[nextSceneIndex]);
+        nextSceneIndex++;
+        Debug.Log("scene index " + nextSceneIndex.ToString() + " out of " + SceneManager.sceneCountInBuildSettings);
+        StartCoroutine("LoadCoroutine");
+        trialStarted = false;
+        Debug.Log("new scene state is: " + currentState.Desc);
         StartCoroutine("WaitForTimer");
+    }
+
+    IEnumerator LoadCoroutine()
+    {
+        SceneManager.LoadSceneAsync(sceneIndices[nextSceneIndex], LoadSceneMode.Additive);
+        yield return new WaitForSeconds(3f);
+        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndices[nextSceneIndex]));
+
     }
 
     void DetermineLeftRightControllers()

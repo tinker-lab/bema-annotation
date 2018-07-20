@@ -160,7 +160,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         swordLine.transform.parent = mainController.controller.transform;
         swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
-        swordLine.transform.rotation = Quaternion.AngleAxis(90, mainController.controller.transform.forward);//Quaternion.Inverse(mainController.controller.transform.rotation);
+        swordLine.transform.rotation = Quaternion.Euler(0f, 90f, 0f);//Quaternion.Inverse(mainController.controller.transform.rotation);
         
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
@@ -177,6 +177,7 @@ public class SliceNSwipeSelectionState : InteractionState
     public GameObject CreateHandPlane(ControllerInfo c, String name)
     {
         GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        UnityEngine.Object.DontDestroyOnLoad(handPlane);
         handPlane.name = name;
         handPlane.layer = LayerMask.NameToLayer("Ignore Raycast"); //ignore raycast
         //Debug.Log("plane layer - " + handPlane.layer.ToString());
@@ -844,6 +845,9 @@ public class SliceNSwipeSelectionState : InteractionState
                     materials[0] = Resources.Load("Blue Material") as Material;
                     materials[1] = Resources.Load("Green Material") as Material;
 
+                    materials[0] = DetermineBaseMaterial(materials[0]);
+                    materials[1] = DetermineBaseMaterial(materials[1]);                     //added to make things transparent in experiment!
+
                     Material baseMaterial = originalMaterial[item.name];
                     //if (lastSeenObj != null && lastSeenObj.name == item.name)
                     //{
@@ -913,14 +917,15 @@ public class SliceNSwipeSelectionState : InteractionState
                     baseMaterial = GazeSelectedMaterial(baseMaterial);
                     //Debug.Log("have swiped, should be purple");
                 }
-                else
-                {
-                    baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
-                    //Debug.Log("have swiped, transparent");
-                }
+                //else
+                //{
+                //    baseMaterial = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent                                     Don't change baseMaterial during experiments -> already transparent!!
+                //    //Debug.Log("have swiped, transparent");
+                //}
                 
                 materials[0] = baseMaterial;
                 materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+                materials[1] = DetermineBaseMaterial(materials[1]);                             //added for experiment transparency
             }
 
             if (mesh.subMeshCount > 1)
@@ -1214,7 +1219,7 @@ public class SliceNSwipeSelectionState : InteractionState
         else
         {
             Material transparentBase = new Material(baseMaterial);
-            transparentBase.name = "TransparentUnselected";
+            transparentBase.name = "TransparentUnselected " + baseMaterial.name;        //added a space and material name for experiment
             transparentBase.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
             transparentBase.SetFloat("_Mode", 3f);
             transparentBase.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
@@ -1238,7 +1243,7 @@ public class SliceNSwipeSelectionState : InteractionState
         {
             Material transparentBase = new Material(baseMaterial);
             transparentBase.name = "TransparentSighted";
-            transparentBase.color = new Color(1.0f, 0f, 1.0f, 0.5f);
+            transparentBase.color = new Color(1.0f, 0f, 1.0f, 0.2f);        //alpha val was 0.5f. changed to be more transparent for the experiment
             transparentBase.SetFloat("_Mode", 3f);
             transparentBase.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
             transparentBase.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);

@@ -450,6 +450,9 @@ public class OutlineManager {
         newOutline.GetComponent<MeshFilter>().mesh = new Mesh();
         newOutline.GetComponent<MeshFilter>().mesh.MarkDynamic();
         newOutline.GetComponent<Renderer>().material = Resources.Load("TestMaterial") as Material;
+        Color transparency = new Color();
+        transparency = newOutline.GetComponent<Renderer>().material.color + new Color(0f, 0f, 0f, 0.5f);
+        newOutline.GetComponent<Renderer>().material.color = transparency;             //added this line to make outlines transparent for the experiment
         newOutline.tag = "highlightmesh";
         newOutline.layer = LayerMask.NameToLayer("Ignore Raycast");
 

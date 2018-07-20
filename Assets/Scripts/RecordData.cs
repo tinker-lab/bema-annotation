@@ -90,25 +90,27 @@ public class RecordData {
     string _FileLocation, _FileName;
     string _data;
     int trialID;
+    int participantID;
     int trialCount;
 
     public static InteractionState CurrentState
     {
-        get { return currentState;  }
+        get { return currentState; }
         set { currentState = value; }
     }
 
-    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, InteractionState state, int numTrials){
+    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, InteractionState state, int numTrials) {
         trialID = 0;
+        participantID = 0;
         controller1 = leftHand;
         controller2 = rightHand;
         currentState = state;
         trialCount = numTrials;
 
-        _FileLocation = "";
-        _FileName = "";
+        _FileLocation = "Assets/WrittenData";
+        _FileName = participantID.ToString() + "test.txt";
 
-        myData = new ExperimentData(numTrials, 0);
+        myData = new ExperimentData(numTrials, participantID);
     }
 
     public void SetTrialID(int id)
@@ -118,27 +120,39 @@ public class RecordData {
         myData.trials[trialID].trialID = trialID;
     }
 
-    public void WriteToFile( float area, float duration){
+    public void EndTrial(float area, float duration) {
         myData.trials[trialID].selectedArea = area;
         myData.trials[trialID].timeElapsed = duration;
-        myData.trials[trialID].selectionInterface = currentState.Desc;
+        if (currentState == null)
+        {
+            Debug.Log("currentState is null at end of trial");
+        }
+        else
+        {
+            myData.trials[trialID].selectionInterface = currentState.Desc;
+        }
 
-        // Time to creat our XML! 
-        _data = SerializeObject(myData);
-        // This is the final resulting XML from the serialization process 
-        CreateXML();
-        trialID++;                                              //should trialID increment like this or be attached to specific scenes? probably scenes.
-        Debug.Log(_data);
+        trialID++;
     }
 
-    public void UpdateLists(long timeStamp, string eventStr = ""){
+    public void UpdateLists(long timeStamp, string eventStr = "") {
         myData.trials[trialID].timeStamps.Add(timeStamp);
         myData.trials[trialID].controller1Locations.Add(controller1.trackedObj.transform.position);
         myData.trials[trialID].controller2Locations.Add(controller2.trackedObj.transform.position);
 
-        if (!eventStr.Equals("")){
+        if (!eventStr.Equals("")) {
             myData.trials[trialID].events.Add(new EventRecord(timeStamp, eventStr));
         }
+    }
+
+    public void WriteToFile()
+    {
+        // Time to creat our XML! 
+        _data = SerializeObject(myData);
+        // This is the final resulting XML from the serialization process 
+        CreateXML();
+        //should trialID increment like this or be attached to specific scenes? probably scenes.
+        Debug.Log(_data);
     }
 
     /* The following metods came from the referenced URL */
