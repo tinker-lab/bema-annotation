@@ -16,6 +16,7 @@ public class ObjectMaker : MonoBehaviour
     Vector3[] previousVertices;
     List<Vector2> previousUVs;
     int previousNumVertices;
+    List<Vector2> UVList;
 
     // Use this for initialization
     void Start()
@@ -24,11 +25,26 @@ public class ObjectMaker : MonoBehaviour
         previousSelectedIndices = baseObject.GetComponent<MeshFilter>().mesh.GetIndices(0);
         previousUnselectedIndices = new int[0];
         previousVertices = baseObject.GetComponent<MeshFilter>().mesh.vertices;
-        List<Vector2> UVList = new List<Vector2>();
+        UVList = new List<Vector2>();
         baseObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
         previousUVs = UVList;
         previousNumVertices = baseObject.GetComponent<MeshFilter>().mesh.vertices.Length;
 
+        MakeObject();
+    }
+
+    void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.C))
+        {
+            MakeCircle circle = new MakeCircle();
+            circle.GeneratePlaneCircle();
+            MakeObject();
+        }
+    }
+
+    private void MakeObject()
+    {
         foreach (Transform planeChild in planeParent.transform)
         {
             GameObject plane = planeChild.gameObject;
