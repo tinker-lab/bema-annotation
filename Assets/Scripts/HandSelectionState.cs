@@ -117,7 +117,7 @@ public class HandSelectionState : InteractionState
 
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        UnityEngine.Object.DontDestroyOnLoad(centerCube);
+        //UnityEngine.Object.DontDestroyOnLoad(centerCube);
         centerCube.name = "handSelectionCenterCube";
         centerCube.GetComponent<Renderer>().material = Resources.Load("Cube Material") as Material;
         centerCube.AddComponent<MeshCollider>();
@@ -171,7 +171,7 @@ public class HandSelectionState : InteractionState
     public GameObject CreateHandPlane(ControllerInfo c, String name)
     {
         GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        UnityEngine.Object.DontDestroyOnLoad(handPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(handPlane);
         handPlane.name = name;
         handPlane.GetComponent<Renderer>().material = Resources.Load("Plane Material") as Material;
         handPlane.AddComponent<MeshCollider>();

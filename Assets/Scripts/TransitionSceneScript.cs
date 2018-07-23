@@ -21,13 +21,20 @@ public class TransitionSceneScript : MonoBehaviour {
     bool timerStarted = false;
     int selectionIndex;
 
-    RunExperiment currTrial;
+    GameObject ExperimentController;
 
 
     // Use this for initialization
     void Init () {
+        //Debug.Log("Intialize the Transition State - controllers are working!!");
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
+        ExperimentController = new GameObject();
+
+        ExperimentController.name = "ExperimentController";
+        UnityEngine.Object.DontDestroyOnLoad(ExperimentController);
+        //UnityEngine.Object.DontDestroyOnLoad(controller0.gameObject);
+        //UnityEngine.Object.DontDestroyOnLoad(controller1.gameObject);
 
         sceneIndices = new List<int>();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -38,6 +45,7 @@ public class TransitionSceneScript : MonoBehaviour {
         recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count);
 
         nextSceneIndex = recorder.trialID + 1;
+        Debug.Log("next scene index: " + nextSceneIndex.ToString());
 
         firstUpdate = false;
     }
@@ -64,25 +72,25 @@ public class TransitionSceneScript : MonoBehaviour {
                 {
                     if (stateStr.Equals("HandSelectionState"))
                     {
-                        Debug.Log("init Yea Big");
+                        Debug.Log("set Yea Big");
                         selectionIndex = 1;
                         interfaceChosen = true;
                     }
                     else if (stateStr.Equals("VolumeCubeSelectionState"))
                     {
-                        Debug.Log("init Volume Cube");
+                        Debug.Log("set Volume Cube");
                         selectionIndex = 2;
                         interfaceChosen = true;
                     }
                     else if (stateStr.Equals("SliceNSwipeSelectionState"))
                     {
-                        Debug.Log("init Slice");
+                        Debug.Log("set Slice");
                         selectionIndex = 3;
                         interfaceChosen = true;
                     }
                     else if (stateStr.Equals("RayCastSelectionState"))
                     {
-                        Debug.Log("init RayCast");
+                        Debug.Log("set RayCast");
                         selectionIndex = 4;
                         interfaceChosen = true;
                     }
@@ -90,25 +98,25 @@ public class TransitionSceneScript : MonoBehaviour {
             }
             else if (Input.GetKeyUp(KeyCode.Alpha1))
             {
-                Debug.Log("init Yea Big");
+                Debug.Log("set Yea Big");
                 selectionIndex = 1;
                 interfaceChosen = true;
             }
             else if (Input.GetKeyUp(KeyCode.Alpha2))
             {
-                Debug.Log("init Volume Cube");
+                Debug.Log("set Volume Cube");
                 selectionIndex = 2;
                 interfaceChosen = true;
             }
             else if (Input.GetKeyUp(KeyCode.Alpha3))
             {
-                Debug.Log("init Slice");
+                Debug.Log("set Slice");
                 selectionIndex = 3;
                 interfaceChosen = true;
             }
             else if (Input.GetKeyUp(KeyCode.Alpha4))
             {
-                Debug.Log("init RayCast");
+                Debug.Log("set RayCast");
                 selectionIndex = 4;
                 interfaceChosen = true;
             }
@@ -116,11 +124,21 @@ public class TransitionSceneScript : MonoBehaviour {
 
         if (interfaceChosen && !timerStarted)
         {
+            //Debug.Log("Interface has been chosen. Waiting for timer");
             if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
             {
+                Debug.Log("HIT BUTTON");
                 timerStarted = true;
-                currTrial = new RunExperiment(controller0Info, controller1Info, recorder, selectionIndex, nextSceneIndex);
-                SceneManager.LoadSceneAsync(nextSceneIndex);
+                RunExperiment currTrial = ExperimentController.AddComponent<RunExperiment>();
+                RunExperiment.SceneIndex = nextSceneIndex;
+                RunExperiment.Recorder = this.recorder;
+                RunExperiment.StateIndex = selectionIndex;
+
+                currTrial.controller0 = controller0;
+                currTrial.controller1 = controller1;
+
+                Debug.Log("Loading scene " + nextSceneIndex.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
+                timerStarted = false;
             }
         }
     }
