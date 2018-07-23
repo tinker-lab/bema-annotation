@@ -78,33 +78,27 @@ public class EventRecord
     }
 }
 
-public class RecordData {
+public class RecordData : MonoBehaviour {
+
+    public static RecordData instance;
 
     ControllerInfo controller1;
     ControllerInfo controller2;
-    private static InteractionState currentState;
 
     ExperimentData myData;
 
     bool _ShouldSave, _ShouldLoad, _SwitchSave, _SwitchLoad;
     string _FileLocation, _FileName;
     string _data;
-    int trialID;
+    public int trialID;
     int participantID;
     int trialCount;
 
-    public static InteractionState CurrentState
-    {
-        get { return currentState; }
-        set { currentState = value; }
-    }
-
-    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, InteractionState state, int numTrials) {
+    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, int numTrials) {
         trialID = 0;
         participantID = 0;
         controller1 = leftHand;
         controller2 = rightHand;
-        currentState = state;
         trialCount = numTrials;
 
         _FileLocation = "Assets/WrittenData";
@@ -113,24 +107,41 @@ public class RecordData {
         myData = new ExperimentData(numTrials, participantID);
     }
 
-    public void SetTrialID(int id)
+    void Awake()
+    {
+        // If the instance reference has not been set, yet, 
+        if (instance == null)
+        {
+            // Set this instance as the instance reference.
+            instance = this;
+        }
+        else if (instance != this)
+        {
+            // If the instance reference has already been set, and this is not the
+            // the instance reference, destroy this game object.
+            UnityEngine.Object.Destroy(gameObject);
+        }
+
+        // Do not destroy this object, when we load a new scene.
+        UnityEngine.Object.DontDestroyOnLoad(gameObject);
+    }
+
+    public void SetTrialID(int id, string desc)
     {
         trialID = id;
         myData.trials[trialID] = new Trial();
         myData.trials[trialID].trialID = trialID;
+        myData.trials[trialID].selectionInterface = desc;
+    }
+
+    public string GetSelectionState()
+    {
+        return myData.trials[trialID].selectionInterface;
     }
 
     public void EndTrial(float area, float duration) {
         myData.trials[trialID].selectedArea = area;
         myData.trials[trialID].timeElapsed = duration;
-        if (currentState == null)
-        {
-            Debug.Log("currentState is null at end of trial");
-        }
-        else
-        {
-            myData.trials[trialID].selectionInterface = currentState.Desc;
-        }
 
         trialID++;
     }
