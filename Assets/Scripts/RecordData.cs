@@ -14,86 +14,156 @@ using System.Text;
 
 public class ExperimentData{
 
-    public Dictionary<int, TrialData> trialData;
     //possible additions to this class:
     //  public string selectionInterface;
-    //  public int participantID;
     // Is there a way to put all interfaces for one participant also in one file w/out more nested dictionaries / classes? 
     // Would that even be useful, or is it better to keep them separate?
 
+    public Trial[] trials;
+    int participant;
+
+
     public ExperimentData(){
-        trialData = new Dictionary<int, TrialData>();       // is this an absurd way to save this? I think all the trials should be in one file,
-                                                                // does that mean the all need to be saved in one object?
+    // is this an absurd way to save this? I think all the trials should be in one file,
+                                                            // does that mean the all need to be saved in one object?
+        trials = new Trial[0] ;
+        participant = 0;
+    }
+
+    public ExperimentData(int numTrials, int participantID)
+    {
+        trials = new Trial[numTrials];
+        participant = participantID;
     }
 }
 
-public class TrialData
+public class Trial
 {
+    public int trialID;
     public string selectionInterface;
     public float selectedArea;                  // total selected area -> updated to hold final amount
     public float timeElapsed;                   // total duration spent on a trial
     public List<long> timeStamps;               // recorded time at every HandleEvents call. its System.DateTime.Now.Ticks, which measures the instant of time in segments of 100 nanoseconds.
     public List<Vector3> controller1Locations;  // left controller location at every HandleEvents call
     public List<Vector3> controller2Locations;  // right controller location at every HandleEvents call
-    public Dictionary<long, string> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
+    public List<EventRecord> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
                                                 // and value is the name of the event
-    public TrialData(){
+    public Trial(){
+        trialID = 0;
         selectionInterface = "";                //should selectionInterface be saved here attached to every trial number or once in experimentData. would it ever be overwritten there?
         selectedArea = 0f;
         timeElapsed = 0f;
         timeStamps = new List<long>();
         controller1Locations = new List<Vector3>();
         controller2Locations = new List<Vector3>();
-        events = new Dictionary<long, string>();
+        events = new List<EventRecord>();
     }
 }
 
-public class RecordData {
+public class EventRecord
+{
+    long timeStamp;
+    string eventName;
+
+    public EventRecord()
+    {
+        timeStamp = (long)0;
+        eventName = "";
+    }
+
+    public EventRecord(long time, string name)
+    {
+        timeStamp = time;
+        eventName = name;
+    }
+}
+
+public class RecordData : MonoBehaviour {
+
+    public static RecordData instance;
 
     ControllerInfo controller1;
     ControllerInfo controller2;
-    InteractionState currentState;
 
     ExperimentData myData;
 
     bool _ShouldSave, _ShouldLoad, _SwitchSave, _SwitchLoad;
     string _FileLocation, _FileName;
     string _data;
-    int trialID;
+    public int trialID;
+    int participantID;
+    int trialCount;
 
-    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, InteractionState state){
+    public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, int numTrials) {
         trialID = 0;
+        participantID = 0;
         controller1 = leftHand;
         controller2 = rightHand;
-        currentState = state;
+        trialCount = numTrials;
 
-        _FileLocation = "";
-        _FileName = "";
+        _FileLocation = "Assets/WrittenData";
+        _FileName = participantID.ToString() + "test.txt";
 
-        myData = new ExperimentData();
+        myData = new ExperimentData(numTrials, participantID);
     }
 
-    public void WriteToFile( float area, float duration){
-        myData.trialData[trialID].selectedArea = area;
-        myData.trialData[trialID].timeElapsed = duration;
-        myData.trialData[trialID].selectionInterface = currentState.Desc;
+    void Awake()
+    {
+        // If the instance reference has not been set, yet, 
+        if (instance == null)
+        {
+            // Set this instance as the instance reference.
+            instance = this;
+        }
+        else if (instance != this)
+        {
+            // If the instance reference has already been set, and this is not the
+            // the instance reference, destroy this game object.
+            UnityEngine.Object.Destroy(gameObject);
+        }
 
+        // Do not destroy this object, when we load a new scene.
+        UnityEngine.Object.DontDestroyOnLoad(gameObject);
+    }
+
+    public void SetTrialID(int id, string desc)
+    {
+        trialID = id;
+        myData.trials[trialID] = new Trial();
+        myData.trials[trialID].trialID = trialID;
+        myData.trials[trialID].selectionInterface = desc;
+    }
+
+    public string GetSelectionState()
+    {
+        return myData.trials[trialID].selectionInterface;
+    }
+
+    public void EndTrial(float area, float duration) {
+        myData.trials[trialID].selectedArea = area;
+        myData.trials[trialID].timeElapsed = duration;
+
+        trialID++;
+    }
+
+    public void UpdateLists(long timeStamp, string eventStr = "") {
+        myData.trials[trialID].timeStamps.Add(timeStamp);
+        myData.trials[trialID].controller1Locations.Add(controller1.trackedObj.transform.position);
+        myData.trials[trialID].controller2Locations.Add(controller2.trackedObj.transform.position);
+
+        if (!eventStr.Equals("")) {
+            myData.trials[trialID].events.Add(new EventRecord(timeStamp, eventStr));
+        }
+    }
+
+    public void WriteToFile()
+    {
         // Time to creat our XML! 
         _data = SerializeObject(myData);
         // This is the final resulting XML from the serialization process 
         CreateXML();
-        trialID++;                                              //should trialID increment like this or be attached to specific scenes? probably scenes.
+        //should trialID increment like this or be attached to specific scenes? probably scenes.
         Debug.Log(_data);
-    }
-
-    public void UpdateLists(long timeStamp, string eventStr = ""){
-        myData.trialData[trialID].timeStamps.Add(timeStamp);
-        myData.trialData[trialID].controller1Locations.Add(controller1.trackedObj.transform.position);
-        myData.trialData[trialID].controller2Locations.Add(controller2.trackedObj.transform.position);
-
-        if (!eventStr.Equals("")){
-            myData.trialData[trialID].events.Add(timeStamp, eventStr);
-        }
     }
 
     /* The following metods came from the referenced URL */

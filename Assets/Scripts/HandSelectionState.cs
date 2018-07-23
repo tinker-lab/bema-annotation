@@ -113,9 +113,11 @@ public class HandSelectionState : InteractionState
 
         leftPlane = CreateHandPlane(controller0, "handSelectionLeftPlane");
         rightPlane = CreateHandPlane(controller1, "handSelectionRightPlane");
+        
 
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        UnityEngine.Object.DontDestroyOnLoad(centerCube);
         centerCube.name = "handSelectionCenterCube";
         centerCube.GetComponent<Renderer>().material = Resources.Load("Cube Material") as Material;
         centerCube.AddComponent<MeshCollider>();
@@ -149,7 +151,6 @@ public class HandSelectionState : InteractionState
         selectedIndices = new List<int>();
         unselectedIndices = new List<int>();
         unsortedOutlinePts = new List<OutlinePoint>();
-
         this.stateToReturnTo = stateToReturnTo;
         allowNavigation = !experiment;
         selectionCount = 0;
@@ -170,6 +171,7 @@ public class HandSelectionState : InteractionState
     public GameObject CreateHandPlane(ControllerInfo c, String name)
     {
         GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        UnityEngine.Object.DontDestroyOnLoad(handPlane);
         handPlane.name = name;
         handPlane.GetComponent<Renderer>().material = Resources.Load("Plane Material") as Material;
         handPlane.AddComponent<MeshCollider>();
@@ -798,10 +800,10 @@ public class HandSelectionState : InteractionState
             mesh.SetTriangles(selectedIndices, 1);
 
             Material[] materials = new Material[2];
-            Material baseMaterial = item.GetComponent<Renderer>().materials[0];
-            materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+            Material baseMaterial = item.GetComponent<Renderer>().sharedMaterials[0];
+            materials[0] = baseMaterial;                                //DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent                               
             materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
-            item.GetComponent<Renderer>().materials = materials;
+            item.GetComponent<Renderer>().sharedMaterials = materials;
         }
 
         else // set highlight meshes foreach (int index in selectedIndices)
