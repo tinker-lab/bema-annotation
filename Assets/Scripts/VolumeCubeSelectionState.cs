@@ -24,6 +24,7 @@ public class VolumeCubeSelectionState : InteractionState
     private List<GameObject> collidingMeshes;       //List of meshes currently being collided with
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
     VolumeCubeCollision centerComponent;            //Script on cube that we get the list of colliders from
+    private Boolean changeCube;
 
     SelectionData selectionData;
      
@@ -142,6 +143,7 @@ public class VolumeCubeSelectionState : InteractionState
 
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
+        changeCube = false;
 
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
 
@@ -246,7 +248,6 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
         Quaternion yaw = Quaternion.LookRotation(new Vector3(head.transform.forward.x, 0, head.transform.forward.z), Vector3.up);
 
-
         //Quaternion.AngleAxis(40, currentDiagonal.normalized) *
         centerCube.transform.rotation = Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw;
 
@@ -260,8 +261,8 @@ public class VolumeCubeSelectionState : InteractionState
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
-        Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
-        centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize;
+        //Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
+        centerCube.transform.localScale = startingDiagonal * scaleSize;
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
@@ -269,6 +270,22 @@ public class VolumeCubeSelectionState : InteractionState
         ////scale cube
         //float distance = Vector3.Distance(nonDominantCorner, dominantCorner);
         //centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * distance + new Vector3(0, 0.3f, 0.3f); //.3f pushes cube outwards and upwards slightly from user
+    }
+
+    private void changeCubeSize()
+    {
+        while(changeCube)
+        {
+            Vector3 currentDiagonal = controller1.controller.transform.position - controller0.controller.transform.position;
+            //float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+            //centerCube.transform.localScale = startingDiagonal.normalized * scaleSize;
+            startingDiagonal = currentDiagonal;
+
+            if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+            {
+                changeCube = false;
+            }
+        }
     }
 
     //private void RotateCube(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject cube)
@@ -404,6 +421,12 @@ public class VolumeCubeSelectionState : InteractionState
         else //If not colliding with anything, change states
         {
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+            if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
+            {
+                changeCube = true;
+            }
+
+            changeCubeSize();
             Uncollide();
             return "";
         }
@@ -616,15 +639,13 @@ public class VolumeCubeSelectionState : InteractionState
                     Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
                     SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
                     UnityEngine.Object.Destroy(removeOutlines[j]);
-
                 }
                 //Debug.Break();
-
             }
         }
         return eventString;
     }
-    
+
     /// <summary>
     /// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
     /// </summary>
@@ -774,7 +795,6 @@ public class VolumeCubeSelectionState : InteractionState
                 bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
                 bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
 
-
                 if (!side0 && !side1 && !side2) //0 intersections
                 {
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
@@ -783,7 +803,6 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                     else
                     {
-                     
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
                 }
