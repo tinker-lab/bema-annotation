@@ -48,6 +48,8 @@ public class NavigationState : InteractionState {
         controller0 = controller0Info;
         controller1 = controller1Info;
 
+        Debug.Log("have controllers " + controller0.ToString() + " " + controller1.ToString());
+
         handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, experiment);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
@@ -56,8 +58,14 @@ public class NavigationState : InteractionState {
         //rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
 
-        cubeColliders = new HashSet<GameObject>();
+        UnityEngine.Object.DontDestroyOnLoad(leftPlane);
+        UnityEngine.Object.DontDestroyOnLoad(rightPlane);
+        UnityEngine.Object.DontDestroyOnLoad(centerCube);
 
+
+        Debug.Log("have planes " + leftPlane.ToString() + " " + rightPlane.ToString());
+
+        cubeColliders = new HashSet<GameObject>();
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
@@ -70,17 +78,29 @@ public class NavigationState : InteractionState {
 
         //laser =  Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
         //laserTransform = laser.transform;
-        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
-        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
+        //laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        //laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
 
-        reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
-        teleportReticleTransform = reticle.transform;
+        //reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
+        //teleportReticleTransform = reticle.transform;
 
     }
 
     public void UpdatePlanes()
     {
-        leftPlane.transform.position = controller0.controller.transform.position;
+        try
+        {
+            leftPlane.transform.position = controller0.controller.transform.position;
+        }
+        catch (MissingReferenceException)
+        {
+            leftPlane = GameObject.Find("handSelectionLeftPlane");
+            rightPlane = GameObject.Find("handSelectionRightPlane");
+            centerCube = GameObject.Find("handSelectionCenterCube");
+            leftPlane.transform.position = controller0.controller.transform.position;
+        }
+
+        
         rightPlane.transform.position = controller1.controller.transform.position;
 
         leftPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
@@ -128,6 +148,8 @@ public class NavigationState : InteractionState {
     // Update is called once per frame
     override public string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        controller0 = controller0Info;
+        controller1 = controller1Info;
         /*
         // Check if controllers are close to plane
         if(NearPlane(controller0Info) && NearPlane(controller1Info) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller0Info.trackedObj.transform.position)) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller1Info.trackedObj.transform.position)))

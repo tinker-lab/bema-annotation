@@ -72,8 +72,9 @@ public class RunExperiment : MonoBehaviour {
 
     void Init()
     {
-        controller0Info = new ControllerInfo(controller0);
-        controller1Info = new ControllerInfo(controller1);
+        SceneManager.LoadScene(sceneIndex);
+
+
         setupControllers = true;
         Debug.Log("set up controllers in trial scene. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
 
@@ -101,8 +102,6 @@ public class RunExperiment : MonoBehaviour {
         selectionEvent = "";
         testObjectParent = GameObject.Find("TestObj");
 
-        SceneManager.LoadScene(sceneIndex);
-        //SceneManager.UnloadSceneAsync(0);
 
         recorder.SetTrialID(sceneIndex, currentState.Desc);
         startTrialTicks = System.DateTime.Now.Ticks;
@@ -116,6 +115,12 @@ public class RunExperiment : MonoBehaviour {
         //    return;
         //}
 
+        controller0 = GameObject.Find("Controller (left)");
+        controller1 = GameObject.Find("Controller (right)");
+
+        controller0Info = new ControllerInfo(controller0);
+        controller1Info = new ControllerInfo(controller1);
+
         if (!setupControllers)
         {
             Init();
@@ -123,7 +128,7 @@ public class RunExperiment : MonoBehaviour {
 
         DetermineLeftRightControllers();
         selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
-        recorder.UpdateLists(System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
+        recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
 
         if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
         {

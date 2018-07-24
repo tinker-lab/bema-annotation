@@ -146,7 +146,7 @@ public class RecordData : MonoBehaviour {
         trialID++;
     }
 
-    public void UpdateLists(long timeStamp, string eventStr = "") {
+    public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, long timeStamp, string eventStr = "") {
         myData.trials[trialID].timeStamps.Add(timeStamp);
         myData.trials[trialID].controller1Locations.Add(controller1.trackedObj.transform.position);
         myData.trials[trialID].controller2Locations.Add(controller2.trackedObj.transform.position);

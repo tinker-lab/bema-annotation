@@ -134,8 +134,8 @@ public class TransitionSceneScript : MonoBehaviour {
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
 
-                currTrial.controller0 = controller0;
-                currTrial.controller1 = controller1;
+                //currTrial.controller0 = controller0;
+                //currTrial.controller1 = controller1;
 
                 Debug.Log("Loading scene " + nextSceneIndex.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
                 timerStarted = false;
