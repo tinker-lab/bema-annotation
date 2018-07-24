@@ -274,17 +274,14 @@ public class VolumeCubeSelectionState : InteractionState
 
     private void changeCubeSize()
     {
-        while(changeCube)
-        {
-            Vector3 currentDiagonal = controller1.controller.transform.position - controller0.controller.transform.position;
-            //float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
-            //centerCube.transform.localScale = startingDiagonal.normalized * scaleSize;
-            startingDiagonal = currentDiagonal;
+        Vector3 currentDiagonal = controller1.controller.transform.position - controller0.controller.transform.position;
+        //float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+        //centerCube.transform.localScale = startingDiagonal.normalized * scaleSize;
+        startingDiagonal = currentDiagonal;
 
-            if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
-            {
-                changeCube = false;
-            }
+        if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+        {
+            changeCube = false;
         }
     }
 
@@ -426,7 +423,11 @@ public class VolumeCubeSelectionState : InteractionState
                 changeCube = true;
             }
 
-            changeCubeSize();
+            if(changeCube)
+            {
+                changeCubeSize();
+            }
+
             Uncollide();
             return "";
         }
