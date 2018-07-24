@@ -4,13 +4,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class RunExperiment : MonoBehaviour {
+
     public GameObject testObjectParent;
 
-    private GameObject controller0;
-    private GameObject controller1;
+    public GameObject controller0;
+    public GameObject controller1;
 
-    RecordData recorder;
+    private static RecordData recorder;
 
+    private static int stateIndex;
     private InteractionState currentState;
 
     private ControllerInfo controller0Info;
@@ -23,59 +25,100 @@ public class RunExperiment : MonoBehaviour {
     long endTrialTicks;
     string selectionEvent;
 
-    int sceneIndex;
+    bool setupControllers;
+
+    private static int sceneIndex;
+
+    public static RecordData Recorder
+    {
+        get { return recorder; }
+        set { recorder = value; } 
+    }
+
+    public static int SceneIndex
+    {
+        get { return sceneIndex; }
+        set { sceneIndex = value; }
+    }
+
+    public static int StateIndex
+    {
+        get { return stateIndex; }
+        set { stateIndex = value; }
+    }
 
     // Use this for initialization
-    public RunExperiment (ControllerInfo controller0, ControllerInfo controller1, RecordData dataset, int interactionState, int sceneInd) {
-        controller0Info = controller0;
-        controller1Info = controller1;
-        sceneIndex = sceneInd;
+    public RunExperiment() {
 
-        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));  //scene 0 is the BasicScene which is in the project all the time bc it has the floor and the camera and this script. other scenes w test objects are loaded and unloaded.
-        testObjectParent = GameObject.Find("TestObj");
+        Debug.Log("starting RunExperiment");
+        //sceneIndex = sceneInd;
+        //stateIndex = interactionState;
+
+        //SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));  //scene 0 is the BasicScene which is in the project all the time bc it has the floor and the camera and this script. other scenes w test objects are loaded and unloaded.
+
+        setupControllers = false;
 
         selectionData = new SelectionData();
         outlineManager = new OutlineManager();
 
-        if (interactionState == 1)
-        {
-            Debug.Log("Init Yea-Big");
-            currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); //outlines/selection are following hands around after a selection when you pull them out of an object, as well as the white cube and z-fighting problems
-        }
-        else if (interactionState == 2)
-        {
-            Debug.Log("Init Volume Cube");
-            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData); //transparent cube turns white when you collide
-        }
-        else if (interactionState == 3)
-        {
-            Debug.Log("Init SliceNSwipe");
-            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData); //z-fighting between the overlayed cube, gaze selection too opaque, swordLine at weird rotation
-        }
-        else if (interactionState == 4)
-        {
-            Debug.Log("Init Raycast");
-            currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
-        }
+        //recorder = dataset;
 
-        selectionEvent = "";
-
-        recorder = dataset;
-        recorder.SetTrialID(sceneIndex, currentState.Desc);
-        startTrialTicks = System.DateTime.Now.Ticks;
+        
 
         //init landing zone, scene changer
         //into between state where you start timer by pressing a button -> "landing zone"
         //landing zone starts measurements and the scene. landing zone could be in this class??
     }
 
+    void Init()
+    {
+        controller0Info = new ControllerInfo(controller0);
+        controller1Info = new ControllerInfo(controller1);
+        setupControllers = true;
+        Debug.Log("set up controllers in trial scene. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
+
+        if (stateIndex == 1)
+        {
+            Debug.Log("Init Yea-Big");
+            currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); //outlines/selection are following hands around after a selection when you pull them out of an object, as well as the white cube and z-fighting problems
+        }
+        else if (stateIndex == 2)
+        {
+            Debug.Log("Init Volume Cube");
+            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData); //transparent cube turns white when you collide
+        }
+        else if (stateIndex == 3)
+        {
+            Debug.Log("Init SliceNSwipe");
+            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData); //z-fighting between the overlayed cube, gaze selection too opaque, swordLine at weird rotation
+        }
+        else if (stateIndex == 4)
+        {
+            Debug.Log("Init Raycast");
+            currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
+        }
+
+        selectionEvent = "";
+        testObjectParent = GameObject.Find("TestObj");
+
+        SceneManager.LoadScene(sceneIndex);
+        //SceneManager.UnloadSceneAsync(0);
+
+        recorder.SetTrialID(sceneIndex, currentState.Desc);
+        startTrialTicks = System.DateTime.Now.Ticks;
+    }
 
 
     // Update is called once per frame
     void Update () {
-        if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
+        //if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
+        //{
+        //    return;
+        //}
+
+        if (!setupControllers)
         {
-            return;
+            Init();
         }
 
         DetermineLeftRightControllers();
@@ -137,8 +180,10 @@ public class RunExperiment : MonoBehaviour {
 
     void LeaveTrialScene()
     {
-        SceneManager.UnloadSceneAsync(sceneIndex);
+
         SceneManager.LoadScene(0); // Transition Scene
+        //SceneManager.UnloadSceneAsync(sceneIndex);
+        
     }
 
     void DetermineLeftRightControllers()
