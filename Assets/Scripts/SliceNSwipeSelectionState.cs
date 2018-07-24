@@ -177,7 +177,7 @@ public class SliceNSwipeSelectionState : InteractionState
     public GameObject CreateHandPlane(ControllerInfo c, String name)
     {
         GameObject handPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        UnityEngine.Object.DontDestroyOnLoad(handPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(handPlane);
         handPlane.name = name;
         handPlane.layer = LayerMask.NameToLayer("Ignore Raycast"); //ignore raycast
         //Debug.Log("plane layer - " + handPlane.layer.ToString());

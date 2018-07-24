@@ -58,9 +58,9 @@ public class NavigationState : InteractionState {
         //rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
 
-        UnityEngine.Object.DontDestroyOnLoad(leftPlane);
-        UnityEngine.Object.DontDestroyOnLoad(rightPlane);
-        UnityEngine.Object.DontDestroyOnLoad(centerCube);
+        //UnityEngine.Object.DontDestroyOnLoad(leftPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(rightPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(centerCube);
 
 
         Debug.Log("have planes " + leftPlane.ToString() + " " + rightPlane.ToString());
@@ -148,6 +148,10 @@ public class NavigationState : InteractionState {
     // Update is called once per frame
     override public string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        cameraRigTransform = GameObject.Find("[CameraRig]").transform;
+        headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+        centerCube = GameObject.Find("handSelectionCenterCube");
+        centerComponent = centerCube.GetComponent<CubeCollision>();
         controller0 = controller0Info;
         controller1 = controller1Info;
         /*
