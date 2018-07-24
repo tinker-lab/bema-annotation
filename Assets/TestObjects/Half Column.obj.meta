@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 410d15e7cb1fa44419a9bd3451490734
+guid: f6fe05dc1b7054713b64ca8461e68e90
 ModelImporter:
   serializedVersion: 22
   fileIDToRecycleName:
@@ -11,12 +11,17 @@ ModelImporter:
     2300000: Mesh1_Model
     3300000: Mesh1_Model
     4300000: Mesh1_Model
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Mesh1_ModelMat
+    second: {fileID: 2100000, guid: 57f0bd24f625f4cb1b60f5e5f6495348, type: 2}
   materials:
     importMaterials: 1
     materialName: 0
     materialSearch: 1
-    materialLocation: 1
+    materialLocation: 0
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
@@ -42,7 +47,7 @@ ModelImporter:
     isReadable: 1
   meshes:
     lODScreenPercentages: []
-    globalScale: 1
+    globalScale: 0.1
     meshCompression: 0
     addColliders: 0
     importVisibility: 1
