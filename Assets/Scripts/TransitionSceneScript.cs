@@ -126,11 +126,11 @@ public class TransitionSceneScript : MonoBehaviour {
     private void OnSceneUnloaded(Scene current)
     {
         nextSceneIndex++;
+        recorder.WriteToFile();
         timerStarted = false;
 
         if(nextSceneIndex >= sceneIndices.Count)
         {
-            recorder.WriteToFile();
             Debug.Break();
         }
     }

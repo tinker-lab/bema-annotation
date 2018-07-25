@@ -160,7 +160,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         swordLine.transform.parent = mainController.controller.transform;
         swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
-        swordLine.transform.rotation = Quaternion.Euler(0f, 90f, 0f);//Quaternion.Inverse(mainController.controller.transform.rotation);
+        //Quaternion.Inverse(mainController.controller.transform.rotation);
         
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering

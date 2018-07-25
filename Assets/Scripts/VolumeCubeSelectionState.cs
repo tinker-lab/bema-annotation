@@ -375,7 +375,7 @@ public class VolumeCubeSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh")
                 {
                     Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
-                    baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                    //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                                                       in experiment, this line is making the interaction test obj opaque. may need to make the alpha channel 0.5f instead of just commenting this out, depending on how colors work.
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
                     //leftOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
@@ -587,6 +587,8 @@ public class VolumeCubeSelectionState : InteractionState
                     for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
                     {
                         GameObject outlineObject = OutlineManager.MakeNewOutline(currObjMesh);
+                        //outlineObject.name = outlineObject.name + outlineObjectCount;
+                        //outlineObjectCount++;
                         Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
 
                         SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
