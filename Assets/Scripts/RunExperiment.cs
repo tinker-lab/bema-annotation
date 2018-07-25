@@ -73,6 +73,7 @@ public class RunExperiment : MonoBehaviour {
     void Init()
     {
         SceneManager.LoadScene(sceneIndex,LoadSceneMode.Additive);
+        SceneManager.sceneLoaded += OnSceneLoaded;
 
         controller0 = GameObject.Find("Controller (left)");
         controller1 = GameObject.Find("Controller (right)");
@@ -110,8 +111,6 @@ public class RunExperiment : MonoBehaviour {
         }
 
         selectionEvent = "";
-
-        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));
 
         recorder.SetTrialID(sceneIndex, currentState);
         startTrialTicks = System.DateTime.Now.Ticks;
@@ -154,6 +153,10 @@ public class RunExperiment : MonoBehaviour {
             }
         }
 	}
+
+    private void OnSceneLoaded(Scene current, LoadSceneMode mode){
+        SceneManager.SetActiveScene(current);
+    }
 
     private float CalculateSelectedArea(){
         // in every trial scene (except Basic Scene) there is a parent gameObject TestObj 

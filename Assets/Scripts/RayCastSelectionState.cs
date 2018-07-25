@@ -12,15 +12,10 @@ public class RayCastSelectionState : InteractionState
     private GameObject collidingObject;
     private GameObject tubeMesh;
 
-    private SelectionData selectionData;
-
     
     //turn outlinePoints into a local variable within ProcessMesh
     private List<Vector3> outlinePoints;    //Pairs of two connected points to be used in drawing an outline mesh
     private List<Vector3> rayDirection;
-
-    List<int> selectedIndices;      //Reused for each mesh during ProcessMesh()
-    List<int> unselectedIndices;    //^^^^
 
     //laser
     private GameObject laser;
@@ -49,10 +44,7 @@ public class RayCastSelectionState : InteractionState
         controller1 = controller1Info;
 
         collidingObject = null;
-        selectionData = sharedData;
 
-        selectedIndices = new List<int>();
-        unselectedIndices = new List<int>();
         outlinePoints = new List<Vector3>();
         outlineTriangles = new List<int>();
         tubeMesh = MakeTubeMesh();
@@ -102,7 +94,7 @@ public class RayCastSelectionState : InteractionState
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        RaycastHit hit;
+        RaycastHit hit = new RaycastHit();
         bool collided = DoRayCast(controller0Info, laser, ref hit);
 
         if (collided && collidingObject == null)
@@ -135,7 +127,7 @@ public class RayCastSelectionState : InteractionState
             Mesh m = collidingObject.GetComponent<MeshFilter>().mesh;
             if (m.subMeshCount == 1)
             {
-                curMeshData = new MeshData(m.vertices, m.triangles);
+                curMeshData = new MeshData(m.vertices, m.uv, m.triangles);
             }
             else if (m.subMeshCount == 2)
             {
@@ -159,7 +151,7 @@ public class RayCastSelectionState : InteractionState
 
             buttonPressed = true;
         }
-        else if (collided && buttonPressed) // button is held down, continue selection
+        else if (!controller0.device.GetHairTriggerUp() && collided && buttonPressed) // button is held down, continue selection
         {
             //Only add new points if they have moved far enough from the previous
             float movementThreshold = 0.008f;
@@ -205,7 +197,7 @@ public class RayCastSelectionState : InteractionState
     {
         outlinePoints.Add(hit.point);
         outlineTriangles.Add(hit.triangleIndex);
-        rayDirection.Add(controller0Info.trackedObj.transform.forward);
+        rayDirection.Add(controller0.trackedObj.transform.forward);
     }
 
     private void UpdateOutline(List<Vector3> points)
@@ -282,10 +274,8 @@ public class RayCastSelectionState : InteractionState
 
         int curTriId = outlineTriangles[0];
 
-        int idOfPotentialSecondToLastPoint;
-
         // subdivide the first face
-        Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[0], outlinePoints[0]);
+        Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[0], outlinePoints[0], -1);
         UpdateTriangleIndices(children);
 
         for (int i = 1; i < outlinePoints.Count; i++)
@@ -294,7 +284,7 @@ public class RayCastSelectionState : InteractionState
             if (origOutlineTriangles[i] == curTriId)
             {
                 // subdivide face where the point is (likely could be in a new triangle)
-                Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], curMeshData.VertexIndex(outlineTriangles[i], outlinePoints[i - 1]));
+                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], curMeshData.VertexIndex(outlineTriangles[i], outlinePoints[i - 1]));
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
@@ -310,7 +300,7 @@ public class RayCastSelectionState : InteractionState
 
                 List<Vector3> prevTriPoints = curMeshData.Points(outlineTriangles[i - 1]);
                 Vector3 prevNormal = Vector3.Cross(prevTriPoints[0] - prevTriPoints[1], prevTriPoints[2] - prevTriPoints[1]).normalized;
-                Vector3 projectionOfCurrentIntoPrevPlane = outlinePoints[i] + (prevNormal * (-(glm::dot(prevNormal, outlinePoints[i]) - Vector3.Dot(prevNormal, outlinePoints[i - 1]))));
+                Vector3 projectionOfCurrentIntoPrevPlane = outlinePoints[i] + (prevNormal * (-(Vector3.Dot(prevNormal, outlinePoints[i]) - Vector3.Dot(prevNormal, outlinePoints[i - 1]))));
                 List<Vector3> sharedEdgeVerts = curMeshData.SharedEdge(outlineTriangles[i - 1], outlineTriangles[i]);
                 if (sharedEdgeVerts.Count != 2)
                 {
@@ -325,7 +315,7 @@ public class RayCastSelectionState : InteractionState
                 MeshTriangle prev = curMeshData.Face(outlineTriangles[i - 1]);
                 MeshTriangle cur = curMeshData.Face(outlineTriangles[i]);
                 int faceIndex = curMeshData.FaceIndex(cur, prev);
-                Dictionary<int, List<int>> children = curMeshData.SplitFace(outlineTriangles[i - 1], curMeshData.Vertex(prev, faceIndex).index, intersectPoint);
+                children = curMeshData.SplitFace(outlineTriangles[i - 1], curMeshData.Vertex(prev, faceIndex).index, intersectPoint);
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
@@ -333,7 +323,7 @@ public class RayCastSelectionState : InteractionState
                 }
 
                 // subdivide current tri
-                Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], -1);
+                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], -1);
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
@@ -344,7 +334,7 @@ public class RayCastSelectionState : InteractionState
                 int neighborId = curMeshData.NeighborId(prev, faceIndex);
                 MeshTriangle newNeighbor = curMeshData.Neighbor(prev, faceIndex);
                 int newFaceIndex = curMeshData.FaceIndex(prev, newNeighbor);
-                Dictionary<int, List<int>> children = curMeshData.SplitFace(neighborId, curMeshData.Vertex(newNeighbor, newFaceIndex).index, intersectPoint);
+                children = curMeshData.SplitFace(neighborId, curMeshData.Vertex(newNeighbor, newFaceIndex).index, intersectPoint);
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
@@ -405,8 +395,9 @@ public class RayCastSelectionState : InteractionState
 
     private void MarkEndToStartConnectionAsCut(Dictionary<int, List<int>> newTris, Vector3 secondToLastPoint)
     {
-        foreach(List<int> children in newTris.Keys)
+        foreach(KeyValuePair<int, List<int>> entry in newTris)
         {
+            List<int> children = entry.Value;
             foreach(int id  in children)
             {
                 // Does this triangle we just created have the outline start point as a vertex? Is so, one of it's edges should be cut.
@@ -416,6 +407,7 @@ public class RayCastSelectionState : InteractionState
                     int startIndex = curMeshData.VertexIndex(id, secondToLastPoint);
                     if (startIndex != -1)
                     {
+                        MeshTriangle tri = curMeshData.Face(id);
                         int edgeIndex = curMeshData.EdgeIndex(startIndex, endIndex);
                         switch (edgeIndex)
                         {
@@ -477,14 +469,14 @@ public class RayCastSelectionState : InteractionState
 
         if (d0CrossD1.magnitude == 0)
         {
-            // lines are not in the same plane!
+            Debug.Log("lines are not in the same plane!");
             Debug.Break();
         }
         float a = rightSide.magnitude / d0CrossD1.magnitude;
 
         if (a < 0.0 || a > 1.0)
         {
-            // lines intersect outside of the segment
+            Debug.Log("lines intersect outside of the segment");
             Debug.Break();
         }
 
@@ -522,9 +514,9 @@ public class RayCastSelectionState : InteractionState
         float d11 = Vector3.Dot(v1, v1);
         float d20 = Vector3.Dot(v2, v0);
         float d21 = Vector3.Dot(v2, v1);
-        float invDenom = 1.0 / (d00 * d11 - d01 * d01);
-        v = (d11 * d20 - d01 * d21) * invDenom;
-        w = (d00 * d21 - d01 * d20) * invDenom;
+        float invDenom = 1.0f / (d00 * d11 - d01 * d01);
+        float v = (d11 * d20 - d01 * d21) * invDenom;
+        float w = (d00 * d21 - d01 * d20) * invDenom;
         //u = 1.0f - v - w;
 
         return (v >= 0) && (w >= 0) && (v + w < 1);
@@ -556,11 +548,19 @@ public class RayCastSelectionState : InteractionState
 
         if (points.Count >= 2)
         {
-            // Assumes that points contains the first point of the line and then every other point in points is duplicated!!!!!!!!!!!!!!!!!!! Point duplication happens in resample method
-            for (int i = 0; i < points.Count - 1; i+=2)
+            List<Vector3> duplicatedPoints = new List<Vector3>();
+            duplicatedPoints.Add(points[0]);
+            for (int i = 1; i < points.Count; i++)
             {
-                Vector3 centerStart = points[i];
-                Vector3 centerEnd = points[i + 1];
+                duplicatedPoints.Add(points[i]);
+                duplicatedPoints.Add(points[i]);
+            }
+
+            // Assumes that points contains the first point of the line and then every other point in points is duplicated!!!!!!!!!!!!!!!!!!! Point duplication happens in resample method
+            for (int i = 0; i < duplicatedPoints.Count - 1; i+=2)
+            {
+                Vector3 centerStart = duplicatedPoints[i];
+                Vector3 centerEnd = duplicatedPoints[i + 1];
                 Vector3 direction = centerEnd - centerStart;
                 direction = direction.normalized;
                 Vector3 right = Vector3.Cross(rayDirection, direction);
@@ -598,8 +598,6 @@ public class RayCastSelectionState : InteractionState
             outlineMesh.SetTriangles(faces, 0);
 
             outlineMesh.RecalculateNormals();
-
-            drawnOutlinePointsCount = outlinePoints.Count;
         }
 
         return outlineMesh;
@@ -752,7 +750,7 @@ public class MeshData
     {
         List<MeshVertex> vertsToSort = new List<MeshVertex>();
 
-        for(int i=0; i < verts.Count; i++)
+        for(int i=0; i < verts.Length; i++)
         {
             MeshVertex v = new MeshVertex(i, verts[i], uvs[i]);
             meshVertices.Add(v);
@@ -760,7 +758,7 @@ public class MeshData
             vertsToSort.Add(v);
         }
 
-        for(int i=0; i < indices.Count; i+=3)
+        for(int i=0; i < indices.Length; i+=3)
         {
             int vId0 = indices[i];
             int vId1 = indices[i + 1];
@@ -769,33 +767,28 @@ public class MeshData
             meshTriangles.Add(tri);
             int triIndex = meshTriangles.Count - 1;
 
-            meshVertices[vId0].triangleIndex = triIndex;
-            meshVertices[vId1].triangleIndex = triIndex;
-            meshVertices[vId2].triangleIndex = triIndex;
+            meshVertices[vId0].triangleId = triIndex;
+            meshVertices[vId1].triangleId = triIndex;
+            meshVertices[vId2].triangleId = triIndex;
         }
 
-        FindSamePositions(vertsToSort);
+        FindSamePositions(ref vertsToSort);
 
         for(int i=0; i < meshTriangles.Count; i++)
         {
             MeshTriangle curTri = meshTriangles[i];
             //tri 0 is verts 1,2
-            curTri.adjTriId0 = findAdjTri(curTri.vId1, curTri.vId2);
+            curTri.adjTriId0 = FindAdjTri(Vertex(curTri.vId1), Vertex(curTri.vId2));
 
             // tri 1 is verts 0,2
-            curTri.adjTriId1 = findAdjTri(curTri.vId0, curTri.vId2);
+            curTri.adjTriId1 = FindAdjTri(Vertex(curTri.vId0), Vertex(curTri.vId2));
 
             // tri 2 is verts 0, 1
-            curTri.adjTriId2 = findAdjTri(curTri.vId0, curTri.vId1);
+            curTri.adjTriId2 = FindAdjTri(Vertex(curTri.vId0), Vertex(curTri.vId1));
 
             //TODO: if needed, this could be sped up by also setting corresponding triangle adjacencies.
 
         }
-    }
-
-    public MeshTriangle Face(int triId)
-    {
-        return meshTriangles[triId];
     }
 
     // Compute barycentric coordinates (u, v, w) for
@@ -811,7 +804,7 @@ public class MeshData
         float d11 = Vector3.Dot(v1, v1);
         float d20 = Vector3.Dot(v2, v0);
         float d21 = Vector3.Dot(v2, v1);
-        float invDenom = 1.0 / (d00 * d11 - d01 * d01);
+        float invDenom = 1.0f / (d00 * d11 - d01 * d01);
         float v = (d11 * d20 - d01 * d21) * invDenom;
         float w = (d00 * d21 - d01 * d20) * invDenom;
         float u = 1.0f - v - w;
@@ -840,9 +833,9 @@ public class MeshData
         MeshVertex center2 = new MeshVertex(id + 2, curPoint, uv);
 
         List<int> samePosition = new List<int>() {id, id + 1, id + 2 };
-        center0.samePosition = samePosition;
-        center1.samePosition = samePosition;
-        center2.samePosition = samePosition;
+        center0.samePositions = samePosition;
+        center1.samePositions = samePosition;
+        center2.samePositions = samePosition;
 
         meshVertices.Add(center0);
         meshVertices.Add(center1);
@@ -902,6 +895,10 @@ public class MeshData
                 break;
         }
 
+        if (orig.adjTriId0 == -1 || orig.adjTriId1 == -1 || orig.adjTriId2 == -1)
+        {
+            Debug.Log("Triangle does not have an adjacent");
+        }
 
         //Update neighboring triangles.
         meshTriangles[orig.adjTriId0].UpdateAdjTri(triId, tri0Id);
@@ -909,12 +906,12 @@ public class MeshData
         meshTriangles[orig.adjTriId2].UpdateAdjTri(triId, tri2Id);
 
         // Set new tri ids
-        center0.triangleIndex = tri0Id;
-        center1.triangleIndex = tri1Id;
-        center2.triangleIndex = tri2Id;
-        origV0.triangleIndex = tri1Id;
-        origV1.triangleIndex = tri2Id;
-        origV2.triangleIndex = tri0Id;
+        center0.triangleId = tri0Id;
+        center1.triangleId = tri1Id;
+        center2.triangleId = tri2Id;
+        origV0.triangleId = tri1Id;
+        origV1.triangleId = tri2Id;
+        origV2.triangleId = tri0Id;
 
         // Update old tri ids for vertices we are reusing
         meshVertices[orig.vId0].triangleId = tri2Id;
@@ -923,16 +920,29 @@ public class MeshData
 
         foreach(int vId in meshVertices[orig.vId0].samePositions)
         {
-            meshVertices[vId].samePositions.Add(origV0.index);
+            if (vId != orig.vId0)
+            {
+                meshVertices[vId].samePositions.Add(origV0.index);
+            }
         }
         foreach (int vId in meshVertices[orig.vId1].samePositions)
         {
-            meshVertices[vId].samePositions.Add(origV1.index);
+            if (vId != orig.vId1)
+            {
+                meshVertices[vId].samePositions.Add(origV1.index);
+            }
         }
         foreach (int vId in meshVertices[orig.vId2].samePositions)
         {
-            meshVertices[vId].samePositions.Add(origV2.index);
+            if (vId != orig.vId2)
+            {
+                meshVertices[vId].samePositions.Add(origV2.index);
+            }
         }
+
+        meshVertices[orig.vId0].samePositions.Add(origV0.index);
+        meshVertices[orig.vId1].samePositions.Add(origV1.index);
+        meshVertices[orig.vId2].samePositions.Add(origV2.index);
 
         origV0.samePositions = meshVertices[orig.vId0].samePositions;
         origV1.samePositions = meshVertices[orig.vId1].samePositions;
@@ -990,7 +1000,7 @@ public class MeshData
 
         Vector3 splitEdgeDir = (Vertex(splitTri, CW(splitVertIndexInTri)).point - Vertex(splitTri, CCW(splitVertIndexInTri)).point);
         float alpha = (splitPoint - Vertex(splitTri, CCW(splitVertIndexInTri)).point).magnitude / splitEdgeDir.magnitude;
-        Vector2 uv = alpha * Vertex(splitTri, CCW(splitVertIndexInTri)).uv + (1.0 - alpha) * Vertex(splitTri, CW(splitVertIndexInTri)).uv; 
+        Vector2 uv = alpha * Vertex(splitTri, CCW(splitVertIndexInTri)).uv + (1.0f - alpha) * Vertex(splitTri, CW(splitVertIndexInTri)).uv; 
 
         int id = meshVertices.Count;
         // New vertices on the edge that is being split, both for the current tri and neighboring tri
@@ -1000,10 +1010,10 @@ public class MeshData
         MeshVertex split3 = new MeshVertex(id+3, splitPoint, uv);
 
         List<int> samePosition = new List<int>() { id, id + 1, id + 2, id + 3 };
-        split0.samePosition = samePosition;
-        split1.samePosition = samePosition;
-        split2.samePosition = samePosition;
-        split3.samePosition = samePosition;
+        split0.samePositions = samePosition;
+        split1.samePositions = samePosition;
+        split2.samePositions = samePosition;
+        split3.samePositions = samePosition;
 
         // Vertex on opposite side of split edge
         MeshVertex splitVertex = meshVertices[vertexId];
@@ -1013,6 +1023,7 @@ public class MeshData
         MeshTriangle neighbor = Neighbor(splitTri, splitVertIndexInTri);
         int neighborSplitIndex = FaceIndex(splitTri, neighbor);
         MeshVertex neighborSplitVertex = Vertex(neighbor, neighborSplitIndex);
+        int neighborId = NeighborId(splitTri, splitVertIndexInTri);
 
 
         //Make new split vertex and neighbor tri vertex
@@ -1032,8 +1043,8 @@ public class MeshData
         int tri2Id = tri1Id + 1;
         int tri3Id = tri2Id + 1;
 
-        split0.triangleIndex = tri0Id;
-        split1.triangleIndex = tri1Id;
+        split0.triangleId = tri0Id;
+        split1.triangleId = tri1Id;
         split2.triangleId = tri2Id;
         split3.triangleId = tri3Id;
 
@@ -1048,12 +1059,21 @@ public class MeshData
         // update split vertices same points
         foreach (int vId in splitVertex.samePositions)
         {
-            meshVertices[vId].samePositions.Add(newSplitVertex.index);
+            if (vId != vertexId)
+            {
+                meshVertices[vId].samePositions.Add(newSplitVertex.index);
+            }
         }
         foreach (int vId in neighborSplitVertex.samePositions)
         {
-            meshVertices[vId].samePositions.Add(newNeighborSplitVertex.index);
+            if (vId != neighborId)
+            {
+                meshVertices[vId].samePositions.Add(newNeighborSplitVertex.index);
+            }
         }
+
+        splitVertex.samePositions.Add(newSplitVertex.index);
+        neighborSplitVertex.samePositions.Add(newNeighborSplitVertex.index);
 
         newSplitVertex.samePositions = splitVertex.samePositions;
         newNeighborSplitVertex.samePositions = neighborSplitVertex.samePositions;
@@ -1073,8 +1093,7 @@ public class MeshData
         tri3.adjTriId2 = NeighborId(splitTri, CW(neighborSplitIndex));
 
         // update cut edges based on original
-        int neighborId = NeighborId(triId, splitVertIndexInTri);
-        bool splitEdgeCut = neighbor.IsSharedEdgeCut(splitTri);
+        bool splitEdgeCut = neighbor.IsSharedEdgeCut(triId);
         if (splitEdgeCut)
         {
             Debug.Log("The user has drawn a self intersecting cut");
@@ -1105,7 +1124,7 @@ public class MeshData
         meshTriangles.Add(tri3);
 
         List<int> childrenOfSplitTri = new List<int>() { tri0Id, tri1Id };
-        List<int> childrenOfNeighborTri = new List<int>() { tr21Id, tri3Id };
+        List<int> childrenOfNeighborTri = new List<int>() { tri2Id, tri3Id };
 
         Dictionary<int, List<int>> parentToChildTriangles = new Dictionary<int, List<int>>();
         parentToChildTriangles.Add(triId, childrenOfSplitTri);
@@ -1120,24 +1139,24 @@ public class MeshData
 
     private int FindAdjTri(MeshVertex v0, MeshVertex v1)
     {
-        List<int> samePosV0 = v0.samePosition;
-        List<int> samePosV1 = v1.samePosition;
+        List<int> samePosV0 = v0.samePositions;
+        List<int> samePosV1 = v1.samePositions;
 
         for(int i=0; i < samePosV0.Count; i++)
         {
-            if (i == v0.index)
+            if (samePosV0[i] == v0.index)
             {
                 continue;
             }
-            for(int j =0; i < samePosV1.Count; j++)
+            for(int j = 0; j < samePosV1.Count; j++)
             {
-                if (j == v1.index)
+                if (samePosV1[j] == v1.index)
                 {
                     continue;
                 }
-                if (meshVertices[i].triangleId == meshVertices[i].triangleId)
+                if (meshVertices[samePosV0[i]].triangleId == meshVertices[samePosV1[j]].triangleId)
                 {
-                    return meshVertices[i].triangleId;
+                    return meshVertices[samePosV0[i]].triangleId;
                 }
             }
         }
@@ -1185,7 +1204,7 @@ public class MeshData
             {
                 foreach(int j in samePoints)
                 {
-                    verts[j].samePoints = samePoints;
+                    verts[j].samePositions = samePoints;
                 }
                 samePoints = new List<int>();
                 curPoint = verts[i].point;
@@ -1206,15 +1225,20 @@ public class MeshData
         return meshTriangles[v.triangleId];
     }
 
-    public MeshTriangle Face(int id)
+    public MeshTriangle Face(int triId)
     {
-        return meshTriangles[id];
+        return meshTriangles[triId];
     }
 
     public List<Vector3> Points(int triId)
     {
         MeshTriangle tri = meshTriangles[triId];
         return new List<Vector3>() { meshVertices[tri.vId0].point, meshVertices[tri.vId1].point, meshVertices[tri.vId2].point };
+    }
+
+    public MeshVertex Vertex(int vertexId)
+    {
+        return meshVertices[vertexId];
     }
 
     public MeshVertex Vertex(MeshTriangle tri, int i)
@@ -1226,7 +1250,7 @@ public class MeshData
             case 1:
                 return meshVertices[tri.vId1];
             case 2:
-                return meshVertices[tri.vid2];
+                return meshVertices[tri.vId2];
             default:
                 Debug.Log("ERROR in Vertex call. Tried to access with i not within range [0-2]");
                 return null;
@@ -1384,44 +1408,44 @@ public class MeshData
 
 public class MeshTriangle
 {
-    protected int adjTriId0
+    public int adjTriId0
     {
         get; set;
     }
-    protected int adjTriId1
+    public int adjTriId1
     {
         get; set;
     }
-    protected int adjTriId2
-    {
-        get; set;
-    }
-
-    protected int vId0
-    {
-        get; set;
-    }
-    protected int vId1
-    {
-        get; set;
-    }
-    protected int vId2
-    {
-        get; set;
-    }
-    protected bool unused
+    public int adjTriId2
     {
         get; set;
     }
 
-    protected bool selected
+    public int vId0
+    {
+        get; set;
+    }
+    public int vId1
+    {
+        get; set;
+    }
+    public int vId2
+    {
+        get; set;
+    }
+    public bool unused
     {
         get; set;
     }
 
-    protected bool edge0IsCut { get; set; }
-    protected bool edge1IsCut { get; set; }
-    protected bool edge2IsCut { get; set; }
+    public bool selected
+    {
+        get; set;
+    }
+
+    public bool edge0IsCut { get; set; }
+    public bool edge1IsCut { get; set; }
+    public bool edge2IsCut { get; set; }
 
     public MeshTriangle(int vId0, int vId1, int vId2)
     {
@@ -1466,7 +1490,7 @@ public class MeshTriangle
         }
         else
         {
-            // method called with a previousID that isn't currently assigned.
+            Debug.Log("method called with a previousID that isn't currently assigned.");
             Debug.Break();
         }
     }
@@ -1498,30 +1522,14 @@ public class MeshTriangle
 
 public class MeshVertex
 {
-    protected int triangleId
-    {
-        get;
-        set;
-    }
-
-    protected Vector3 point
-    {
-        get;
-        set;
-    }
-
-    protected Vector2 uv
-    {
-        get; set;
-    }
-
-    protected int index
-    {
-        get; set;
-    }
+    public int triangleId;
+    public Vector3 point;
+    public Vector2 uv;
+    public int index;
+   
 
     // Holds the indices for other vertices at the same position
-    protected List<int> samePositions
+    public List<int> samePositions
     {
         get; set;
     }
