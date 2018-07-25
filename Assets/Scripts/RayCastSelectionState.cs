@@ -97,8 +97,11 @@ public class RayCastSelectionState : InteractionState
         laser.SetActive(false);
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        controller0 = controller0Info;
+        controller1 = controller1Info;
+
         RaycastHit hit;
         bool collided = DoRayCast(controller0Info, laser, ref hit);
 
@@ -194,9 +197,8 @@ public class RayCastSelectionState : InteractionState
 
                 ProcessMesh();
             }
-
-
         }
+        return "";
     }
 
     private void AddNextPoint(RaycastHit hit)
@@ -1481,7 +1483,7 @@ public class MeshTriangle
         }
         else if (adjTriId2 == neighborId)
         {
-            return edge2IsCut
+            return edge2IsCut;
         }
         else
         {

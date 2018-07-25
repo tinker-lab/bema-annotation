@@ -7,6 +7,7 @@ using UnityEngine.Assertions;
 public class VolumeCubeSelectionState : InteractionState
 {
     //private const bool debug = false;
+    private int selectionCount = 0;
 
     //InteractionState stateToReturnTo;
     private ControllerInfo controller0;
@@ -23,6 +24,7 @@ public class VolumeCubeSelectionState : InteractionState
     private List<GameObject> collidingMeshes;       //List of meshes currently being collided with
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
     VolumeCubeCollision centerComponent;            //Script on cube that we get the list of colliders from
+    private Boolean changeCube;
 
     SelectionData selectionData;
      
@@ -121,6 +123,8 @@ public class VolumeCubeSelectionState : InteractionState
 
         //The center cube is anchored between controllers and detects collisions with other objects
         centerCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        centerCube.transform.position = new Vector3 (0f, -0.631f, 0f);
+        //UnityEngine.Object.DontDestroyOnLoad(centerCube);
         centerCube.name = "volumeCube";
         centerCube.GetComponent<Renderer>().material = Resources.Load("Volume Cube") as Material; //might want to change material
         centerCube.AddComponent<MeshCollider>();
@@ -139,6 +143,7 @@ public class VolumeCubeSelectionState : InteractionState
 
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
+        changeCube = false;
 
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
 
@@ -243,7 +248,6 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 currentDiagonal = dominantCorner - nonDominantCorner;
         Quaternion yaw = Quaternion.LookRotation(new Vector3(head.transform.forward.x, 0, head.transform.forward.z), Vector3.up);
 
-
         //Quaternion.AngleAxis(40, currentDiagonal.normalized) *
         centerCube.transform.rotation = Quaternion.FromToRotation(yaw * startingDiagonal.normalized, currentDiagonal.normalized) * yaw;
 
@@ -257,8 +261,8 @@ public class VolumeCubeSelectionState : InteractionState
 
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
-        Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
-        centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * scaleSize;
+        //Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
+        centerCube.transform.localScale = startingDiagonal * scaleSize;
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
@@ -266,6 +270,19 @@ public class VolumeCubeSelectionState : InteractionState
         ////scale cube
         //float distance = Vector3.Distance(nonDominantCorner, dominantCorner);
         //centerCube.transform.localScale = new Vector3(1f, 1f, 1f) * distance + new Vector3(0, 0.3f, 0.3f); //.3f pushes cube outwards and upwards slightly from user
+    }
+
+    private void changeCubeSize()
+    {
+        Vector3 currentDiagonal = controller1.controller.transform.position - controller0.controller.transform.position;
+        //float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
+        //centerCube.transform.localScale = startingDiagonal.normalized * scaleSize;
+        startingDiagonal = currentDiagonal;
+
+        if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+        {
+            changeCube = false;
+        }
     }
 
     //private void RotateCube(ControllerInfo controller0Info, ControllerInfo controller1Info, Vector3 leftPos, Vector3 rightPos, GameObject cube)
@@ -379,8 +396,9 @@ public class VolumeCubeSelectionState : InteractionState
         Uncollide();
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        string eventString = "";
         List<Vector2> UVList = new List<Vector2>();
 
         //Update cube (method has position, rotation, and scale in it)
@@ -400,8 +418,18 @@ public class VolumeCubeSelectionState : InteractionState
         else //If not colliding with anything, change states
         {
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
+            if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
+            {
+                changeCube = true;
+            }
+
+            if(changeCube)
+            {
+                changeCubeSize();
+            }
+
             Uncollide();
-            return;
+            return "";
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
@@ -409,6 +437,7 @@ public class VolumeCubeSelectionState : InteractionState
             //first time seeing object, if the original vertices are not stored already, store them
             if (!SelectionData.PreviousNumVertices.ContainsKey(currObjMesh.name))
             {
+                eventString = "first collision with " + currObjMesh.name;
                 SelectionData.PreviousNumVertices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length);
                 currObjMesh.GetComponent<MeshFilter>().mesh.MarkDynamic();
                 SelectionData.PreviousSelectedIndices.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(0));
@@ -441,6 +470,8 @@ public class VolumeCubeSelectionState : InteractionState
         //and save the outlines and new meshes
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
         {
+            selectionCount++;
+            eventString = "selection " + selectionCount.ToString();
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 //Debug.Log("Cube Selection: " + currObjMesh.name);
@@ -530,7 +561,7 @@ public class VolumeCubeSelectionState : InteractionState
 
                 for (int i = 0; i < removeOutlines.Count(); i++)
                 {
-                    Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
+                  //  Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
                     SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[i]);
                     UnityEngine.Object.Destroy(removeOutlines[i]);
 
@@ -585,11 +616,11 @@ public class VolumeCubeSelectionState : InteractionState
                         if (outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
                         {
                            // Debug.Break();
-                           if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
-                            {
-                                Debug.Log("selection went to 0 for back plane" + outlineObject.name);
-                                //Debug.Break();
-                            }
+                           //if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
+                           // {
+                           //     Debug.Log("selection went to 0 for back plane" + outlineObject.name);
+                           //     //Debug.Break();
+                           // }
                             removeOutlines.Add(outlineObject);
                         }
 
@@ -609,14 +640,13 @@ public class VolumeCubeSelectionState : InteractionState
                     Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
                     SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
                     UnityEngine.Object.Destroy(removeOutlines[j]);
-
                 }
                 //Debug.Break();
-
             }
         }
+        return eventString;
     }
-    
+
     /// <summary>
     /// Creates a new game object with the same position, rotation, scale, material, and mesh as the original.
     /// </summary>
@@ -766,7 +796,6 @@ public class VolumeCubeSelectionState : InteractionState
                 bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
                 bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
 
-
                 if (!side0 && !side1 && !side2) //0 intersections
                 {
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
@@ -775,11 +804,6 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                     else
                     {
-                        if (item.name == "highlight 6")
-                        {
-                            Debug.Log("planePass: " + planePass.ToString());
-                            Debug.Break();
-                        }
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                     }
                 }
@@ -912,11 +936,11 @@ public class VolumeCubeSelectionState : InteractionState
 
                 //unsortedOutlinePts.Clear();
             } else{
-                if (selectedIndices.Count() < 1)
-                {
-                    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection on " + item.name);
-                  //  Debug.Break();
-                }
+                //if (selectedIndices.Count() < 1)
+                //{
+                //    Debug.Log("Volume Cube: " + "plane " + planePass.ToString() + " made an empty selection on " + item.name);
+                //  //  Debug.Break();
+                //}
             }
         }
 
@@ -933,8 +957,8 @@ public class VolumeCubeSelectionState : InteractionState
 
             Material[] materials = new Material[2];
             Material baseMaterial = item.GetComponent<Renderer>().materials[0];
-            materials[0] = DetermineBaseMaterial(baseMaterial); //Sets unselected as transparent
-            materials[1] = Resources.Load("Selected") as Material; //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+            materials[0] = baseMaterial;                            //DetermineBaseMaterial(baseMaterial); //Sets unselected as transparent                                                  Don't change baseMaterial during experiments -> already transparent!!
+            materials[1] = Resources.Load("Selected") as Material;  //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             item.GetComponent<Renderer>().materials = materials;
         }
 

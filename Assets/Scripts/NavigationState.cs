@@ -5,6 +5,7 @@ using UnityEngine;
 public class NavigationState : InteractionState {
 
     public static readonly float MIN_DISTANCE = 0.25f;    // How close controllers need to be to plane
+    private bool allowNavigation;
 
     private int doNotTeleportLayer;
     private int worldUILayer;
@@ -41,13 +42,15 @@ public class NavigationState : InteractionState {
     private HashSet<GameObject> cubeColliders;
 
 
-    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData)
+    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false)
     {
         desc = "NavigationState";
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData);
+        Debug.Log("have controllers " + controller0.ToString() + " " + controller1.ToString());
+
+        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, experiment);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");
@@ -55,11 +58,19 @@ public class NavigationState : InteractionState {
         //rightComponent = rightPlane.GetComponent<CubeCollision>();
         centerComponent = centerCube.GetComponent<CubeCollision>();
 
-        cubeColliders = new HashSet<GameObject>();
+        //UnityEngine.Object.DontDestroyOnLoad(leftPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(rightPlane);
+        //UnityEngine.Object.DontDestroyOnLoad(centerCube);
 
+
+        Debug.Log("have planes " + leftPlane.ToString() + " " + rightPlane.ToString());
+
+        cubeColliders = new HashSet<GameObject>();
 
         cameraRigTransform = GameObject.Find("[CameraRig]").transform;
         headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+
+        allowNavigation = !experiment;
 
         teleportReticleOffset = new Vector3(0, 0.005f, 0);
         doNotTeleportLayer = LayerMask.NameToLayer("Do not teleport");
@@ -67,17 +78,29 @@ public class NavigationState : InteractionState {
 
         //laser =  Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
         //laserTransform = laser.transform;
-        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
-        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
+        //laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        //laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
 
-        reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
-        teleportReticleTransform = reticle.transform;
+        //reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
+        //teleportReticleTransform = reticle.transform;
 
     }
 
     public void UpdatePlanes()
     {
-        leftPlane.transform.position = controller0.controller.transform.position;
+        try
+        {
+            leftPlane.transform.position = controller0.controller.transform.position;
+        }
+        catch (MissingReferenceException)
+        {
+            leftPlane = GameObject.Find("handSelectionLeftPlane");
+            rightPlane = GameObject.Find("handSelectionRightPlane");
+            centerCube = GameObject.Find("handSelectionCenterCube");
+            leftPlane.transform.position = controller0.controller.transform.position;
+        }
+
+        
         rightPlane.transform.position = controller1.controller.transform.position;
 
         leftPlane.transform.up = (rightPlane.transform.position - leftPlane.transform.position).normalized;
@@ -123,8 +146,14 @@ public class NavigationState : InteractionState {
     }
 
     // Update is called once per frame
-    override public void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    override public string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
+        cameraRigTransform = GameObject.Find("[CameraRig]").transform;
+        headTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+        centerCube = GameObject.Find("handSelectionCenterCube");
+        centerComponent = centerCube.GetComponent<CubeCollision>();
+        controller0 = controller0Info;
+        controller1 = controller1Info;
         /*
         // Check if controllers are close to plane
         if(NearPlane(controller0Info) && NearPlane(controller1Info) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller0Info.trackedObj.transform.position)) && NearPlane(EdgeSelectionState.ClosestPointToPlane(controller1Info.trackedObj.transform.position)))
@@ -160,44 +189,54 @@ public class NavigationState : InteractionState {
                     activeHighlight.GetComponent<MeshRenderer>().enabled = true;
                 }
             }
-           
-            GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            if (allowNavigation)
+            {
+                GameObject.Find("UIController").GetComponent<UIController>().ChangeState(handSelectionState);
+            }
+            else
+            {
+                GameObject.Find("ExperimentController").GetComponent<RunExperiment>().ChangeState(handSelectionState);
+            }
 
         }
-
-        // Teleport
-        if (controller0.device.GetHairTrigger()) {
-
-            laser1.SetActive(false);
-            DoRayCast(controller0, laser0);
-        }
-        else if (controller1.device.GetHairTrigger())
+        if (allowNavigation)
         {
-            laser0.SetActive(false);
-            DoRayCast(controller1, laser1);
-           
-        }
-        else if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
-        {
-            if (shouldTeleport)
+            // Teleport
+            if (controller0.device.GetHairTrigger())
+            {
+
+                laser1.SetActive(false);
+                DoRayCast(controller0, laser0);
+            }
+            else if (controller1.device.GetHairTrigger())
+            {
+                laser0.SetActive(false);
+                DoRayCast(controller1, laser1);
+
+            }
+            else if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
+            {
+                if (shouldTeleport)
+                {
+                    laser0.SetActive(false);
+                    laser1.SetActive(false);
+                    Teleport();
+                }
+            }
+            /*
+            else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
+            {
+                GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
+            }
+            */
+            else
             {
                 laser0.SetActive(false);
                 laser1.SetActive(false);
-                Teleport();
+                reticle.SetActive(false);
             }
         }
-        /*
-        else if (controller0Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPress(SteamVR_Controller.ButtonMask.Touchpad))    // Go back to start state, useful for debugging
-        {
-            GameObject.Find("UIController").GetComponent<UIController>().changeState(new StartState());
-        }
-        */
-        else
-        {
-            laser0.SetActive(false);
-            laser1.SetActive(false);
-            reticle.SetActive(false);
-        }
+        return "";
     }
 
     void DoRayCast(ControllerInfo controllerInfo, GameObject laser)

@@ -60,7 +60,7 @@ public class EdgeSelectionState : InteractionState {
         //viewPlane.GetComponent<BoxCollider>().enabled = true;   
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
         if (firstTime)
         {
@@ -108,6 +108,7 @@ public class EdgeSelectionState : InteractionState {
             GameObject.Find("BezierParent").transform.GetChild(1).gameObject.SetActive(true);
             firstTime = false;
         }
+        return "";
     }
 
     public static Vector3 ClosestPointToPlane(Vector3 pt)

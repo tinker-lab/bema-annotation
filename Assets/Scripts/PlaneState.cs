@@ -38,7 +38,7 @@ public class PlaneState : InteractionState {
 
     }
 
-    public override void HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
+    public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
 
         ChangePlane(controller0Info, controller1Info);
@@ -52,6 +52,7 @@ public class PlaneState : InteractionState {
 
             GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
         }
+        return "";
     }
 
     private void updateView()
