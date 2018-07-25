@@ -282,6 +282,9 @@ public class VolumeCubeSelectionState : InteractionState
             Vector3 rotatedFront = (centerCube.transform.rotation * normals[(int)cubeSides.front]).normalized;
             Vector3 toCenter = centerCube.transform.position - centerCube.transform.TransformPoint(0, 0, -0.5f);
 
+            Debug.DrawRay(controller0.controller.transform.position, 0.25f * toCenter.normalized, Color.cyan, 0f, false);
+            Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotatedFront.normalized, Color.grey, 0f, false);
+
             if(Vector3.Dot(rotatedFront, toCenter) < 0)
             {
                 for (int i = 0; i < 6; i++)
@@ -575,6 +578,7 @@ public class VolumeCubeSelectionState : InteractionState
                     UnityEngine.Object.Destroy(removeOutlines[i]);
 
                 }
+
                 removeOutlines.Clear();
                 //Debug.Break();
 
@@ -746,7 +750,7 @@ public class VolumeCubeSelectionState : InteractionState
         rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
         rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
 
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue,0f,false);
+        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue, 0f, false);
         Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red, 0f, false);
         Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green, 0f, false);
 
