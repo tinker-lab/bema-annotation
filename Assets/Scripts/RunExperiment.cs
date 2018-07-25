@@ -111,7 +111,7 @@ public class RunExperiment : MonoBehaviour {
 
         selectionEvent = "";
 
-        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));
+        //SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));
 
         recorder.SetTrialID(sceneIndex, currentState);
         startTrialTicks = System.DateTime.Now.Ticks;
