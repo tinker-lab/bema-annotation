@@ -172,7 +172,7 @@ public class RunExperiment : MonoBehaviour {
         {
             float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
             float selectionArea = TriangleArea(selection.GetTriangles(1), selection.vertices);
-            return goalArea - selectionArea;
+            return selectionArea - goalArea;
         }
         else
         {
