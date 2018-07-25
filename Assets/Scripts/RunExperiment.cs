@@ -72,8 +72,14 @@ public class RunExperiment : MonoBehaviour {
 
     void Init()
     {
-        SceneManager.LoadScene(sceneIndex);
+        SceneManager.LoadScene(sceneIndex,LoadSceneMode.Additive);
 
+        controller0 = GameObject.Find("Controller (left)");
+        controller1 = GameObject.Find("Controller (right)");
+        testObjectParent = GameObject.Find("TestObj");
+
+        controller0Info = new ControllerInfo(controller0);
+        controller1Info = new ControllerInfo(controller1);
 
         setupControllers = true;
         Debug.Log("set up controllers in trial scene. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
@@ -97,13 +103,17 @@ public class RunExperiment : MonoBehaviour {
         {
             Debug.Log("Init Raycast");
             currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
+        } else
+        {
+            currentState = recorder.GetSelectionState();
+
         }
 
         selectionEvent = "";
-        testObjectParent = GameObject.Find("TestObj");
 
+        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));
 
-        recorder.SetTrialID(sceneIndex, currentState.Desc);
+        recorder.SetTrialID(sceneIndex, currentState);
         startTrialTicks = System.DateTime.Now.Ticks;
     }
 
@@ -115,28 +125,33 @@ public class RunExperiment : MonoBehaviour {
         //    return;
         //}
 
-        controller0 = GameObject.Find("Controller (left)");
-        controller1 = GameObject.Find("Controller (right)");
-
-        controller0Info = new ControllerInfo(controller0);
-        controller1Info = new ControllerInfo(controller1);
-
         if (!setupControllers)
         {
             Init();
         }
 
-        DetermineLeftRightControllers();
-        selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
-        recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
-
-        if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+        if (endTrialTicks == 0L)
         {
-            Debug.Log("timer stopped " + currentState.Desc);
-            endTrialTicks = System.DateTime.Now.Ticks;
-            float selectedArea = CalculateSelectedArea();
-            recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
-            LeaveTrialScene();
+            controller0 = GameObject.Find("Controller (left)");
+            controller1 = GameObject.Find("Controller (right)");
+            testObjectParent = GameObject.Find("TestObj");
+
+            controller0Info = new ControllerInfo(controller0);
+            controller1Info = new ControllerInfo(controller1);
+
+            DetermineLeftRightControllers();
+            selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
+            recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
+
+            if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+            {
+                Debug.Log("timer stopped " + currentState.Desc);
+                endTrialTicks = System.DateTime.Now.Ticks;
+                float selectedArea = CalculateSelectedArea();
+                recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
+                currentState.Deactivate();
+                LeaveTrialScene();
+            }
         }
 	}
 
@@ -145,19 +160,20 @@ public class RunExperiment : MonoBehaviour {
             // where child 0 is the preselected goal object the participant cannot collide with and 
             // child 1 is the transparent object of the same shape that the participant selects.
         if(!SceneManager.GetActiveScene().name.Equals("Basic Scene")){
-            Mesh goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
-            Mesh selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
-            if (selection.subMeshCount > 0)
-            {
-                float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
-                float selectionArea = TriangleArea(selection.GetTriangles(1), selection.vertices);
-                return goalArea - selectionArea;
-            } else
-            {
-                Debug.Log("Participant cube not selected");
-            }
-        } else{
-            Debug.Log("No Object to select in Basic Scene");
+            SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(0));
+        }
+
+        Mesh goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
+        Mesh selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
+        if (selection.subMeshCount > 0)
+        {
+            float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
+            float selectionArea = TriangleArea(selection.GetTriangles(1), selection.vertices);
+            return goalArea - selectionArea;
+        }
+        else
+        {
+            Debug.Log("Participant cube not selected");
         }
         // Both children should have submeshes 0 unselected and 1 selected.
         // Iterate over the triangles in submesh 1 to calculate their total areas.
@@ -186,8 +202,9 @@ public class RunExperiment : MonoBehaviour {
     void LeaveTrialScene()
     {
 
-        SceneManager.LoadScene(0); // Transition Scene
-        //SceneManager.UnloadSceneAsync(sceneIndex);
+        //SceneManager.LoadScene(0); // Transition Scene
+        SceneManager.UnloadSceneAsync(sceneIndex);
+        //SceneManager.LoadScene(0, LoadSceneMode.Single);
         
     }
 

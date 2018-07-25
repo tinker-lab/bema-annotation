@@ -82,17 +82,17 @@ public class UIController : MonoBehaviour {
         outlineManager = new OutlineManager();
 
         volumeCubeSelectionState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData);
-        volumeCubeSelectionState.Deactivate();
+        //volumeCubeSelectionState.Deactivate();
         sliceNSwipeSelectionState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData);
         sliceNSwipeSelectionState.Deactivate();
         rayCastSelectionState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
         rayCastSelectionState.Deactivate();
 
-        handSelectionState = new NavigationState(controller0Info, controller1Info, selectionData);
+        //handSelectionState = new NavigationState(controller0Info, controller1Info, selectionData);
 
         //currentState = new PickResourceState(controller0Info);
         //currentState = new NavigationState(controller0Info, controller1Info);
-        currentState = handSelectionState;
+        currentState = volumeCubeSelectionState; //handSelectionState;
     }
 
     // Update is called once per frame
@@ -114,7 +114,7 @@ public class UIController : MonoBehaviour {
         if(Input.GetKeyDown("1"))
         {
             //ChangeState(new NavigationState(controller0Info, controller1Info));
-            ChangeState(handSelectionState);
+            //ChangeState(handSelectionState);
         }
         else if(Input.GetKeyDown("2"))
         {

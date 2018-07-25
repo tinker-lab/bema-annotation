@@ -93,6 +93,7 @@ public class RecordData : MonoBehaviour {
     public int trialID;
     int participantID;
     int trialCount;
+    InteractionState lastState;
 
     public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, int numTrials) {
         trialID = 0;
@@ -123,20 +124,21 @@ public class RecordData : MonoBehaviour {
         }
 
         // Do not destroy this object, when we load a new scene.
-        UnityEngine.Object.DontDestroyOnLoad(gameObject);
+        //UnityEngine.Object.DontDestroyOnLoad(gameObject);
     }
 
-    public void SetTrialID(int id, string desc)
+    public void SetTrialID(int id, InteractionState state)
     {
         trialID = id;
         myData.trials[trialID] = new Trial();
         myData.trials[trialID].trialID = trialID;
-        myData.trials[trialID].selectionInterface = desc;
+        myData.trials[trialID].selectionInterface = state.Desc;
+        lastState = state;
     }
 
-    public string GetSelectionState()
+    public InteractionState GetSelectionState()
     {
-        return myData.trials[trialID].selectionInterface;
+        return lastState;
     }
 
     public void EndTrial(float area, float duration) {

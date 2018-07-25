@@ -26,13 +26,13 @@ public class TransitionSceneScript : MonoBehaviour {
 
     // Use this for initialization
     void Init () {
-        //Debug.Log("Intialize the Transition State - controllers are working!!");
+        Debug.Log("Intialize the Transition State - controllers are working!!");
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
         ExperimentController = new GameObject();
 
         ExperimentController.name = "ExperimentController";
-        UnityEngine.Object.DontDestroyOnLoad(ExperimentController);
+        //UnityEngine.Object.DontDestroyOnLoad(ExperimentController);
         //UnityEngine.Object.DontDestroyOnLoad(controller0.gameObject);
         //UnityEngine.Object.DontDestroyOnLoad(controller1.gameObject);
 
@@ -47,11 +47,14 @@ public class TransitionSceneScript : MonoBehaviour {
         nextSceneIndex = recorder.trialID + 1;
         Debug.Log("next scene index: " + nextSceneIndex.ToString());
 
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
+
         firstUpdate = false;
     }
 	
 	// Update is called once per frame
 	void Update () {
+      //  Debug.Log("transition script");
         if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
         {
             return;
@@ -65,38 +68,7 @@ public class TransitionSceneScript : MonoBehaviour {
 
         if (!interfaceChosen)
         {
-            if (!(recorder == null))
-            {
-                string stateStr = recorder.GetSelectionState();
-                if (!stateStr.Equals(""))
-                {
-                    if (stateStr.Equals("HandSelectionState"))
-                    {
-                        Debug.Log("set Yea Big");
-                        selectionIndex = 1;
-                        interfaceChosen = true;
-                    }
-                    else if (stateStr.Equals("VolumeCubeSelectionState"))
-                    {
-                        Debug.Log("set Volume Cube");
-                        selectionIndex = 2;
-                        interfaceChosen = true;
-                    }
-                    else if (stateStr.Equals("SliceNSwipeSelectionState"))
-                    {
-                        Debug.Log("set Slice");
-                        selectionIndex = 3;
-                        interfaceChosen = true;
-                    }
-                    else if (stateStr.Equals("RayCastSelectionState"))
-                    {
-                        Debug.Log("set RayCast");
-                        selectionIndex = 4;
-                        interfaceChosen = true;
-                    }
-                }
-            }
-            else if (Input.GetKeyUp(KeyCode.Alpha1))
+            if (Input.GetKeyUp(KeyCode.Alpha1))
             {
                 Debug.Log("set Yea Big");
                 selectionIndex = 1;
@@ -129,7 +101,14 @@ public class TransitionSceneScript : MonoBehaviour {
             {
                 Debug.Log("HIT BUTTON");
                 timerStarted = true;
-                RunExperiment currTrial = ExperimentController.AddComponent<RunExperiment>();
+
+                
+                if(!(ExperimentController.GetComponent<RunExperiment>() == null))
+                {
+                    UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
+                }
+                ExperimentController.AddComponent<RunExperiment>();
+               
                 RunExperiment.SceneIndex = nextSceneIndex;
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
@@ -138,8 +117,21 @@ public class TransitionSceneScript : MonoBehaviour {
                 //currTrial.controller1 = controller1;
 
                 Debug.Log("Loading scene " + nextSceneIndex.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
-                timerStarted = false;
             }
+        }
+        
+    }
+
+    //listen for sceneUnload at nextSceneIndex. then increment nextSceneIndex and set timerStarted = false;
+    private void OnSceneUnloaded(Scene current)
+    {
+        nextSceneIndex++;
+        timerStarted = false;
+
+        if(nextSceneIndex >= sceneIndices.Count)
+        {
+            recorder.WriteToFile();
+            Debug.Break();
         }
     }
 }
