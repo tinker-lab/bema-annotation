@@ -951,16 +951,16 @@ public class SliceNSwipeSelectionState : InteractionState
 
            // item.GetComponent<Renderer>().material; --can we clear this out first? is that the problem??
 
-            if (mesh.subMeshCount > 1)
-            {
+            //if (mesh.subMeshCount > 1)                see if this works in experiment w resized arrays. esp for removing first slice.
+            //{
                 Debug.Log("materials used length " + materials.Length);
                 item.GetComponent<Renderer>().materials = materials;
-            }
-            else
-            {
-                Debug.Log("materials used length " + materials.Length + " " + materials[0].name);
-                item.GetComponent<Renderer>().material = materials[0];
-            }
+            //}
+            //else
+            //{
+            //    Debug.Log("materials used length " + materials.Length + " " + materials[0].name);
+            //    item.GetComponent<Renderer>().material = materials[0];
+            //}
             //Debug.Log(item.name + " M0: " + materials[0].name + " M1: " + materials[1].name);
         }
         else if (item.gameObject.tag == "highlightmesh" ) //&& mode == "slice")
