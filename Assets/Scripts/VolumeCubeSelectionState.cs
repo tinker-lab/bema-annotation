@@ -262,7 +262,21 @@ public class VolumeCubeSelectionState : InteractionState
         //scale cube
         float scaleSize = currentDiagonal.magnitude / startingDiagonal.magnitude;
         //Vector3 scaleVec = currentDiagonal / startingDiagonal.magnitude;
-        centerCube.transform.localScale = startingDiagonal * scaleSize;
+        Vector3 potentialScale = startingDiagonal * scaleSize;
+        if (potentialScale.x < 0)
+        {
+            potentialScale.x = 0.0001f;
+        }
+        if (potentialScale.y < 0)
+        {
+            potentialScale.y = 0.0001f;
+        }
+        if (potentialScale.z < 0)
+        {
+            potentialScale.z = 0.0001f;
+        }
+        centerCube.transform.localScale = potentialScale;
+        
 
         //rotate cube w/ respect to both controllers -- sets orientation of cube
         //RotateCube(controller0, controller1, nonDominantCorner, dominantCorner, centerCube);
@@ -277,21 +291,21 @@ public class VolumeCubeSelectionState : InteractionState
         Vector3 currentDiagonal = controller1.controller.transform.position - controller0.controller.transform.position;
         startingDiagonal = currentDiagonal;
 
+        //Debug.DrawRay(centerCube.transform.TransformPoint(0.001f, 0, -0.5f), 0.25f * (centerCube.transform.position - centerCube.transform.TransformPoint(0, 0, -0.5f)).normalized, Color.cyan, 0f, false);
+        //Debug.DrawRay(centerCube.transform.TransformPoint(0, 0, -0.5f), 0.25f * (centerCube.transform.rotation * normals[(int)cubeSides.front]).normalized, Color.grey, 0f, false);
+
         if (controller0.device.GetHairTriggerUp() || controller1.device.GetHairTriggerUp())
         {
-            Vector3 rotatedFront = (centerCube.transform.rotation * normals[(int)cubeSides.front]).normalized;
-            Vector3 toCenter = centerCube.transform.position - centerCube.transform.TransformPoint(0, 0, -0.5f);
+            //Vector3 rotatedFront = (centerCube.transform.rotation * normals[(int)cubeSides.front]).normalized;
+            //Vector3 toCenter = centerCube.transform.position - centerCube.transform.TransformPoint(0, 0, -0.5f);
 
-            Debug.DrawRay(controller0.controller.transform.position, 0.25f * toCenter.normalized, Color.cyan, 0f, false);
-            Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotatedFront.normalized, Color.grey, 0f, false);
-
-            if(Vector3.Dot(rotatedFront, toCenter) < 0)
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    normals[i] = -normals[i];
-                }
-            }
+            //if(Vector3.Dot(rotatedFront, toCenter) < 0)
+            //{
+            //    for (int i = 0; i < 6; i++)
+            //    {
+            //        normals[i] = -normals[i];
+            //    }
+            //}
                
             changeCube = false;
         }
@@ -378,7 +392,7 @@ public class VolumeCubeSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh")
                 {
                     Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
-                    baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                    //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                                                       in experiment, this line is making the interaction test obj opaque. may need to make the alpha channel 0.5f instead of just commenting this out, depending on how colors work.
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
                     //leftOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
@@ -591,6 +605,8 @@ public class VolumeCubeSelectionState : InteractionState
                     for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
                     {
                         GameObject outlineObject = OutlineManager.MakeNewOutline(currObjMesh);
+                        //outlineObject.name = outlineObject.name + outlineObjectCount;
+                        //outlineObjectCount++;
                         Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
 
                         SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
@@ -748,13 +764,13 @@ public class VolumeCubeSelectionState : InteractionState
         rotationVectors[(int)cubeSides.left] = (centerCube.transform.rotation * normals[(int)cubeSides.left]).normalized;
         rotationVectors[(int)cubeSides.right] = (centerCube.transform.rotation * normals[(int)cubeSides.right]).normalized;
 
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue, 0f, false);
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red, 0f, false);
-        Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green, 0f, false);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[0].normalized, Color.blue, 0f, false);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[1].normalized, Color.red, 0f, false);
+        //Debug.DrawRay(controller1.controller.transform.position, 0.25f * rotationVectors[2].normalized, Color.green, 0f, false);
 
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta, 0f, false);
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow, 0f, false);
-        Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black, 0f, false);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[3].normalized, Color.magenta, 0f, false);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[4].normalized, Color.yellow, 0f, false);
+        //Debug.DrawRay(controller0.controller.transform.position, 0.25f * rotationVectors[5].normalized, Color.black, 0f, false);
 
         for (int planePass = 0; planePass < 6; planePass++)
         {

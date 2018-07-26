@@ -78,10 +78,10 @@ public class HandSelectionState : InteractionState
     }
 
 
-    public static Dictionary<string, List<GameObject>> PreSelectionOutlines
-    {
-        get { return preSelectionOutlines; }
-    }
+    //public static Dictionary<string, List<GameObject>> PreSelectionOutlines
+    //{
+    //    get { return preSelectionOutlines; }
+    //}
 
     //public static Dictionary<string, GameObject> LeftOutlines
     //{
@@ -269,6 +269,7 @@ public class HandSelectionState : InteractionState
             Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
             mesh.subMeshCount = 2;
             indices = SelectionData.PreviousSelectedIndices[collidingObj.name]; // the indices of last selection
+            preSelectionOutlines = OutlineManager.preSelectionOutlines;
 
             if (SelectionData.ObjectsWithSelections.Contains(collidingObj.name))    // If it previously had a piece selected (CLICKED) - revert to that selection
             {
@@ -332,7 +333,7 @@ public class HandSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh")
                 {
                     Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
-                    baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                    //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                           this is making the material opaque in experiment. it should Not
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
                     foreach (GameObject outlineMesh in preSelectionOutlines[collidingObj.name])
@@ -347,7 +348,7 @@ public class HandSelectionState : InteractionState
             //stop rendering current outline whenever hands removed from collidingObj
             if (preSelectionOutlines.ContainsKey(collidingObj.name)) //|| rightOutlines.ContainsKey(collidingObj.name))
             {
-                for (int i = preSelectionOutlines[collidingObj.name].Count - 1; i >= 0; i--)
+                for (int i = preSelectionOutlines.Count - 1; i >= 0; i--)
                 {
                     UnityEngine.Object.Destroy(preSelectionOutlines[collidingObj.name][i]);
                     preSelectionOutlines[collidingObj.name].RemoveAt(i);
@@ -475,7 +476,7 @@ public class HandSelectionState : InteractionState
                     SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
                 }
 
-                foreach (GameObject outline in preSelectionOutlines[currObjMesh.name])
+                foreach (GameObject outline in OutlineManager.preSelectionOutlines[currObjMesh.name])
                 {
                     GameObject savedOutline = OutlineManager.CopyObject(outline); // save the highlights at the point of selection
 
@@ -506,7 +507,7 @@ public class HandSelectionState : InteractionState
                 Material[] origMaterials = currObjMesh.GetComponent<Renderer>().materials;
                 for (int i = 0; i < origMaterials.Length; i++)
                 {
-                    if (origMaterials[i].name == "Selected (Instance)")
+                    if (origMaterials[i].name == "Selected Transparent (Instance)")
                     {
                         submeshNum = i;
                     }
@@ -802,7 +803,7 @@ public class HandSelectionState : InteractionState
             Material[] materials = new Material[2];
             Material baseMaterial = item.GetComponent<Renderer>().sharedMaterials[0];
             materials[0] = baseMaterial;                                //DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent                               
-            materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+            materials[1] = Resources.Load("Selected Transparent") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             item.GetComponent<Renderer>().sharedMaterials = materials;
         }
 

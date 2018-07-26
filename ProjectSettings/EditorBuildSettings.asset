@@ -12,9 +12,21 @@ EditorBuildSettings:
     path: Assets/Scenes/Experiment Scenes/transition scene.unity
     guid: 105b98ced3808a1479ee7f9621b9d6fb
   - enabled: 1
-    path: Assets/Scenes/Experiment Scenes/Cylinder 1.unity
+    path: Assets/Scenes/Experiment Scenes/Cylinder w square.unity
     guid: 01f2bbca034892f4a887b3776c7a7378
   - enabled: 1
-    path: Assets/Scenes/Experiment Scenes/Irregular Quadrilateral 1.unity
+    path: Assets/Scenes/Experiment Scenes/Cylinder w Irregular.unity
+    guid: bc8ea11589534492cae7acab8799edce
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Cylinder w circle.unity
+    guid: ea456cbda24d5438e9b323410da70f01
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Cylinder w large circle.unity
+    guid: 5f731c340c7fe4aa0aa1c3fbc139773a
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Cylinder w trapezoid.unity
+    guid: 68f29f93f2a1f4944a26cd60a1a9425b
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Cube w circle.unity
     guid: bf950c5190292a04ead038beb199e6d4
   m_configObjects: {}

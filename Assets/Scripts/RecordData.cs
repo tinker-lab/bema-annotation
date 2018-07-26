@@ -103,7 +103,7 @@ public class RecordData : MonoBehaviour {
         trialCount = numTrials;
 
         _FileLocation = "Assets/WrittenData";
-        _FileName = participantID.ToString() + "test.txt";
+        _FileName = participantID.ToString() + "test.xml";
 
         myData = new ExperimentData(numTrials, participantID);
     }

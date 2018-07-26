@@ -26,6 +26,7 @@ public class RunExperiment : MonoBehaviour {
     string selectionEvent;
 
     bool setupControllers;
+    bool sceneIsLoaded;
 
     private static int sceneIndex;
 
@@ -57,6 +58,7 @@ public class RunExperiment : MonoBehaviour {
         //SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(sceneIndex));  //scene 0 is the BasicScene which is in the project all the time bc it has the floor and the camera and this script. other scenes w test objects are loaded and unloaded.
 
         setupControllers = false;
+        sceneIsLoaded = false;
 
         selectionData = new SelectionData();
         outlineManager = new OutlineManager();
@@ -85,6 +87,52 @@ public class RunExperiment : MonoBehaviour {
         setupControllers = true;
         Debug.Log("set up controllers in trial scene. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
 
+        selectionEvent = "";
+    }
+
+
+    // Update is called once per frame
+    void Update () {
+        //if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
+        //{
+        //    return;
+        //}
+
+        if (!setupControllers)
+        {
+            Init();
+        }
+        if (sceneIsLoaded)
+        {
+            if (endTrialTicks == 0L)
+            {
+                controller0 = GameObject.Find("Controller (left)");
+                controller1 = GameObject.Find("Controller (right)");
+                testObjectParent = GameObject.Find("TestObj");
+
+                controller0Info = new ControllerInfo(controller0);
+                controller1Info = new ControllerInfo(controller1);
+
+                DetermineLeftRightControllers();
+                selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
+                recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
+
+                if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+                {
+                    Debug.Log("timer stopped " + currentState.Desc);
+                    endTrialTicks = System.DateTime.Now.Ticks;
+                    float selectedArea = CalculateSelectedArea();
+                    recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
+                    currentState.Deactivate();
+                    LeaveTrialScene();
+                }
+            }
+        }
+	}
+
+    private void OnSceneLoaded(Scene current, LoadSceneMode mode){
+        SceneManager.SetActiveScene(current);
+
         if (stateIndex == 1)
         {
             Debug.Log("Init Yea-Big");
@@ -104,58 +152,16 @@ public class RunExperiment : MonoBehaviour {
         {
             Debug.Log("Init Raycast");
             currentState = new RayCastSelectionState(controller0Info, controller1Info, selectionData);
-        } else
+        }
+        else
         {
             currentState = recorder.GetSelectionState();
 
         }
-
-        selectionEvent = "";
-
         recorder.SetTrialID(sceneIndex, currentState);
         startTrialTicks = System.DateTime.Now.Ticks;
-    }
 
-
-    // Update is called once per frame
-    void Update () {
-        //if (controller0.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None || controller1.GetComponent<SteamVR_TrackedObject>().index == SteamVR_TrackedObject.EIndex.None)
-        //{
-        //    return;
-        //}
-
-        if (!setupControllers)
-        {
-            Init();
-        }
-
-        if (endTrialTicks == 0L)
-        {
-            controller0 = GameObject.Find("Controller (left)");
-            controller1 = GameObject.Find("Controller (right)");
-            testObjectParent = GameObject.Find("TestObj");
-
-            controller0Info = new ControllerInfo(controller0);
-            controller1Info = new ControllerInfo(controller1);
-
-            DetermineLeftRightControllers();
-            selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
-            recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
-
-            if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
-            {
-                Debug.Log("timer stopped " + currentState.Desc);
-                endTrialTicks = System.DateTime.Now.Ticks;
-                float selectedArea = CalculateSelectedArea();
-                recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
-                currentState.Deactivate();
-                LeaveTrialScene();
-            }
-        }
-	}
-
-    private void OnSceneLoaded(Scene current, LoadSceneMode mode){
-        SceneManager.SetActiveScene(current);
+        sceneIsLoaded = true;
     }
 
     private float CalculateSelectedArea(){
@@ -172,7 +178,7 @@ public class RunExperiment : MonoBehaviour {
         {
             float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
             float selectionArea = TriangleArea(selection.GetTriangles(1), selection.vertices);
-            return goalArea - selectionArea;
+            return selectionArea - goalArea;
         }
         else
         {
@@ -204,7 +210,7 @@ public class RunExperiment : MonoBehaviour {
 
     void LeaveTrialScene()
     {
-
+        SceneManager.sceneLoaded -= OnSceneLoaded;
         //SceneManager.LoadScene(0); // Transition Scene
         SceneManager.UnloadSceneAsync(sceneIndex);
         //SceneManager.LoadScene(0, LoadSceneMode.Single);

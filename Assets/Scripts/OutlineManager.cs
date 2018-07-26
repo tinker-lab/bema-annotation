@@ -27,11 +27,13 @@ public class OutlinePoint
 public class OutlineManager {
 
     private static int outlineObjectCount;
+    private static int copiedObjectCount;
     public static Dictionary<string, List<GameObject>> preSelectionOutlines;
 
     public OutlineManager()
     {
         outlineObjectCount = 0;
+        copiedObjectCount = 0;
         preSelectionOutlines = new Dictionary<string, List<GameObject>>();
     }
 
@@ -493,10 +495,10 @@ public class OutlineManager {
         mesh.SetUVs(0, uvs);
         copy.GetComponent<MeshFilter>().mesh = mesh;
         copy.tag = "highlightmesh"; // tag this object as a highlight
-        //copy.name = "highlight" + outlineObjectCount;
-        copy.name = original.name;
+        copy.name = "copied highlight" + copiedObjectCount;
+        //copy.name = original.name;
         copy.layer = LayerMask.NameToLayer("Ignore Raycast");
-        //outlineObjectCount++;
+        copiedObjectCount++;
 
         return copy;
     }

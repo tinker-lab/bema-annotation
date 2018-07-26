@@ -42,10 +42,12 @@ public class TransitionSceneScript : MonoBehaviour {
             sceneIndices.Add(i);
         }
 
+        ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
+
         recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count);
 
-        nextSceneIndex = recorder.trialID + 1;
-        Debug.Log("next scene index: " + nextSceneIndex.ToString());
+        nextSceneIndex = 0;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
+        Debug.Log("next scene index: " + sceneIndices[nextSceneIndex].ToString());
 
         SceneManager.sceneUnloaded += OnSceneUnloaded;
 
@@ -109,28 +111,46 @@ public class TransitionSceneScript : MonoBehaviour {
                 }
                 ExperimentController.AddComponent<RunExperiment>();
                
-                RunExperiment.SceneIndex = nextSceneIndex;
+                RunExperiment.SceneIndex = sceneIndices[nextSceneIndex];
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
 
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;
 
-                Debug.Log("Loading scene " + nextSceneIndex.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
+                Debug.Log("Loading scene " + sceneIndices[nextSceneIndex].ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
             }
         }
         
+    }
+
+    /* implementation of fisher-yates shuffle algorithm from 
+    //  https://stackoverflow.com/questions/5383498/shuffle-rearrange-randomly-a-liststring 
+    //  https://stackoverflow.com/revisions/1262619/1
+    */
+    private void ShuffleScenes()
+    {
+        System.Random rnd = new System.Random();  
+        int n = sceneIndices.Count;  
+        while (n > 1) 
+        {  
+            n--;  
+            int k = rnd.Next(0,n);  
+            int value = sceneIndices[k];  
+            sceneIndices[k] = sceneIndices[n];  
+            sceneIndices[n] = value;  
+        }          
     }
 
     //listen for sceneUnload at nextSceneIndex. then increment nextSceneIndex and set timerStarted = false;
     private void OnSceneUnloaded(Scene current)
     {
         nextSceneIndex++;
+        recorder.WriteToFile();
         timerStarted = false;
 
         if(nextSceneIndex >= sceneIndices.Count)
         {
-            recorder.WriteToFile();
             Debug.Break();
         }
     }
