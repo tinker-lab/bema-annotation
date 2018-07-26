@@ -20,6 +20,7 @@ public class TransitionSceneScript : MonoBehaviour {
     bool interfaceChosen = false;
     bool timerStarted = false;
     int selectionIndex;
+    bool zeroDominant = true;
 
     GameObject ExperimentController;
 
@@ -29,6 +30,10 @@ public class TransitionSceneScript : MonoBehaviour {
         Debug.Log("Intialize the Transition State - controllers are working!!");
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
+
+        controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                    //turn off 0 controller
+        controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; //defaults controller 0 to be rendered as a hand
+
         ExperimentController = new GameObject();
 
         ExperimentController.name = "ExperimentController";
@@ -65,6 +70,27 @@ public class TransitionSceneScript : MonoBehaviour {
         if (firstUpdate)
         {
             Init();
+        }
+
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            zeroDominant = !zeroDominant;
+            if (zeroDominant)
+            {
+                controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                    //turn off 0 controller
+                controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //turn on 0 hand
+
+                controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;   //turn off 1 hand
+                controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                     //turn on 1 controller
+            }
+            else
+            {
+                controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                    //turn on 0 controller
+                controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //turn off 0 hand
+
+                controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;   //turn on 1 hand
+                controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                     //turn off 1 controller
+            }
         }
 
 
@@ -104,6 +130,17 @@ public class TransitionSceneScript : MonoBehaviour {
                 Debug.Log("HIT BUTTON");
                 timerStarted = true;
 
+                if (zeroDominant)
+                {
+                    controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                    //turn on 0 controller
+                    controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //turn off 0 hand
+                }
+                else
+                {
+                    controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;   //turn off 1 hand
+                    controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                     //turn on 1 controller
+                }
+
                 
                 if(!(ExperimentController.GetComponent<RunExperiment>() == null))
                 {
@@ -115,6 +152,7 @@ public class TransitionSceneScript : MonoBehaviour {
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
                 RunExperiment.Transition = this;
+                RunExperiment.ZeroDominant = zeroDominant;
 
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;

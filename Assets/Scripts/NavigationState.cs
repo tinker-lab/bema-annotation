@@ -176,11 +176,11 @@ public class NavigationState : InteractionState {
         {
             // Debug.Log("Switching to handselectionstate");
 
-            //controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
-            //controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
+            controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
+            controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
 
-            //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
-            //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
+            controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
+            controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
             foreach (List<GameObject> activeHighlightList in OutlineManager.preSelectionOutlines.Values)
             {

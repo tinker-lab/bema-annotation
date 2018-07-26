@@ -31,6 +31,7 @@ public class RunExperiment : MonoBehaviour {
     bool sceneIsLoaded;
 
     private static int sceneIndex;
+    private static bool zeroDominant;
 
     public static RecordData Recorder
     {
@@ -54,6 +55,12 @@ public class RunExperiment : MonoBehaviour {
     {
         get { return transition; }
         set { transition = value; }
+    }
+
+    public static bool ZeroDominant
+    {
+        get { return zeroDominant; }
+        set { zeroDominant = value; }
     }
 
     // Use this for initialization
@@ -156,12 +163,12 @@ public class RunExperiment : MonoBehaviour {
         else if (stateIndex == 2)
         {
             Debug.Log("Init Volume Cube");
-            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData, true); //resizing the cube is kinda difficult. still drawing outlines.
+            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData, true); 
         }
         else if (stateIndex == 3)
         {
             Debug.Log("Init SliceNSwipe");
-            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData, true); // is it still drawing outlines?? should we use gazeSelection in the experiment or just automatically collide w object?
+            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData, true, zeroDominant); // zeroDominant is a boolean that refers to whether controller0 is in the participant's dominant hand in TransitionScene.
         }
         else if (stateIndex == 4)
         {

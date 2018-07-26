@@ -15,6 +15,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private const bool debug = false;
     private const float motionThreshold = 0.04f;
     bool isExperiment;
+    bool swapControllers;
 
     private static int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     //private ControllerInfo controller0;
@@ -99,7 +100,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
-    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false)
+    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false, bool zeroDominant = true)
     {
 
         //Debug.Log("Constructing Slice State");
@@ -109,6 +110,7 @@ public class SliceNSwipeSelectionState : InteractionState
         ControllerInfo controller1 = controller1Info;
 
         isExperiment = experiment;
+        swapControllers = !zeroDominant;
 
         camera = GameObject.Find("Camera (eye)"); //.transform.GetChild(0).gameObject;
         laser = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
@@ -150,12 +152,21 @@ public class SliceNSwipeSelectionState : InteractionState
 
     private void DetermineDominantController(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
-        controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //deactivate controller rendering
         controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; //enable hand rendering
+        controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;
+
         //Debug.Log("Set Dominant Hand");
-        mainController = controller0Info;
-        altController = controller1Info;
-        GameObject hand = GameObject.Find("Hand");
+        if (!swapControllers)
+        {
+            mainController = controller0Info;
+            altController = controller1Info;
+        }
+        else
+        {
+            mainController = controller1Info;
+            altController = controller0Info;
+        }
+        //GameObject hand = GameObject.Find("Hand");
 
         //handTrail.transform.parent = mainController.controller.transform;
         //handTrail.transform.localPosition = new Vector3 (0f, 0f, 0f);
@@ -168,7 +179,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
         //  altController.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //enable rendering of controllers
-        Debug.Log("Remember to Implement DetermineDominantController()");
+        //Debug.Log("Remember to Implement DetermineDominantController()");
     }
 
     /// <summary>

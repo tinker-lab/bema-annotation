@@ -117,6 +117,9 @@ public class VolumeCubeSelectionState : InteractionState
         controller0 = controller0Info;
         controller1 = controller1Info;
 
+        controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);         //render controllers
+        controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);
+
         planeLayer = LayerMask.NameToLayer("PlaneLayer");
 
         //leftPlane = CreateHandPlane(controller0, "handSelectionLeftPlane");
