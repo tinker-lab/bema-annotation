@@ -158,9 +158,9 @@ public class SliceNSwipeSelectionState : InteractionState
         //handTrail.transform.localPosition = new Vector3 (0f, 0f, 0f);
         //Debug.Log(handTrail.transform.position.ToString());
 
-        swordLine.transform.parent = mainController.controller.transform;
-        swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
-        //Quaternion.Inverse(mainController.controller.transform.rotation);
+        //swordLine.transform.parent = mainController.controller.transform;
+        //swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
+        //swordLine.transform.Rotate(new Vector3(90, 0, 0));
         
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
@@ -206,7 +206,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     public void UpdatePlane(Vector3 movement)
     {
-        slicePlane.transform.position = mainController.controller.transform.position;
+        slicePlane.transform.position = mainController.controller.transform.position + -0.01f * mainController.trackedObj.transform.up.normalized;
 
         Vector3 mxf = Vector3.Cross(movement, mainController.controller.transform.forward).normalized;
 
@@ -264,6 +264,9 @@ public class SliceNSwipeSelectionState : InteractionState
         Vector3 currentPos = mainController.trackedObj.transform.position;
         Vector3 currentOrientation = mainController.trackedObj.transform.forward;
 
+        swordLine.transform.position = currentPos + 0.4f * currentOrientation.normalized + -0.01f * mainController.trackedObj.transform.up.normalized;//new Vector3(0f, -0.01f, 0.4f); ;
+        swordLine.transform.rotation = mainController.trackedObj.transform.rotation;
+        swordLine.transform.Rotate(new Vector3(90, 0, 0));
 
         if (lastPos == new Vector3(0, 0, 0))
         {
@@ -836,7 +839,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 if (sliced0Indices.ContainsKey(item.name))
                 {
                     mesh.subMeshCount = 3;
-
+                    //materials = new Material[3];
                     mesh.SetTriangles(sliced0Indices[item.name], 0);
                     mesh.SetTriangles(sliced1Indices[item.name], 1);
                     mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 2);
@@ -845,8 +848,8 @@ public class SliceNSwipeSelectionState : InteractionState
                     materials[0] = Resources.Load("Blue Material") as Material;
                     materials[1] = Resources.Load("Green Material") as Material;
 
-                    materials[0] = DetermineBaseMaterial(materials[0]);
-                    materials[1] = DetermineBaseMaterial(materials[1]);                     //added to make things transparent in experiment!
+                    //materials[0] = DetermineBaseMaterial(materials[0]);
+                    //materials[1] = DetermineBaseMaterial(materials[1]);                     //added to make things transparent in experiment!
 
                     Material baseMaterial = originalMaterial[item.name];
                     //if (lastSeenObj != null && lastSeenObj.name == item.name)
@@ -865,6 +868,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     if (SelectionData.ObjectsWithSelections.Contains(item.name))
                     {
                         mesh.subMeshCount = 2;
+                        materials = new Material[2];
                        // Debug.Log("Remove slice with selections");
                         mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 1);
                         mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
@@ -877,16 +881,17 @@ public class SliceNSwipeSelectionState : InteractionState
                         }
                         else
                         {
-                            materials[0] = DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
+                            materials[0] = baseMaterial;    //DetermineBaseMaterial(baseMaterial);         // Sets unselected as transparent
                             //Debug.Log("removed a slice, should be transparent");
                         }
-                        materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+                        materials[1] = Resources.Load("Selected Transparent") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
                         //Debug.Log("num submeshes: " + mesh.subMeshCount.ToString() + " mats len: " + materials.Length.ToString() + " first mat: " + materials[0].name + ", " + materials[1].name);
                     }
                     else
                     {
                         //Debug.Log("Remove first slice");
                         mesh.subMeshCount = 1;
+                        materials = new Material[1];
                         mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 0);
 
                         if(lastSeenObj != null && lastSeenObj.name == item.name)
@@ -905,6 +910,7 @@ public class SliceNSwipeSelectionState : InteractionState
             else if (mode == "swipe")
             {
                 mesh.subMeshCount = 2;
+                materials = new Material[2];
                 //Debug.Log(item.name + " s: " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " u: " + SelectionData.PreviousUnselectedIndices[item.name].Count().ToString());
                 mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 1);
                 mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
@@ -924,8 +930,8 @@ public class SliceNSwipeSelectionState : InteractionState
                 //}
                 
                 materials[0] = baseMaterial;
-                materials[1] = Resources.Load("Selected") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
-                materials[1] = DetermineBaseMaterial(materials[1]);                             //added for experiment transparency
+                materials[1] = Resources.Load("Selected Transparent") as Material;      // May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+               // materials[1] = DetermineBaseMaterial(materials[1]);                             //added for experiment transparency
             }
 
             if (mesh.subMeshCount > 1)

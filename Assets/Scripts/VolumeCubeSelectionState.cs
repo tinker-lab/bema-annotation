@@ -518,7 +518,7 @@ public class VolumeCubeSelectionState : InteractionState
                 Material[] origMaterials = currObjMesh.GetComponent<Renderer>().materials;
                 for (int i = 0; i < origMaterials.Length; i++)
                 {
-                    if (origMaterials[i].name == "Selected (Instance)")
+                    if (origMaterials[i].name == "Selected Transparent (Instance)")
                     {
                         submeshNum = i;
                     }
@@ -985,7 +985,7 @@ public class VolumeCubeSelectionState : InteractionState
             Material[] materials = new Material[2];
             Material baseMaterial = item.GetComponent<Renderer>().materials[0];
             materials[0] = baseMaterial;                            //DetermineBaseMaterial(baseMaterial); //Sets unselected as transparent                                                  Don't change baseMaterial during experiments -> already transparent!!
-            materials[1] = Resources.Load("Selected") as Material;  //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
+            materials[1] = Resources.Load("Selected Transparent") as Material;  //May need to specify which submesh we get this from? -> THIS SETS SELECTION AS ORANGE STUFF
             item.GetComponent<Renderer>().materials = materials;
         }
 

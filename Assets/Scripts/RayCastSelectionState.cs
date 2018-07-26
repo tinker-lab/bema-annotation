@@ -901,9 +901,18 @@ public class MeshData
         }
 
         //Update neighboring triangles.
-        meshTriangles[orig.adjTriId0].UpdateAdjTri(triId, tri0Id);
-        meshTriangles[orig.adjTriId1].UpdateAdjTri(triId, tri1Id);
-        meshTriangles[orig.adjTriId2].UpdateAdjTri(triId, tri2Id);
+        if (orig.adjTriId0 != -1)
+        {
+            meshTriangles[orig.adjTriId0].UpdateAdjTri(triId, tri0Id);
+        }
+        if (orig.adjTriId1 != -1)
+        {
+            meshTriangles[orig.adjTriId1].UpdateAdjTri(triId, tri1Id);
+        }
+        if (orig.adjTriId2 != -1)
+        {
+            meshTriangles[orig.adjTriId2].UpdateAdjTri(triId, tri2Id);
+        }
 
         // Set new tri ids
         center0.triangleId = tri0Id;
@@ -1112,11 +1121,25 @@ public class MeshData
         tri3.edge2IsCut = meshTriangles[NeighborId(neighbor, CW(neighborSplitIndex))].IsSharedEdgeCut(neighborId);
 
         // update neighbor tris
-
-        meshTriangles[NeighborId(splitTri, CW(splitVertIndexInTri))].UpdateAdjTri(triId, tri0Id);
-        meshTriangles[NeighborId(splitTri, CCW(splitVertIndexInTri))].UpdateAdjTri(triId, tri1Id);
-        meshTriangles[NeighborId(neighbor, CW(neighborSplitIndex))].UpdateAdjTri(neighborId, tri3Id);
-        meshTriangles[NeighborId(neighbor, CCW(neighborSplitIndex))].UpdateAdjTri(neighborId, tri2Id);
+        int adj = NeighborId(splitTri, CW(splitVertIndexInTri));
+        if (adj != -1)
+        {
+            meshTriangles[adj].UpdateAdjTri(triId, tri0Id);
+        }
+        adj = NeighborId(splitTri, CCW(splitVertIndexInTri));
+        if (adj != -1) {
+            meshTriangles[adj].UpdateAdjTri(triId, tri1Id);
+        }
+        adj = NeighborId(neighbor, CW(neighborSplitIndex));
+        if (adj != -1)
+        {
+            meshTriangles[adj].UpdateAdjTri(neighborId, tri3Id);
+        }
+        adj = NeighborId(neighbor, CCW(neighborSplitIndex));
+        if (adj != -1)
+        {
+            meshTriangles[adj].UpdateAdjTri(neighborId, tri2Id);
+        }
 
         meshTriangles.Add(tri0);
         meshTriangles.Add(tri1);
@@ -1204,7 +1227,7 @@ public class MeshData
             {
                 foreach(int j in samePoints)
                 {
-                    verts[j].samePositions = samePoints;
+                    meshVertices[j].samePositions = new List<int>(samePoints);
                 }
                 samePoints = new List<int>();
                 curPoint = verts[i].point;

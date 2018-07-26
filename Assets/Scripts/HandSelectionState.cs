@@ -333,7 +333,7 @@ public class HandSelectionState : InteractionState
                 if (collidingObj.tag != "highlightmesh")
                 {
                     Material baseMaterial = collidingObj.GetComponent<Renderer>().materials[0];
-                    //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                           this is making the material opaque in experiment. it should Not
+                    //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                          // this is making the material opaque in experiment. it should Not
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
                     foreach (GameObject outlineMesh in preSelectionOutlines[collidingObj.name])
@@ -348,7 +348,7 @@ public class HandSelectionState : InteractionState
             //stop rendering current outline whenever hands removed from collidingObj
             if (preSelectionOutlines.ContainsKey(collidingObj.name)) //|| rightOutlines.ContainsKey(collidingObj.name))
             {
-                for (int i = preSelectionOutlines.Count - 1; i >= 0; i--)
+                for (int i = preSelectionOutlines[collidingObj.name].Count - 1; i >= 0; i--)
                 {
                     UnityEngine.Object.Destroy(preSelectionOutlines[collidingObj.name][i]);
                     preSelectionOutlines[collidingObj.name].RemoveAt(i);
@@ -387,6 +387,7 @@ public class HandSelectionState : InteractionState
             else
             {
                 GameObject.Find("ExperimentController").GetComponent<RunExperiment>().ChangeState(stateToReturnTo);
+                return "";
             }
         }
 

@@ -92,7 +92,7 @@ public class RecordData : MonoBehaviour {
     string _data;
     public int trialID;
     int participantID;
-    int trialCount;
+    //int trialCount;
     InteractionState lastState;
 
     public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, int numTrials) {
@@ -100,7 +100,7 @@ public class RecordData : MonoBehaviour {
         participantID = 0;
         controller1 = leftHand;
         controller2 = rightHand;
-        trialCount = numTrials;
+        //trialCount = numTrials;
 
         _FileLocation = "Assets/WrittenData";
         _FileName = participantID.ToString() + "test.xml";
