@@ -25,6 +25,7 @@ public class VolumeCubeSelectionState : InteractionState
     private HashSet<GameObject> cubeColliders;      //All the objects the cube is colliding with
     VolumeCubeCollision centerComponent;            //Script on cube that we get the list of colliders from
     private Boolean changeCube;
+    private bool isExperiment;
 
     SelectionData selectionData;
      
@@ -109,7 +110,7 @@ public class VolumeCubeSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData) 
+    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false) 
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "VolumeCubeSelectionState";
@@ -144,6 +145,7 @@ public class VolumeCubeSelectionState : InteractionState
         collidingMeshes = new List<GameObject>();      
         cubeColliders = new HashSet<GameObject>();
         changeCube = false;
+        isExperiment = experiment;
 
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
 
@@ -538,139 +540,146 @@ public class VolumeCubeSelectionState : InteractionState
 
                 SelectionData.ObjectsWithSelections.Add(currObjMesh.name);
 
-                if (!SelectionData.SavedOutlines.ContainsKey(currObjMesh.name))
+                if (!isExperiment)
                 {
-                    SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-                }
 
-                //process outlines and associate them with the original objects
-                //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
-                //savedOutlines[currObjMesh.name].Add(savedRightOutline);
-
-                List<GameObject> removeOutlines = new List<GameObject>();
-                //if this object has outlines associated with it, process the outlines
-                foreach (GameObject outline in SelectionData.SavedOutlines[currObjMesh.name])
-                {
-                    if (!SelectionData.PreviousNumVertices.ContainsKey(outline.name))
+                    if (!SelectionData.SavedOutlines.ContainsKey(currObjMesh.name))
                     {
-                        SelectionData.PreviousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
-
-                        //TODO: should this be nested?
-                        //if (!previousSelectedIndices.ContainsKey(outline.name))
-                        //{
-                        SelectionData.PreviousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                        SelectionData.PreviousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
-
-                        UVList = new List<Vector2>();
-                        outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                        SelectionData.PreviousUVs.Add(outline.name, UVList.ToArray<Vector2>());
-                            //previous two lines used to be currObjMesh instead of outline, trying to see if this is correct
-                        //}
+                        SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
                     }
 
-                    ProcessMesh(outline, new List<int>());
-                   
-                    if (outline.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
+                    //process outlines and associate them with the original objects
+                    //savedOutlines[currObjMesh.name].Add(savedLeftOutline);
+                    //savedOutlines[currObjMesh.name].Add(savedRightOutline);
+
+                    List<GameObject> removeOutlines = new List<GameObject>();
+                    //if this object has outlines associated with it, process the outlines
+                    foreach (GameObject outline in SelectionData.SavedOutlines[currObjMesh.name])
                     {
-                        removeOutlines.Add(outline);
-                    }
-
-                    SelectionData.PreviousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                    SelectionData.ObjectsWithSelections.Add(outline.name);
-                    SelectionData.PreviousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
-                    SelectionData.PreviousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
-
-                    UVList = new List<Vector2>();
-                    outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                    SelectionData.PreviousUVs[outline.name] = UVList.ToArray<Vector2>();
-                }
-
-                for (int i = 0; i < removeOutlines.Count(); i++)
-                {
-                  //  Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
-                    SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[i]);
-                    UnityEngine.Object.Destroy(removeOutlines[i]);
-
-                }
-
-                removeOutlines.Clear();
-                //Debug.Break();
-
-                //List<GameObject> backOutlines = new List<GameObject>();
-                for (int i = 0; i < 6; i++)
-                {
-                    List<List<OutlinePoint>> sortedPoints = OutlineManager.OrderPoints(SavedOutlinePoints[currObjMesh.name][i]);
-                    //    Debug.Log("Just called order points");
-
-                    for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
-                    {
-                        GameObject outlineObject = OutlineManager.MakeNewOutline(currObjMesh);
-                        //outlineObject.name = outlineObject.name + outlineObjectCount;
-                        //outlineObjectCount++;
-                        Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
-
-                        SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
-
-                        if (!SelectionData.PreviousNumVertices.ContainsKey(outlineObject.name))
+                        if (!SelectionData.PreviousNumVertices.ContainsKey(outline.name))
                         {
-                            SelectionData.PreviousNumVertices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
+                            SelectionData.PreviousNumVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
 
                             //TODO: should this be nested?
                             //if (!previousSelectedIndices.ContainsKey(outline.name))
                             //{
-                            SelectionData.PreviousSelectedIndices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0));
-                            SelectionData.PreviousVertices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.vertices);
+                            SelectionData.PreviousSelectedIndices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                            SelectionData.PreviousVertices.Add(outline.name, outline.GetComponent<MeshFilter>().mesh.vertices);
 
                             UVList = new List<Vector2>();
-                            outlineObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                            SelectionData.PreviousUVs.Add(outlineObject.name, UVList.ToArray<Vector2>());
+                            outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                            SelectionData.PreviousUVs.Add(outline.name, UVList.ToArray<Vector2>());
                             //previous two lines used to be currObjMesh instead of outline, trying to see if this is correct
                             //}
                         }
 
-                        List<int> ignorePassList = new List<int>();
-                        /*
-                        for (int j = i; j >= 0; j--)
-                        {
-                            ignorePassList.Add(j);
-                        }
-                        */
-                        ignorePassList.Add(i);
-                        //if (i == 0)
-                        //{
-                        //    backOutlines.Add(OutlineManager.CopyObject(outlineObject));
-                        //}
-                        ProcessMesh(outlineObject, ignorePassList);
+                        ProcessMesh(outline, new List<int>());
 
-                        if (outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
+                        if (outline.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
                         {
-                           // Debug.Break();
-                           //if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
-                           // {
-                           //     Debug.Log("selection went to 0 for back plane" + outlineObject.name);
-                           //     //Debug.Break();
-                           // }
-                            removeOutlines.Add(outlineObject);
+                            removeOutlines.Add(outline);
                         }
 
-                        SelectionData.PreviousSelectedIndices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0);
-                        SelectionData.ObjectsWithSelections.Add(outlineObject.name);
-                        SelectionData.PreviousNumVertices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.vertices.Length;
-                        SelectionData.PreviousVertices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.vertices;
+                        SelectionData.PreviousSelectedIndices[outline.name] = outline.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                        SelectionData.ObjectsWithSelections.Add(outline.name);
+                        SelectionData.PreviousNumVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices.Length;
+                        SelectionData.PreviousVertices[outline.name] = outline.GetComponent<MeshFilter>().mesh.vertices;
 
                         UVList = new List<Vector2>();
-                        outlineObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
-                        SelectionData.PreviousUVs[outlineObject.name] = UVList.ToArray<Vector2>();
+                        outline.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                        SelectionData.PreviousUVs[outline.name] = UVList.ToArray<Vector2>();
                     }
-                }
 
-                for (int j = 0; j < removeOutlines.Count(); j++)
-                {
-                    Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
-                    SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
-                    UnityEngine.Object.Destroy(removeOutlines[j]);
+                    for (int i = 0; i < removeOutlines.Count(); i++)
+                    {
+                        //  Debug.Log("Removing before creating new outlines: " + removeOutlines[i].name);
+                        SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[i]);
+                        UnityEngine.Object.Destroy(removeOutlines[i]);
+
+                    }
+
+                    removeOutlines.Clear();
+                    //Debug.Break();
+                
+                    //List<GameObject> backOutlines = new List<GameObject>();
+                    for (int i = 0; i < 6; i++)
+                    {
+                        List<List<OutlinePoint>> sortedPoints = OutlineManager.OrderPoints(SavedOutlinePoints[currObjMesh.name][i]);
+                        //    Debug.Log("Just called order points");
+
+                        for (int chainIndex = 0; chainIndex < sortedPoints.Count; chainIndex++)
+                        {
+                            GameObject outlineObject = OutlineManager.MakeNewOutline(currObjMesh);
+                            //outlineObject.name = outlineObject.name + outlineObjectCount;
+                            //outlineObjectCount++;
+                          
+                            Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
+
+                            SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
+                           
+
+                            if (!SelectionData.PreviousNumVertices.ContainsKey(outlineObject.name))
+                            {
+                                SelectionData.PreviousNumVertices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.vertices.Length);  //Maybe want to store vertices as array instead?
+
+                                //TODO: should this be nested?
+                                //if (!previousSelectedIndices.ContainsKey(outline.name))
+                                //{
+                                SelectionData.PreviousSelectedIndices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0));
+                                SelectionData.PreviousVertices.Add(outlineObject.name, outlineObject.GetComponent<MeshFilter>().mesh.vertices);
+
+                                UVList = new List<Vector2>();
+                                outlineObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                                SelectionData.PreviousUVs.Add(outlineObject.name, UVList.ToArray<Vector2>());
+                                //previous two lines used to be currObjMesh instead of outline, trying to see if this is correct
+                                //}
+                            }
+
+                            List<int> ignorePassList = new List<int>();
+                            /*
+                            for (int j = i; j >= 0; j--)
+                            {
+                                ignorePassList.Add(j);
+                            }
+                            */
+                            ignorePassList.Add(i);
+                            //if (i == 0)
+                            //{
+                            //    backOutlines.Add(OutlineManager.CopyObject(outlineObject));
+                            //}
+                            ProcessMesh(outlineObject, ignorePassList);
+
+                            if (outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Count() == 0)
+                            {
+                               // Debug.Break();
+                               //if(i == 0 )//&& SelectionData.PreviousSelectedIndices[outlineObject.name].Count() > 0)
+                               // {
+                               //     Debug.Log("selection went to 0 for back plane" + outlineObject.name);
+                               //     //Debug.Break();
+                               // }
+                                removeOutlines.Add(outlineObject);
+                            }
+
+                            SelectionData.PreviousSelectedIndices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.GetIndices(0);
+                            SelectionData.ObjectsWithSelections.Add(outlineObject.name);
+                            SelectionData.PreviousNumVertices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.vertices.Length;
+                            SelectionData.PreviousVertices[outlineObject.name] = outlineObject.GetComponent<MeshFilter>().mesh.vertices;
+
+                            UVList = new List<Vector2>();
+                            outlineObject.GetComponent<MeshFilter>().mesh.GetUVs(0, UVList);
+                            SelectionData.PreviousUVs[outlineObject.name] = UVList.ToArray<Vector2>();
+                        }
+                    
+                    }
+
+                    for (int j = 0; j < removeOutlines.Count(); j++)
+                    {
+                        Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
+                        SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
+                        UnityEngine.Object.Destroy(removeOutlines[j]);
+                    }
+                        //Debug.Break();
                 }
-                //Debug.Break();
             }
         }
         return eventString;

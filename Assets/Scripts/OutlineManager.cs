@@ -82,8 +82,8 @@ public class OutlineManager {
                 Debug.Log("chainIndex oob");
             }
 
-            //Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], currentPlane.transform.up, preSelectionOutlines[item.name][meshId]);        this line commented out for experiment
-            //preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh = outlineMesh;                                                              this line commentde out for experiment
+            Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], currentPlane.transform.up, preSelectionOutlines[item.name][meshId]);        //this line commented out for experiment
+            preSelectionOutlines[item.name][meshId].GetComponent<MeshFilter>().sharedMesh = outlineMesh;                                                              //this line commentde out for experiment
 
             //preSelectionOutlines[item.name][meshId].transform.position = Vector3.zero;//item.transform.position;
             //preSelectionOutlines[item.name][meshId].transform.localScale = Vector3.one;//item.transform.localScale;

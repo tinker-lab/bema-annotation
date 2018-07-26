@@ -7,7 +7,7 @@ using UnityEngine.Assertions;
 public class HandSelectionState : InteractionState
 {
     private const bool debug = false;
-    private bool allowNavigation;
+    private bool notExperiment;
     private int selectionCount;
 
     InteractionState stateToReturnTo;
@@ -152,10 +152,12 @@ public class HandSelectionState : InteractionState
         unselectedIndices = new List<int>();
         unsortedOutlinePts = new List<OutlinePoint>();
         this.stateToReturnTo = stateToReturnTo;
-        allowNavigation = !experiment;
+        notExperiment = !experiment;
         selectionCount = 0;
-
-        preSelectionOutlines = OutlineManager.preSelectionOutlines;
+        if (notExperiment)
+        {
+            preSelectionOutlines = OutlineManager.preSelectionOutlines;
+        }
         //rightOutlines = new Dictionary<string, List<GameObject>>();
 
         //leftOutlineMesh = new Mesh();
@@ -269,7 +271,10 @@ public class HandSelectionState : InteractionState
             Mesh mesh = collidingObj.GetComponent<MeshFilter>().mesh;
             mesh.subMeshCount = 2;
             indices = SelectionData.PreviousSelectedIndices[collidingObj.name]; // the indices of last selection
-            preSelectionOutlines = OutlineManager.preSelectionOutlines;
+            if (notExperiment)
+            {
+                preSelectionOutlines = OutlineManager.preSelectionOutlines;
+            }
 
             if (SelectionData.ObjectsWithSelections.Contains(collidingObj.name))    // If it previously had a piece selected (CLICKED) - revert to that selection
             {
@@ -302,27 +307,30 @@ public class HandSelectionState : InteractionState
                 mesh.RecalculateBounds();
                 mesh.RecalculateNormals();
 
-                // Go through each outline associated with the current mesh object and reset it
-                foreach (GameObject outline in SelectionData.SavedOutlines[collidingObj.name])
+                if (notExperiment)
                 {
-                    //Debug.Log("Removing outlines for " + collidingObj.name);
+                    // Go through each outline associated with the current mesh object and reset it
+                    foreach (GameObject outline in SelectionData.SavedOutlines[collidingObj.name])
+                    {
+                        //Debug.Log("Removing outlines for " + collidingObj.name);
 
-                    Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
-                    //Vector3[] outlineVerts = outlineMesh.vertices;
-                    Vector3[] outlineVerts = SelectionData.PreviousVertices[outline.name];
-                    List<Vector2> outlineUVs = new List<Vector2>();
-                    outlineUVs = SelectionData.PreviousUVs[outline.name].ToList();
-                    //outlineMesh.GetUVs(0, outlineUVs);
+                        Mesh outlineMesh = outline.GetComponent<MeshFilter>().mesh;
+                        //Vector3[] outlineVerts = outlineMesh.vertices;
+                        Vector3[] outlineVerts = SelectionData.PreviousVertices[outline.name];
+                        List<Vector2> outlineUVs = new List<Vector2>();
+                        outlineUVs = SelectionData.PreviousUVs[outline.name].ToList();
+                        //outlineMesh.GetUVs(0, outlineUVs);
 
-                    outlineMesh.Clear();
-                    outlineMesh.vertices = outlineVerts;
-                    outlineMesh.SetUVs(0, outlineUVs);
+                        outlineMesh.Clear();
+                        outlineMesh.vertices = outlineVerts;
+                        outlineMesh.SetUVs(0, outlineUVs);
 
-                    outlineMesh.subMeshCount = 1;
-                    outlineMesh.SetTriangles(SelectionData.PreviousSelectedIndices[outline.name], 0);
+                        outlineMesh.subMeshCount = 1;
+                        outlineMesh.SetTriangles(SelectionData.PreviousSelectedIndices[outline.name], 0);
 
-                    outlineMesh.RecalculateBounds();
-                    outlineMesh.RecalculateNormals();
+                        outlineMesh.RecalculateBounds();
+                        outlineMesh.RecalculateNormals();
+                    }
                 }
             }
             else // NOT CLICKED 
@@ -336,22 +344,28 @@ public class HandSelectionState : InteractionState
                     //baseMaterial.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);                          // this is making the material opaque in experiment. it should Not
                     collidingObj.GetComponent<Renderer>().materials[1] = baseMaterial;
 
-                    foreach (GameObject outlineMesh in preSelectionOutlines[collidingObj.name])
+                    if (notExperiment)
                     {
-                        outlineMesh.GetComponent<MeshFilter>().mesh.Clear();
+                        foreach (GameObject outlineMesh in preSelectionOutlines[collidingObj.name])
+                        {
+                            outlineMesh.GetComponent<MeshFilter>().mesh.Clear();
+                        }
+                        //leftOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
+                        //rightOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
                     }
-                    //leftOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
-                    //rightOutlines[collidingObj.name].GetComponent<MeshFilter>().mesh.Clear();
                 }
             }
 
-            //stop rendering current outline whenever hands removed from collidingObj
-            if (preSelectionOutlines.ContainsKey(collidingObj.name)) //|| rightOutlines.ContainsKey(collidingObj.name))
+            if (notExperiment)
             {
-                for (int i = preSelectionOutlines[collidingObj.name].Count - 1; i >= 0; i--)
+                //stop rendering current outline whenever hands removed from collidingObj
+                if (preSelectionOutlines.ContainsKey(collidingObj.name)) //|| rightOutlines.ContainsKey(collidingObj.name))
                 {
-                    UnityEngine.Object.Destroy(preSelectionOutlines[collidingObj.name][i]);
-                    preSelectionOutlines[collidingObj.name].RemoveAt(i);
+                    for (int i = preSelectionOutlines[collidingObj.name].Count - 1; i >= 0; i--)
+                    {
+                        UnityEngine.Object.Destroy(preSelectionOutlines[collidingObj.name][i]);
+                        preSelectionOutlines[collidingObj.name].RemoveAt(i);
+                    }
                 }
             }
         }
@@ -379,7 +393,7 @@ public class HandSelectionState : InteractionState
         }
         else // If not colliding with anything, change states
         {
-            if (allowNavigation)
+            if (notExperiment)
             {
                 GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
                 return "";
@@ -472,19 +486,22 @@ public class HandSelectionState : InteractionState
 
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
 
-                if (!SelectionData.SavedOutlines.ContainsKey(currObjMesh.name))
+                if (notExperiment)
                 {
-                    SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
-                }
+                    if (!SelectionData.SavedOutlines.ContainsKey(currObjMesh.name))
+                    {
+                        SelectionData.SavedOutlines.Add(currObjMesh.name, new HashSet<GameObject>());
+                    }
 
-                foreach (GameObject outline in OutlineManager.preSelectionOutlines[currObjMesh.name])
-                {
-                    GameObject savedOutline = OutlineManager.CopyObject(outline); // save the highlights at the point of selection
+                    foreach (GameObject outline in OutlineManager.preSelectionOutlines[currObjMesh.name])
+                    {
+                        GameObject savedOutline = OutlineManager.CopyObject(outline); // save the highlights at the point of selection
 
-                    //GameObject savedOutline = OutlineManager.MakeNewOutline(outline);
-                    SelectionData.SavedOutlines[currObjMesh.name].Add(savedOutline);
+                        //GameObject savedOutline = OutlineManager.MakeNewOutline(outline);
+                        SelectionData.SavedOutlines[currObjMesh.name].Add(savedOutline);
+                    }
+                    //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
                 }
-                //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
 
 
                 ////test, the immediate if statement
@@ -783,7 +800,7 @@ public class HandSelectionState : InteractionState
                 }
             }
 
-            if (item.gameObject.tag != "highlightmesh")
+            if (item.gameObject.tag != "highlightmesh" && notExperiment)
             {
                 OutlineManager.ResizePreselectedPoints(item, unsortedOutlinePts, planePass, currentPlane);
             }

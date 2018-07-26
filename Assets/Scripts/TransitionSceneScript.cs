@@ -114,6 +114,7 @@ public class TransitionSceneScript : MonoBehaviour {
                 RunExperiment.SceneIndex = sceneIndices[nextSceneIndex];
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
+                RunExperiment.Transition = this;
 
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;
@@ -153,5 +154,11 @@ public class TransitionSceneScript : MonoBehaviour {
         {
             Debug.Break();
         }
+    }
+
+    public void ReloadScene()
+    {
+        nextSceneIndex--;
+        UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
     }
 }

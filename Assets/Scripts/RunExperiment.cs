@@ -13,6 +13,8 @@ public class RunExperiment : MonoBehaviour {
     private static RecordData recorder;
 
     private static int stateIndex;
+
+    private static TransitionSceneScript transition;
     private InteractionState currentState;
 
     private ControllerInfo controller0Info;
@@ -48,10 +50,16 @@ public class RunExperiment : MonoBehaviour {
         set { stateIndex = value; }
     }
 
+    public static TransitionSceneScript Transition
+    {
+        get { return transition; }
+        set { transition = value; }
+    }
+
     // Use this for initialization
     public RunExperiment() {
 
-        Debug.Log("starting RunExperiment");
+        //Debug.Log("starting RunExperiment");
         //sceneIndex = sceneInd;
         //stateIndex = interactionState;
 
@@ -85,7 +93,7 @@ public class RunExperiment : MonoBehaviour {
         controller1Info = new ControllerInfo(controller1);
 
         setupControllers = true;
-        Debug.Log("set up controllers in trial scene. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
+        Debug.Log("Starting ExperimentController. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
 
         selectionEvent = "";
     }
@@ -117,7 +125,14 @@ public class RunExperiment : MonoBehaviour {
                 selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
                 recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
 
-                if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
+                if (Input.GetKeyUp(KeyCode.L))      //reLoad scene
+                {
+                    transition.ReloadScene();
+                    currentState.Deactivate();
+                    LeaveTrialScene();
+                }
+
+                if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))     //finish trial
                 {
                     Debug.Log("timer stopped " + currentState.Desc);
                     endTrialTicks = System.DateTime.Now.Ticks;
@@ -141,12 +156,12 @@ public class RunExperiment : MonoBehaviour {
         else if (stateIndex == 2)
         {
             Debug.Log("Init Volume Cube");
-            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData); //resizing the cube is kinda difficult. still drawing outlines.
+            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData, true); //resizing the cube is kinda difficult. still drawing outlines.
         }
         else if (stateIndex == 3)
         {
             Debug.Log("Init SliceNSwipe");
-            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData); // is it still drawing outlines?? should we use gazeSelection in the experiment or just automatically collide w object?
+            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData, true); // is it still drawing outlines?? should we use gazeSelection in the experiment or just automatically collide w object?
         }
         else if (stateIndex == 4)
         {
