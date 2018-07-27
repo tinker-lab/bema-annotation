@@ -1,4 +1,23 @@
-﻿using System.Collections.Generic;
+﻿/**
+ * This class cuts the mesh of an object into two submeshes in order to show a shape on the object.
+ * The mesh is cut using planes in unity.
+ * There is a scene in unity called ObjectMaker that contains an ObjectMaker.
+ * Add objects to the scene as you like. In order to specify which object to cut the mesh of, add that object into the ObjectMaker base object.
+ * There should also be a planeParent group, and this should be put into the category Plane Parent of the ObjectMaker.
+ * Within the folder of planeParent, add as many planes as desired.
+ * Position these planes on the object that will be cut.
+ * Make sure the rotation faces into the object. Planes are one sided, and the side that can be seen in unity is the side where the cut is made.
+ * Press play on unity, and a new object and mesh will be made.
+ * In order to save this new object, you must rename the object and the mesh before hitting play again, or else it will be replaced with the new cut.
+ * You can make circles as well by hitting the key 'c' after pressing play once.
+ * Additional planes will show up to do this, so delete the other planes for the circle to be successful.
+ * The center of the circle will be the origin on the unity scene, so make sure the object is placed at the origin.
+ * To change the size of number of planes of the circle, go to the MakeCircle class and edit radius, and numSections relatively.
+ * The new submesh will be pink because there is no material attached to it.
+ * You can add a material to the submesh on the object itself.
+ */
+
+using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Text;
