@@ -187,15 +187,25 @@ public class RunExperiment : MonoBehaviour {
     }
 
     private float CalculateSelectedArea(){
-        // in every trial scene (except Basic Scene) there is a parent gameObject TestObj 
-            // where child 0 is the preselected goal object the participant cannot collide with and 
-            // child 1 is the transparent object of the same shape that the participant selects.
-        if(!SceneManager.GetActiveScene().name.Equals("Basic Scene")){
-            SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(0));
-        }
+        // in every trial scene (except the real world example) there is a parent gameObject TestObj 
+        // where child 0 is the preselected goal object the participant cannot collide with and 
+        // child 1 is the transparent object of the same shape that the participant selects.
+        // The real world example has only one child of the test object that matters - the one participants interact with
+        //  there is another object representing just the part that should be selected that can be measured as a goal area.
 
-        Mesh goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
-        Mesh selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
+        Mesh goal;
+        Mesh selection;
+        if (SceneManager.GetActiveScene().name.Equals("Real World"))
+        {
+            goal = GameObject.Find("13na-selection").GetComponent<MeshFilter>().mesh;           //this object is in the real world scene, adjusted to the same scale as the full object, hidden under the floor with the MeshRenderer turned off
+            selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
+        }
+        else
+        {
+            goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
+            selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
+        }
+        
         if (selection.subMeshCount > 0)
         {
             float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
@@ -204,7 +214,7 @@ public class RunExperiment : MonoBehaviour {
         }
         else
         {
-            Debug.Log("Participant cube not selected");
+            Debug.Log("Interaction shape not selected");
         }
         // Both children should have submeshes 0 unselected and 1 selected.
         // Iterate over the triangles in submesh 1 to calculate their total areas.
@@ -232,6 +242,11 @@ public class RunExperiment : MonoBehaviour {
 
     void LeaveTrialScene()
     {
+        if (!SceneManager.GetActiveScene().name.Equals("Basic Scene"))
+        {
+            SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(0));      // set's the active scene to the basic scene since the testObj scene is going to be unloaded.
+        }
+
         SceneManager.sceneLoaded -= OnSceneLoaded;
         //SceneManager.LoadScene(0); // Transition Scene
         SceneManager.UnloadSceneAsync(sceneIndex);
