@@ -37,16 +37,16 @@ public class TransitionSceneScript : MonoBehaviour {
         //UnityEngine.Object.DontDestroyOnLoad(controller1.gameObject);
 
         sceneIndices = new List<int>();
-        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        for (int i = 1; i < SceneManager.sceneCountInBuildSettings; i++)
         {
             sceneIndices.Add(i);
         }
 
         ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
 
-        recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count);
+        recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count+1);
 
-        nextSceneIndex = 0;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
+        nextSceneIndex = 1;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
         Debug.Log("next scene index: " + sceneIndices[nextSceneIndex].ToString());
 
         SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -114,6 +114,7 @@ public class TransitionSceneScript : MonoBehaviour {
                 RunExperiment.SceneIndex = sceneIndices[nextSceneIndex];
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
+                RunExperiment.Transition = this;
 
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;
@@ -153,5 +154,11 @@ public class TransitionSceneScript : MonoBehaviour {
         {
             Debug.Break();
         }
+    }
+
+    public void ReloadScene()
+    {
+        nextSceneIndex--;
+        UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
     }
 }

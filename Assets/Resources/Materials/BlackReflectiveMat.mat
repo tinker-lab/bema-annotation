@@ -40,9 +40,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Outline: 0.0025
-    - _Shininess: 0.078125
+    - _Shininess: 0.464
     m_Colors:
     - _Color: {r: 0.13235295, g: 0.13235295, b: 0.13235295, a: 1}
     - _OutlineColor: {r: 0, g: 0.47058824, b: 0.7058824, a: 1}
     - _ReflectColor: {r: 1, g: 1, b: 1, a: 0.5}
-    - _SpecColor: {r: 0.8308824, g: 0.8308824, b: 0.8308824, a: 1}
+    - _SpecColor: {r: 0.6007476, g: 0.79908615, b: 0.9433962, a: 1}
