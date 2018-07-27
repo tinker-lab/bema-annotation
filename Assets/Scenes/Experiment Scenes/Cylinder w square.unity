@@ -180,7 +180,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4935118511728770, guid: 13cea7d1323334bdfa6239c4efa67e64, type: 2}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4935118511728770, guid: 13cea7d1323334bdfa6239c4efa67e64, type: 2}
       propertyPath: m_LocalEulerAnglesHint.y
