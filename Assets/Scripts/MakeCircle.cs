@@ -10,8 +10,8 @@ public class MakeCircle : MonoBehaviour
 
     public MakeCircle()
     {
-        numSections = 36;
-        radius = 0.75f;
+        numSections = 36; //How many planes, the bigger the circle the more planes are needed
+        radius = 0.75f; //size of the circle
         centerPoint = new Vector3(0, 0, 0);
     }
 
