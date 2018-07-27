@@ -361,19 +361,19 @@ public class RayCastSelectionState : InteractionState
             // tri. If an adjacent has not been visited and does not share a cut edge, 
             // then mark it visited and enqueue it
             MeshTriangle neighbor0 = curMeshData.Neighbor(tri, 0);
-            if (!tri.edge0IsCut && !neighbor0.selected)
+            if (neighbor0 != null && !tri.edge0IsCut && !neighbor0.selected)
             {
                 neighbor0.selected = true;
                 queue.Enqueue(tri.adjTriId0);
             }
             MeshTriangle neighbor1 = curMeshData.Neighbor(tri, 1);
-            if (!tri.edge1IsCut && !neighbor1.selected)
+            if (neighbor1 != null && !tri.edge1IsCut && !neighbor1.selected)
             {
                 neighbor1.selected = true;
                 queue.Enqueue(tri.adjTriId1);
             }
             MeshTriangle neighbor2 = curMeshData.Neighbor(tri, 2);
-            if (!tri.edge2IsCut && !neighbor2.selected)
+            if (neighbor2 != null && !tri.edge2IsCut && !neighbor2.selected)
             {
                 neighbor2.selected = true;
                 queue.Enqueue(tri.adjTriId2);
@@ -927,6 +927,8 @@ public class MeshData
         meshVertices[orig.vId1].triangleId = tri0Id;
         meshVertices[orig.vId2].triangleId = tri1Id;
 
+        /*
+
         foreach(int vId in meshVertices[orig.vId0].samePositions)
         {
             if (vId != orig.vId0)
@@ -948,6 +950,7 @@ public class MeshData
                 meshVertices[vId].samePositions.Add(origV2.index);
             }
         }
+        */
 
         meshVertices[orig.vId0].samePositions.Add(origV0.index);
         meshVertices[orig.vId1].samePositions.Add(origV1.index);
@@ -1066,6 +1069,7 @@ public class MeshData
         Vertex(neighbor, CCW(CCW(neighborSplitIndex))).triangleId = tri2Id;
 
         // update split vertices same points
+        /*
         foreach (int vId in splitVertex.samePositions)
         {
             if (vId != vertexId)
@@ -1080,6 +1084,7 @@ public class MeshData
                 meshVertices[vId].samePositions.Add(newNeighborSplitVertex.index);
             }
         }
+        */
 
         splitVertex.samePositions.Add(newSplitVertex.index);
         neighborSplitVertex.samePositions.Add(newNeighborSplitVertex.index);
@@ -1227,7 +1232,7 @@ public class MeshData
             {
                 foreach(int j in samePoints)
                 {
-                    meshVertices[j].samePositions = new List<int>(samePoints);
+                    meshVertices[j].samePositions = samePoints;
                 }
                 samePoints = new List<int>();
                 curPoint = verts[i].point;
@@ -1348,15 +1353,28 @@ public class MeshData
         switch (i)
         {
             case 0:
-                return meshTriangles[tri.adjTriId0];
+                if (tri.adjTriId0 != -1)
+                {
+                    return meshTriangles[tri.adjTriId0];
+                }
+                break;
             case 1:
-                return meshTriangles[tri.adjTriId1];
+                if (tri.adjTriId1 != -1)
+                {
+                    return meshTriangles[tri.adjTriId1];
+                }
+                break;
             case 2:
-                return meshTriangles[tri.adjTriId2];
+                if (tri.adjTriId2 != -1)
+                {
+                    return meshTriangles[tri.adjTriId2];
+                }
+                break;
             default:
                 Debug.Log("ERROR in Neighbor call. Tried to access with i not within range [0-2]");
                 return null;
         }
+        return null;
     }
 
     public int NeighborId(MeshTriangle tri, int i)
@@ -1382,15 +1400,15 @@ public class MeshData
 
     public int FaceIndex(MeshTriangle test, MeshTriangle tri)
     {
-        if (test.Equals(meshTriangles[tri.adjTriId0]))
+        if (tri.adjTriId0 != -1 && test.Equals(meshTriangles[tri.adjTriId0]))
         {
             return 0;
         }
-        else if (test.Equals(meshTriangles[tri.adjTriId1]))
+        else if (tri.adjTriId1 != -1 && test.Equals(meshTriangles[tri.adjTriId1]))
         {
             return 1;
         }
-        else if (test.Equals(meshTriangles[tri.adjTriId2]))
+        else if(tri.adjTriId2 != -1 && test.Equals(meshTriangles[tri.adjTriId2]))
         {
             return 2;
         }

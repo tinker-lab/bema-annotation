@@ -45,14 +45,15 @@ public class TransitionSceneScript : MonoBehaviour {
         for (int i = 1; i < SceneManager.sceneCountInBuildSettings; i++)
         {
             sceneIndices.Add(i);
+            Debug.Log(i);
         }
 
         ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
 
         recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count+1);
 
-        nextSceneIndex = 1;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
-        Debug.Log("next scene index: " + sceneIndices[nextSceneIndex].ToString());
+        nextSceneIndex = 0;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
+        //Debug.Log("next scene index: " + sceneIndices[nextSceneIndex].ToString());
 
         SceneManager.sceneUnloaded += OnSceneUnloaded;
 
@@ -170,15 +171,18 @@ public class TransitionSceneScript : MonoBehaviour {
     private void ShuffleScenes()
     {
         System.Random rnd = new System.Random();  
-        int n = sceneIndices.Count;  
+        int n = sceneIndices.Count;
+        string sceneOrder = "";
         while (n > 1) 
         {  
             n--;  
             int k = rnd.Next(0,n);  
             int value = sceneIndices[k];  
             sceneIndices[k] = sceneIndices[n];  
-            sceneIndices[n] = value;  
-        }          
+            sceneIndices[n] = value;
+            sceneOrder += value.ToString() + " ";
+        }
+        Debug.Log(sceneOrder);
     }
 
     //listen for sceneUnload at nextSceneIndex. then increment nextSceneIndex and set timerStarted = false;

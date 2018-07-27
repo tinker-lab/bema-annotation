@@ -152,7 +152,10 @@ public class SliceNSwipeSelectionState : InteractionState
 
     private void DetermineDominantController(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
-        controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; //enable hand rendering
+
+        controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                 // disable controller rendering
+        controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);
+        controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; // enable hand rendering
         controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;
 
         //Debug.Log("Set Dominant Hand");
