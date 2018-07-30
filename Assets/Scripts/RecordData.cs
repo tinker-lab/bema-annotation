@@ -19,6 +19,7 @@ public class ExperimentData{
     // Is there a way to put all interfaces for one participant also in one file w/out more nested dictionaries / classes? 
     // Would that even be useful, or is it better to keep them separate?
 
+    [XmlElement]
     public Trial[] trials;
     int participant;
 
@@ -45,9 +46,9 @@ public class Trial
     public float selectedPercentage;
     public float timeElapsed;                   // total duration spent on a trial
     public List<long> timeStamps;               // recorded time at every HandleEvents call. its System.DateTime.Now.Ticks, which measures the instant of time in segments of 100 nanoseconds.
-    public List<Transform> controller1Locations;  // left controller location at every HandleEvents call
-    public List<Transform> controller2Locations;  // right controller location at every HandleEvents call
-    public List<Transform> hmdLocations;
+    public List<ObjectPose> controller1Locations;  // left controller location at every HandleEvents call
+    public List<ObjectPose> controller2Locations;  // right controller location at every HandleEvents call
+    public List<ObjectPose> hmdLocations;
     public List<EventRecord> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
                                                 // and value is the name of the event
     public Trial(){
@@ -57,10 +58,26 @@ public class Trial
         selectedPercentage = 0f;
         timeElapsed = 0f;
         timeStamps = new List<long>();
-        controller1Locations = new List<Transform>();
-        controller2Locations = new List<Transform>();
-        hmdLocations = new List<Transform>();
+        controller1Locations = new List<ObjectPose>();
+        controller2Locations = new List<ObjectPose>();
+        hmdLocations = new List<ObjectPose>();
         events = new List<EventRecord>();
+    }
+}
+
+public class ObjectPose
+{
+    public Vector3 position;
+    public Quaternion rotation;
+
+    public ObjectPose() {
+        position = new Vector3();
+        rotation = new Quaternion();
+    }
+
+    public void Add(Vector3 pos, Quaternion rot){
+        position = pos;
+        rotation = rot;
     }
 }
 
@@ -75,8 +92,7 @@ public class EventRecord
         eventName = "";
     }
 
-    public EventRecord(long time, string name)
-    {
+    public void Add(long time, string name){
         timeStamp = time;
         eventName = name;
     }
@@ -155,12 +171,22 @@ public class RecordData : MonoBehaviour {
 
     public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, Transform hmd, long timeStamp, string eventStr = "") {
         myData.trials[trialID].timeStamps.Add(timeStamp);
-        myData.trials[trialID].controller1Locations.Add(controller1.trackedObj.transform);
-        myData.trials[trialID].controller2Locations.Add(controller2.trackedObj.transform);
-        myData.trials[trialID].hmdLocations.Add(hmd);
+        ObjectPose pose1 = new ObjectPose();
+        pose1.Add(controller1.trackedObj.transform.position, controller1.trackedObj.transform.rotation);
+        myData.trials[trialID].controller1Locations.Add(pose1);
+
+        ObjectPose pose2 = new ObjectPose();
+        pose2.Add(controller2.trackedObj.transform.position, controller2.trackedObj.transform.rotation);
+        myData.trials[trialID].controller2Locations.Add(pose2);
+
+        ObjectPose headPose = new ObjectPose();
+        headPose.Add(hmd.position, hmd.rotation);
+        myData.trials[trialID].hmdLocations.Add(headPose);
 
         if (!eventStr.Equals("")) {
-            myData.trials[trialID].events.Add(new EventRecord(timeStamp, eventStr));
+            EventRecord eventRecord = new EventRecord();
+            eventRecord.Add(timeStamp, eventStr);
+            myData.trials[trialID].events.Add(eventRecord);
         }
     }
 
