@@ -223,11 +223,12 @@ public class TransitionSceneScript : MonoBehaviour {
     //listen for sceneUnload at nextSceneIndex. then increment nextSceneIndex and set timerStarted = false;
     private void OnSceneUnloaded(Scene current)
     {
-        nextSceneIndex++;
+        
         recorder.WriteToFile();
         timerStarted = false;
         GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
-
+        Debug.Log("scene " + sceneIndices[nextSceneIndex] + " accuracy: " + recorder.GetSelectedPercentage().ToString());
+        nextSceneIndex++;
         if (nextSceneIndex >= sceneIndices.Count)
         {
             Debug.Break();
@@ -242,7 +243,7 @@ public class TransitionSceneScript : MonoBehaviour {
         GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
         trainingSceneCount++;
 
-        float percent = recorder.GetSelectedPercentage();
+        double percent = recorder.GetSelectedPercentage();
         Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
         if (percent < 50f && percent > -50f && trainingSceneCount > 4)
         {
