@@ -710,10 +710,16 @@ public class SliceNSwipeSelectionState : InteractionState
             triangleIndex1 = indices[3 * i + 1];
             triangleIndex2 = indices[3 * i + 2];
 
-            bool side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], slicePlane);
-            bool side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], slicePlane);
-            bool side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], slicePlane);
+            bool side0 = false;
+            bool side1 = false;
+            bool side2 = false;
 
+            if (BoundingCircleIntersectsWithPlane(slicePlane, transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], transformedVertices[triangleIndex2]))
+            {
+                side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], slicePlane);
+                side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], slicePlane);
+                side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], slicePlane);
+            }
 
             if (!side0 && !side1 && !side2) // 0 intersections
             {
@@ -850,6 +856,41 @@ public class SliceNSwipeSelectionState : InteractionState
         }
 
         unsortedOutlinePoints.Clear();
+
+    }
+
+    private bool BoundingCircleIntersectsWithPlane(GameObject plane, Vector3 a, Vector3 b, Vector3 c)
+    {
+        float dotABAB = Vector3.Dot(b - a, b - a);
+        float dotABAC = Vector3.Dot(b - a, c - a);
+        float dotACAC = Vector3.Dot(c - a, c - a);
+        float d = 2.0f * (dotABAB * dotACAC - dotABAC * dotABAC);
+        Vector3 referencePt = a;
+        Vector3 center = new Vector3(0, 0, 0);
+
+        float s = (dotABAB * dotACAC - dotACAC * dotABAC) / d;
+        float t = (dotACAC * dotABAB - dotABAB * dotABAC) / d;
+        // s controls height over AC, t over AB, (1-s-t) over BC
+        if (s <= 0.0f)
+        {
+            center = 0.5f * (a + c);
+        }
+        else if (t <= 0.0f)
+        {
+            center = 0.5f * (a + b);
+        }
+        else if (s + t >= 1.0f)
+        {
+            center = 0.5f * (b + c);
+            referencePt = b;
+        }
+        else center = a + s * (b - a) + t * (c - a);
+
+        float sqrRadius = Vector3.Dot(center - referencePt, center - referencePt);
+
+        Vector3 closestPointInPlaneToCenter = center + (plane.transform.up * (-(Vector3.Dot(plane.transform.up, center) - Vector3.Dot(plane.transform.up, plane.transform.position))));
+
+        return (center - closestPointInPlaneToCenter).sqrMagnitude < sqrRadius;
 
     }
 
