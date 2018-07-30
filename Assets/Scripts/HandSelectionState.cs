@@ -915,7 +915,7 @@ public class HandSelectionState : InteractionState
             referencePt = b;
         }
         else center = a + s * (b - a) + t * (c - a);
-        
+
         float sqrRadius = Vector3.Dot(center - referencePt, center - referencePt);
 
         Vector3 closestPointInPlaneToCenter = center + (plane.transform.up * (-(Vector3.Dot(plane.transform.up, center) - Vector3.Dot(plane.transform.up, plane.transform.position))));
