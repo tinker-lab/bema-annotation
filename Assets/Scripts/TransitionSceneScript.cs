@@ -184,7 +184,7 @@ public class TransitionSceneScript : MonoBehaviour {
                     loadScene = sceneIndices[nextSceneIndex];
                 }
 
-                RunExperiment.SceneIndex = loadScene;
+                RunExperiment.SceneIndex = loadScene;       ///somehow save nextSceneIndex to recorder
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
                 RunExperiment.Transition = this;
