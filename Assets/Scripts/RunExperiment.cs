@@ -158,7 +158,6 @@ public class RunExperiment : MonoBehaviour {
                         selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
                     }
 
-
                     float selectedAreaDiff = CalculateSelectedArea(goal, selection);
                     float selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goal);
                     recorder.EndTrial(selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
@@ -228,12 +227,12 @@ public class RunExperiment : MonoBehaviour {
         return 0f;
     }
 
-    private float CalculateAreaPercentage (float selectedArea, Mesh goal)
+    private float CalculateAreaPercentage (float areaDiff, Mesh goal)
     {
-        if (selectedArea > 0f)
+        if (areaDiff > 0f)
         {
             float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
-            float percentArea = selectedArea / goalArea * 100f;
+            float percentArea = areaDiff/ goalArea * 100f;
             return percentArea;
         }
         else

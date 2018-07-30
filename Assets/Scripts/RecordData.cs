@@ -127,7 +127,7 @@ public class RecordData : MonoBehaviour {
         //trialCount = numTrials;
 
         _FileLocation = "Assets/WrittenData";
-        _FileName = participantID.ToString() + "test.xml";
+        _FileName = participantID.ToString() + System.DateTime.Now.ToString("yyyyMMddHHmmssfff") + "test.xml";
 
         myData = new ExperimentData(numTrials, participantID);
     }
@@ -170,7 +170,12 @@ public class RecordData : MonoBehaviour {
         myData.trials[trialID].selectedPercentage = percent;
         myData.trials[trialID].timeElapsed = duration;
 
-        trialID++;
+        //trialID++;
+    }
+
+    public float GetSelectedPercentage()
+    {
+        return myData.trials[trialID].selectedPercentage;
     }
 
     public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, Transform hmd, long timeStamp, string eventStr = "") {
