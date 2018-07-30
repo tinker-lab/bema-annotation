@@ -169,6 +169,10 @@ public class SliceNSwipeSelectionState : InteractionState
             mainController = controller1Info;
             altController = controller0Info;
         }
+
+        if(isExperiment){
+            collidingMesh = GameObject.Find("TestObj").transform.GetChild(1).gameObject;
+        }
         //GameObject hand = GameObject.Find("Hand");
 
         //handTrail.transform.parent = mainController.controller.transform;
@@ -299,9 +303,11 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (sliceStatus == 0)
         {
-            GazeSelection();
+            if (!isExperiment)
+            {
+                GazeSelection();
+            }
         }
-
         if (collidingMesh != null)
         { 
             if (sliceStatus == 0 && Vector3.Distance(lastPos, currentPos) <= motionThreshold) //small movement and you haven't made a slice
@@ -533,7 +539,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
                 }
 
-                if (lastSeenObj == null || collidingMesh.name != lastSeenObj.name)
+            if (!isExperiment && (lastSeenObj == null || collidingMesh.name != lastSeenObj.name))
                 {
                     collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);
                     if (lastSeenObj != null && originalMaterial.ContainsKey(lastSeenObj.name))
@@ -922,7 +928,14 @@ public class SliceNSwipeSelectionState : InteractionState
                     Material baseMaterial = originalMaterial[item.name];
                     //if (lastSeenObj != null && lastSeenObj.name == item.name)
                     //{
-                    materials[2] = GazeSelectedMaterial(baseMaterial);
+                    if (!isExperiment)
+                    {
+                        materials[2] = GazeSelectedMaterial(baseMaterial);
+                    } 
+                    else
+                    {
+                        materials[2] = baseMaterial;
+                    }
                     //Debug.Log("after a slice has been made, should still be purple");
                     //}
                     //else
