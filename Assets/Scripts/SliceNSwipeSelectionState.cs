@@ -958,7 +958,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         mesh.SetTriangles(SelectionData.PreviousUnselectedIndices[item.name], 0);
 
                         Material baseMaterial = originalMaterial[item.name];
-                        if (lastSeenObj != null && lastSeenObj.name == item.name)
+                        if (!isExperiment && lastSeenObj != null && lastSeenObj.name == item.name)
                         {
                             materials[0] = GazeSelectedMaterial(baseMaterial);
                             //Debug.Log("removed a slice, should be purple");
@@ -979,7 +979,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 0);
 
                         Material baseMaterial = originalMaterial[item.name];
-                        if(lastSeenObj != null && lastSeenObj.name == item.name)
+                        if(!isExperiment &&  lastSeenObj != null && lastSeenObj.name == item.name)
                         {
                             materials[0] = GazeSelectedMaterial(baseMaterial);
                             Debug.Log("removed first slice, should be purple");
@@ -1004,7 +1004,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 Material baseMaterial = originalMaterial[item.name];
                
 
-                if (lastSeenObj != null && item.name == lastSeenObj.name)
+                if (!isExperiment && lastSeenObj != null && item.name == lastSeenObj.name)
                 {
                     baseMaterial = GazeSelectedMaterial(baseMaterial);
                     //Debug.Log("have swiped, should be purple");
