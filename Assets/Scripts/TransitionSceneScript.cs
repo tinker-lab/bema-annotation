@@ -12,6 +12,7 @@ public class TransitionSceneScript : MonoBehaviour {
     private ControllerInfo controller1Info;
 
     List<int> sceneIndices;
+    List<int> trainingIndices;
     int nextSceneIndex;
 
     RecordData recorder;
@@ -21,9 +22,10 @@ public class TransitionSceneScript : MonoBehaviour {
     bool timerStarted = false;
     int selectionIndex;
     bool zeroDominant = true;
+    bool training = true;
+    int trainingSceneCount = 0;
 
     GameObject ExperimentController;
-
 
     // Use this for initialization
     void Init () {
@@ -42,20 +44,36 @@ public class TransitionSceneScript : MonoBehaviour {
         //UnityEngine.Object.DontDestroyOnLoad(controller1.gameObject);
 
         sceneIndices = new List<int>();
-        for (int i = 1; i < SceneManager.sceneCountInBuildSettings; i++)
+        trainingIndices = new List<int>();
+        int sceneCount = SceneManager.sceneCountInBuildSettings;
+        for (int i = 1; i <sceneCount; i++)
         {
             sceneIndices.Add(i);
             Debug.Log(i);
         }
 
+        for (int i = sceneCount-1; i > sceneCount-3; i--)
+        {
+            sceneIndices.Remove(i);
+            trainingIndices.Add(i);
+            Debug.Log("training: " + i);
+        }
+
         ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
 
-        recorder = new RecordData(controller0Info, controller1Info, sceneIndices.Count+1);
+        recorder = new RecordData(controller0Info, controller1Info, sceneCount);
 
         nextSceneIndex = 0;         // nextSceneIndex increments linearly every time a scene is unloaded. Used to access the shuffled sceneIndices list.
         //Debug.Log("next scene index: " + sceneIndices[nextSceneIndex].ToString());
 
-        SceneManager.sceneUnloaded += OnSceneUnloaded;
+        if(!training)
+        {
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+        }
+        else
+        {
+            SceneManager.sceneUnloaded += OnSceneUnloadedTraining;
+        }
 
         firstUpdate = false;
     }
@@ -92,6 +110,11 @@ public class TransitionSceneScript : MonoBehaviour {
                 controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;   //turn on 1 hand
                 controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                     //turn off 1 controller
             }
+        }
+
+        if (Input.GetKeyUp(KeyCode.T))
+        {
+            training = !training;
         }
 
 
@@ -148,9 +171,20 @@ public class TransitionSceneScript : MonoBehaviour {
                 {
                     UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
                 }
+
                 ExperimentController.AddComponent<RunExperiment>();
-               
-                RunExperiment.SceneIndex = sceneIndices[nextSceneIndex];
+
+                int loadScene;
+                if (training)
+                {
+                    loadScene = trainingIndices[nextSceneIndex];
+                }
+                else
+                {
+                    loadScene = sceneIndices[nextSceneIndex];
+                }
+
+                RunExperiment.SceneIndex = loadScene;
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
                 RunExperiment.Transition = this;
@@ -159,7 +193,7 @@ public class TransitionSceneScript : MonoBehaviour {
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;
 
-                Debug.Log("Loading scene " + sceneIndices[nextSceneIndex].ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
+                Debug.Log("Loading scene " + loadScene.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
             }
         }
         
@@ -197,6 +231,30 @@ public class TransitionSceneScript : MonoBehaviour {
         if (nextSceneIndex >= sceneIndices.Count)
         {
             Debug.Break();
+        }
+    }
+
+    private void OnSceneUnloadedTraining(Scene current)
+    {
+        nextSceneIndex++;
+        recorder.WriteToFile();
+        timerStarted = false;
+        GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
+        trainingSceneCount++;
+
+        float percent = recorder.GetSelectedPercentage();
+        Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
+        if (percent < 50f && percent > -50f && trainingSceneCount > 4)
+        {
+            training = false;
+            SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            return;
+        }
+
+        if (nextSceneIndex >= trainingIndices.Count)
+        {
+            nextSceneIndex = 0;
         }
     }
 

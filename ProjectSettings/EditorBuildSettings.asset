@@ -41,4 +41,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Experiment Scenes/Real World.unity
     guid: 060e33683fb8d38419c62993240e1624
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Training Cylinder.unity
+    guid: 947a9981116eb614fb9d8ed525b57491
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Training Cube.unity
+    guid: 6b3e0082cddcd44b78f5a28f0f9ea9da
   m_configObjects: {}
