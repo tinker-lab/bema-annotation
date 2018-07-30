@@ -40,14 +40,18 @@ public class ExperimentData{
 
 public class Trial
 {
+    [XmlElement("id")]
     public int trialID;
     public string selectionInterface;
     public float selectedDifference;                  // total selected area -> updated to hold final amount
     public float selectedPercentage;
     public float timeElapsed;                   // total duration spent on a trial
     public List<long> timeStamps;               // recorded time at every HandleEvents call. its System.DateTime.Now.Ticks, which measures the instant of time in segments of 100 nanoseconds.
+    [XmlArray("controller1"), XmlArrayItem("location")]
     public List<ObjectPose> controller1Locations;  // left controller location at every HandleEvents call
+    [XmlArray("controller2"), XmlArrayItem("location")]
     public List<ObjectPose> controller2Locations;  // right controller location at every HandleEvents call
+    [XmlArray("hmd"), XmlArrayItem("location")]
     public List<ObjectPose> hmdLocations;
     public List<EventRecord> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
                                                 // and value is the name of the event
@@ -83,8 +87,8 @@ public class ObjectPose
 
 public class EventRecord
 {
-    long timeStamp;
-    string eventName;
+    public long timeStamp;
+    public string eventName;
 
     public EventRecord()
     {
