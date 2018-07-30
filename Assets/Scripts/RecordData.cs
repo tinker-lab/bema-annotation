@@ -43,8 +43,8 @@ public class Trial
     [XmlElement("id")]
     public int trialID;
     public string selectionInterface;
-    public float selectedDifference;                  // total selected area -> updated to hold final amount
-    public float selectedPercentage;
+    public double selectedDifference;                  // total selected area -> updated to hold final amount
+    public double selectedPercentage;
     public float timeElapsed;                   // total duration spent on a trial
     public List<long> timeStamps;               // recorded time at every HandleEvents call. its System.DateTime.Now.Ticks, which measures the instant of time in segments of 100 nanoseconds.
     [XmlArray("controller1"), XmlArrayItem("location")]
@@ -58,8 +58,8 @@ public class Trial
     public Trial(){
         trialID = 0;
         selectionInterface = "";                //should selectionInterface be saved here attached to every trial number or once in experimentData. would it ever be overwritten there?
-        selectedDifference = 0f;
-        selectedPercentage = 0f;
+        selectedDifference = 0;
+        selectedPercentage = 0;
         timeElapsed = 0f;
         timeStamps = new List<long>();
         controller1Locations = new List<ObjectPose>();
@@ -165,7 +165,7 @@ public class RecordData : MonoBehaviour {
         return lastState;
     }
 
-    public void EndTrial(float area, float percent, float duration) {
+    public void EndTrial(double area, double percent, float duration) {
         myData.trials[trialID].selectedDifference = area;
         myData.trials[trialID].selectedPercentage = percent;
         myData.trials[trialID].timeElapsed = duration;
@@ -173,7 +173,7 @@ public class RecordData : MonoBehaviour {
         //trialID++;
     }
 
-    public float GetSelectedPercentage()
+    public double GetSelectedPercentage()
     {
         return myData.trials[trialID].selectedPercentage;
     }

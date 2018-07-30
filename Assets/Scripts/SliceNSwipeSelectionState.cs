@@ -124,7 +124,6 @@ public class SliceNSwipeSelectionState : InteractionState
 
         slicePlane = CreateHandPlane(mainController, "SliceNSwipeHandPlane");
 
-        collidingMesh = null;
         //cubeColliders = new HashSet<GameObject>();
 
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
@@ -148,11 +147,20 @@ public class SliceNSwipeSelectionState : InteractionState
         sliced1Indices = new Dictionary<string, int[]>();
 
         //sliceOutlines = new Dictionary<string, GameObject>();
+
+        if (isExperiment)
+        {
+            collidingMesh = GameObject.Find("TestObj").transform.GetChild(1).gameObject;
+            originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
+        }
+        else
+        {
+            collidingMesh = null;
+        }
     }
 
     private void DetermineDominantController(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
-
         controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                 // disable controller rendering
         controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);
         controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; // enable hand rendering
@@ -169,10 +177,6 @@ public class SliceNSwipeSelectionState : InteractionState
             mainController = controller1Info;
             altController = controller0Info;
         }
-
-        if(isExperiment){
-            collidingMesh = GameObject.Find("TestObj").transform.GetChild(1).gameObject;
-        }
         //GameObject hand = GameObject.Find("Hand");
 
         //handTrail.transform.parent = mainController.controller.transform;
@@ -182,7 +186,7 @@ public class SliceNSwipeSelectionState : InteractionState
         //swordLine.transform.parent = mainController.controller.transform;
         //swordLine.transform.localPosition = new Vector3(0f, -0.01f, 0.4f);
         //swordLine.transform.Rotate(new Vector3(90, 0, 0));
-        
+
 
         //  altController.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false; //disable hand rendering
         //  altController.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //enable rendering of controllers
@@ -526,7 +530,6 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, 1.7f))
         {
-           
                 //Vector3 hitPoint = hit.point;
                 //int hitLayer = hit.collider.gameObject.layer;
                 //ShowLaser(hit, laser, camera.transform.position, hitPoint);
@@ -539,7 +542,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     originalMaterial.Add(collidingMesh.name, collidingMesh.GetComponent<Renderer>().material);
                 }
 
-            if (!isExperiment && (lastSeenObj == null || collidingMesh.name != lastSeenObj.name))
+            if (lastSeenObj == null || collidingMesh.name != lastSeenObj.name)
                 {
                     collidingMesh.GetComponent<Renderer>().material = GazeSelectedMaterial(collidingMesh.GetComponent<Renderer>().material);
                     if (lastSeenObj != null && originalMaterial.ContainsKey(lastSeenObj.name))

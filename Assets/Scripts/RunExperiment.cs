@@ -158,8 +158,8 @@ public class RunExperiment : MonoBehaviour {
                         selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
                     }
 
-                    float selectedAreaDiff = CalculateSelectedArea(goal, selection);
-                    float selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goal);
+                    double selectedAreaDiff = CalculateSelectedArea(goal, selection);
+                    double selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goal);
                     recorder.EndTrial(selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
                     currentState.Deactivate();
                     LeaveTrialScene();
@@ -202,7 +202,7 @@ public class RunExperiment : MonoBehaviour {
         sceneIsLoaded = true;
     }
 
-    private float CalculateSelectedArea(Mesh goal, Mesh selection){
+    private double CalculateSelectedArea(Mesh goal, Mesh selection){
         // in every trial scene (except the real world example) there is a parent gameObject TestObj 
         // where child 0 is the preselected goal object the participant cannot collide with and 
         // child 1 is the transparent object of the same shape that the participant selects.
@@ -213,34 +213,38 @@ public class RunExperiment : MonoBehaviour {
         
         if (selection.subMeshCount > 0)
         {
-            float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
-            float selectionArea = TriangleArea(selection.GetTriangles(1), selection.vertices);
-            return selectionArea - goalArea;
+            double goalArea = (double) TriangleArea(goal.GetTriangles(1), goal.vertices);
+            double selectionArea = (double) TriangleArea(selection.GetTriangles(1), selection.vertices);
+            double area = selectionArea - goalArea;
+            if(area < 0)
+            {
+                Debug.Log("Small selection");
+            }
+            return area;
         }
         else
         {
             Debug.Log("Interaction shape not selected");
+            return 0;
         }
         // Both children should have submeshes 0 unselected and 1 selected.
         // Iterate over the triangles in submesh 1 to calculate their total areas.
         // Return the difference preselection area - participant selection area.
-        return 0f;
     }
 
-    private float CalculateAreaPercentage (float areaDiff, Mesh goal)
+    private double CalculateAreaPercentage (double areaDiff, Mesh goal)
     {
-        if (areaDiff > 0f)
+        if (areaDiff != 0)
         {
-            float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
-            float percentArea = areaDiff/ goalArea * 100f;
+            double goalArea = (double) TriangleArea(goal.GetTriangles(1), goal.vertices);
+            double percentArea = areaDiff / goalArea * 100;
             return percentArea;
         }
         else
         {
             Debug.Log("invalid or null selection at calculateArea");
-            return 0f;
+            return 0;
         }
-        
     }
 
     /* code for area of triangles adapted from http://james-ramsden.com/area-of-a-triangle-in-3d-c-code/ */
@@ -257,6 +261,10 @@ public class RunExperiment : MonoBehaviour {
 
             float s = (sideA + sideB + sideC) / 2;
             area += Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+        }
+        if(area == 0)
+        {
+            Debug.Log("SELECTED AREA IS ZERO");
         }
         return area;
     }
