@@ -142,7 +142,8 @@ public class TransitionSceneScript : MonoBehaviour {
                     controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                     //turn on 1 controller
                 }
 
-                
+                GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = false;             //turn off orb
+
                 if(!(ExperimentController.GetComponent<RunExperiment>() == null))
                 {
                     UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
@@ -191,8 +192,9 @@ public class TransitionSceneScript : MonoBehaviour {
         nextSceneIndex++;
         recorder.WriteToFile();
         timerStarted = false;
+        GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
 
-        if(nextSceneIndex >= sceneIndices.Count)
+        if (nextSceneIndex >= sceneIndices.Count)
         {
             Debug.Break();
         }

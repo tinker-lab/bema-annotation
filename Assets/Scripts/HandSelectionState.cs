@@ -335,7 +335,7 @@ public class HandSelectionState : InteractionState
             }
             else // NOT CLICKED 
             {
-                //Debug.Log("deactivating and not clicked " + collidingObj.name);
+                Debug.Log("deactivating and not clicked " + collidingObj.name);
 
                 // reset object to original state (before interaction)
                 if (collidingObj.tag != "highlightmesh")
@@ -393,6 +393,12 @@ public class HandSelectionState : InteractionState
         }
         else // If not colliding with anything, change states
         {
+            controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); // enable rendering of controllers
+            controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true); //
+
+            controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    // deactivate hand rendering
+            controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;    //
+
             if (notExperiment)
             {
                 GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);

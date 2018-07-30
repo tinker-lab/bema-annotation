@@ -19,6 +19,7 @@ public class RunExperiment : MonoBehaviour {
 
     private ControllerInfo controller0Info;
     private ControllerInfo controller1Info;
+    private GameObject hmd;
 
     private SelectionData selectionData;
     public OutlineManager outlineManager;
@@ -98,6 +99,7 @@ public class RunExperiment : MonoBehaviour {
 
         controller0Info = new ControllerInfo(controller0);
         controller1Info = new ControllerInfo(controller1);
+        hmd = GameObject.Find("Camera (eye)");
 
         setupControllers = true;
         Debug.Log("Starting ExperimentController. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
@@ -130,7 +132,7 @@ public class RunExperiment : MonoBehaviour {
 
                 DetermineLeftRightControllers();
                 selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
-                recorder.UpdateLists(controller0Info, controller1Info, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
+                recorder.UpdateLists(controller0Info, controller1Info, hmd.gameObject.transform, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
 
                 if (Input.GetKeyUp(KeyCode.L))      //reLoad scene
                 {
@@ -143,8 +145,23 @@ public class RunExperiment : MonoBehaviour {
                 {
                     Debug.Log("timer stopped " + currentState.Desc);
                     endTrialTicks = System.DateTime.Now.Ticks;
-                    float selectedArea = CalculateSelectedArea();
-                    recorder.EndTrial(selectedArea, endTrialTicks - startTrialTicks);
+                    Mesh goal;
+                    Mesh selection;
+                    if (SceneManager.GetActiveScene().name.Equals("Real World"))
+                    {
+                        goal = GameObject.Find("13na-selection").GetComponent<MeshFilter>().mesh;           //this object is in the real world scene, adjusted to the same scale as the full object, hidden under the floor with the MeshRenderer turned off
+                        selection = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
+                    }
+                    else
+                    {
+                        goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
+                        selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
+                    }
+
+
+                    float selectedAreaDiff = CalculateSelectedArea(goal, selection);
+                    float selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goal);
+                    recorder.EndTrial(selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
                     currentState.Deactivate();
                     LeaveTrialScene();
                 }
@@ -186,25 +203,14 @@ public class RunExperiment : MonoBehaviour {
         sceneIsLoaded = true;
     }
 
-    private float CalculateSelectedArea(){
+    private float CalculateSelectedArea(Mesh goal, Mesh selection){
         // in every trial scene (except the real world example) there is a parent gameObject TestObj 
         // where child 0 is the preselected goal object the participant cannot collide with and 
         // child 1 is the transparent object of the same shape that the participant selects.
         // The real world example has only one child of the test object that matters - the one participants interact with
         //  there is another object representing just the part that should be selected that can be measured as a goal area.
 
-        Mesh goal;
-        Mesh selection;
-        if (SceneManager.GetActiveScene().name.Equals("Real World"))
-        {
-            goal = GameObject.Find("13na-selection").GetComponent<MeshFilter>().mesh;           //this object is in the real world scene, adjusted to the same scale as the full object, hidden under the floor with the MeshRenderer turned off
-            selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
-        }
-        else
-        {
-            goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
-            selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
-        }
+       
         
         if (selection.subMeshCount > 0)
         {
@@ -220,6 +226,22 @@ public class RunExperiment : MonoBehaviour {
         // Iterate over the triangles in submesh 1 to calculate their total areas.
         // Return the difference preselection area - participant selection area.
         return 0f;
+    }
+
+    private float CalculateAreaPercentage (float selectedArea, Mesh goal)
+    {
+        if (selectedArea > 0f)
+        {
+            float goalArea = TriangleArea(goal.GetTriangles(1), goal.vertices);
+            float percentArea = selectedArea / goalArea * 100f;
+            return percentArea;
+        }
+        else
+        {
+            Debug.Log("invalid or null selection at calculateArea");
+            return 0f;
+        }
+        
     }
 
     /* code for area of triangles adapted from http://james-ramsden.com/area-of-a-triangle-in-3d-c-code/ */
