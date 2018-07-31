@@ -86,6 +86,11 @@ public class NavigationState : InteractionState {
 
     }
 
+    public override bool CanTransition()
+    {
+        return base.CanTransition();
+    }
+
     public void UpdatePlanes()
     {
         try

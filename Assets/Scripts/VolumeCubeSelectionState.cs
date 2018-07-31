@@ -193,6 +193,20 @@ public class VolumeCubeSelectionState : InteractionState
         //previousRotation = Quaternion.identity;
     }
 
+    public override bool CanTransition()
+    {
+        bool allowed;
+        if (collidingMeshes.Count > 0)
+        {
+            allowed = false;
+        }
+        else
+        {
+            allowed = true;
+        }
+        return allowed;
+    }
+
     ///// <summary>
     ///// Sets up the planes that follow each hand/controller
     ///// </summary>
@@ -412,6 +426,7 @@ public class VolumeCubeSelectionState : InteractionState
             //    rightOutlines[collidingObj.name].GetComponent<MeshRenderer>().enabled = false;
             //}
         }
+        collidingMeshes.Clear();
     }
 
     public override void Deactivate()

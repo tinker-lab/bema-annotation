@@ -9,6 +9,7 @@ public class HandSelectionState : InteractionState
     private const bool debug = false;
     private bool notExperiment;
     private int selectionCount;
+    //private bool canTransition = true;
 
     InteractionState stateToReturnTo;
     private ControllerInfo controller0;
@@ -162,6 +163,19 @@ public class HandSelectionState : InteractionState
 
         //leftOutlineMesh = new Mesh();
         //rightOutlineMesh = new Mesh();
+    }
+
+    public override bool CanTransition()
+    {
+        bool allowed;
+        if(collidingMeshes.Count > 0)
+        {
+            allowed = false;
+        } else
+        {
+            allowed = true;
+        }
+        return allowed;
     }
 
     /// <summary>

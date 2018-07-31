@@ -32,6 +32,7 @@ public class RunExperiment : MonoBehaviour {
     bool sceneIsLoaded;
 
     private static int sceneIndex;
+    private static int sceneOrder;
     private static bool zeroDominant;
 
     public static RecordData Recorder
@@ -44,6 +45,12 @@ public class RunExperiment : MonoBehaviour {
     {
         get { return sceneIndex; }
         set { sceneIndex = value; }
+    }
+
+    public static int SceneOrder
+    {
+        get { return sceneOrder; }
+        set { sceneOrder = value; }
     }
 
     public static int StateIndex
@@ -136,37 +143,59 @@ public class RunExperiment : MonoBehaviour {
 
                 if (Input.GetKeyUp(KeyCode.L))      //reLoad scene
                 {
-                    transition.ReloadScene();
-                    currentState.Deactivate();
-                    LeaveTrialScene();
+                    Reset();
                 }
 
                 if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))     //finish trial
                 {
-                    Debug.Log("timer stopped " + currentState.Desc);
-                    endTrialTicks = System.DateTime.Now.Ticks;
-                    Mesh goal;
-                    Mesh selection;
-                    if (SceneManager.GetActiveScene().name.Equals("Real World"))
-                    {
-                        goal = GameObject.Find("13na-selection").GetComponent<MeshFilter>().mesh;           //this object is in the real world scene, adjusted to the same scale as the full object, hidden under the floor with the MeshRenderer turned off
-                        selection = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
-                    }
-                    else
-                    {
-                        goal = testObjectParent.transform.GetChild(0).GetComponent<MeshFilter>().mesh;
-                        selection = testObjectParent.transform.GetChild(1).GetComponent<MeshFilter>().mesh;
-                    }
+                    if(currentState.CanTransition()){
+                        Debug.Log("timer stopped " + currentState.Desc);
+                        endTrialTicks = System.DateTime.Now.Ticks;
 
-                    double selectedAreaDiff = CalculateSelectedArea(goal, selection);
-                    double selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goal);
-                    recorder.EndTrial(selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
-                    currentState.Deactivate();
-                    LeaveTrialScene();
+                        GameObject goalObj = testObjectParent.transform.GetChild(0).gameObject;
+                        GameObject selectedObj = testObjectParent.transform.GetChild(1).gameObject;
+
+                        Mesh goal = goalObj.GetComponent<MeshFilter>().mesh;
+                        Mesh selection = selectedObj.GetComponent<MeshFilter>().mesh;
+                        if (selection.subMeshCount > 0)
+                        {
+                            if (selection.subMeshCount > 2)
+                            {
+                                Debug.Log("SubMesh Count: " + selection.subMeshCount);
+                            }
+                            double goalArea = (double)TriangleArea(goalObj, goal, goal.vertices);
+                            double selectionArea = (double)TriangleArea(selectedObj, selection, selection.vertices);
+
+                            if (selectionArea == 0)
+                            {
+                                Debug.Log("selected 0 area - Keep Going");
+                                endTrialTicks = 0L;
+                                return;
+                            }
+
+                            double selectedAreaDiff = CalculateSelectedArea(goalArea, selectionArea);
+                            double selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goalArea);
+                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
+                            Debug.Log(selectionArea + " - " + goalArea + " = " + selectedAreaDiff + ",  " + selectedPercentage + "%");
+                            currentState.Deactivate();
+                            LeaveTrialScene();
+                        }
+                        else
+                        {
+                            Debug.Log("Interaction shape not selected");
+                        }
+                    }
                 }
             }
         }
 	}
+
+    private void Reset()
+    {
+        currentState.Deactivate();
+        LeaveTrialScene();
+        transition.ReloadScene();
+    }
 
     private void OnSceneLoaded(Scene current, LoadSceneMode mode){
         SceneManager.SetActiveScene(current);
@@ -196,64 +225,39 @@ public class RunExperiment : MonoBehaviour {
             currentState = recorder.GetSelectionState();
 
         }
-        recorder.SetTrialID(sceneIndex, currentState);
+        recorder.SetTrialID(sceneIndex, sceneOrder, currentState);
         startTrialTicks = System.DateTime.Now.Ticks;
 
         sceneIsLoaded = true;
     }
 
-    private double CalculateSelectedArea(Mesh goal, Mesh selection){
-        // in every trial scene (except the real world example) there is a parent gameObject TestObj 
-        // where child 0 is the preselected goal object the participant cannot collide with and 
-        // child 1 is the transparent object of the same shape that the participant selects.
-        // The real world example has only one child of the test object that matters - the one participants interact with
-        //  there is another object representing just the part that should be selected that can be measured as a goal area.
+    private double CalculateSelectedArea(double goal, double selection){
 
-       
-        
-        if (selection.subMeshCount > 0)
-        {
-            double goalArea = (double) TriangleArea(goal.GetTriangles(1), goal.vertices);
-            double selectionArea = (double) TriangleArea(selection.GetTriangles(1), selection.vertices);
-            double area = selectionArea - goalArea;
-            if(area < 0)
-            {
-                Debug.Log("Small selection");
-            }
+            double area = selection - goal;
             return area;
-        }
-        else
-        {
-            Debug.Log("Interaction shape not selected");
-            return 0;
-        }
-        // Both children should have submeshes 0 unselected and 1 selected.
-        // Iterate over the triangles in submesh 1 to calculate their total areas.
-        // Return the difference preselection area - participant selection area.
     }
 
-    private double CalculateAreaPercentage (double areaDiff, Mesh goal)
+    private double CalculateAreaPercentage (double areaDiff, double goalArea)
     {
-        if (areaDiff != 0)
-        {
-            double goalArea = (double) TriangleArea(goal.GetTriangles(1), goal.vertices);
-            double percentArea = areaDiff / goalArea * 100;
-            return percentArea;
-        }
-        else
-        {
-            Debug.Log("invalid or null selection at calculateArea");
-            return 0;
-        }
+        double percentArea = areaDiff / goalArea * 100;
+        return percentArea;
     }
 
     /* code for area of triangles adapted from http://james-ramsden.com/area-of-a-triangle-in-3d-c-code/ */
-    private float TriangleArea(int[] trianglePts, Vector3[] verts){
+    private float TriangleArea(GameObject obj, Mesh mesh, Vector3[] verts){
         float area = 0f;
+        int[] trianglePts = mesh.GetTriangles(1);
+        List<Vector3> transformedVertices = new List<Vector3>(verts.Length);
+
+        for (int i = 0; i < verts.Length; i++)
+        {
+            transformedVertices.Add(obj.gameObject.transform.TransformPoint(verts[i]));
+        }
+
         for (int i = 0; i < trianglePts.Length; i += 3){
-            Vector3 pt0 = verts[trianglePts[i]];
-            Vector3 pt1 = verts[trianglePts[i + 1]];
-            Vector3 pt2 = verts[trianglePts[i + 2]];
+            Vector3 pt0 = transformedVertices[trianglePts[i]];
+            Vector3 pt1 = transformedVertices[trianglePts[i + 1]];
+            Vector3 pt2 = transformedVertices[trianglePts[i + 2]];
 
             float sideA = Vector3.Distance(pt0, pt1);
             float sideB = Vector3.Distance(pt1, pt2);
@@ -261,10 +265,6 @@ public class RunExperiment : MonoBehaviour {
 
             float s = (sideA + sideB + sideC) / 2;
             area += Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
-        }
-        if(area == 0)
-        {
-            Debug.Log("SELECTED AREA IS ZERO");
         }
         return area;
     }

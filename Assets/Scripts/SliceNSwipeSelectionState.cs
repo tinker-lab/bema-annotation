@@ -16,6 +16,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private const float motionThreshold = 0.04f;
     bool isExperiment;
     bool swapControllers;
+    //bool canTransition;
 
     private static int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     //private ControllerInfo controller0;
@@ -91,7 +92,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //}
     //public static int SliceStatus
     //{
-    //    get { return sliceStatus;  }
+    //    get { return sliceStatus; }
     //}
 
     /// <summary>
@@ -159,23 +160,40 @@ public class SliceNSwipeSelectionState : InteractionState
         }
     }
 
+    public override bool CanTransition()
+    {
+        bool allowed;
+        if(sliceStatus == 1)
+        {
+            allowed = false;
+        }
+        else
+        {
+            allowed = true;
+        }
+        return allowed;
+    }
+
     private void DetermineDominantController(ControllerInfo controller0Info, ControllerInfo controller1Info)
     {
-        controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);                 // disable controller rendering
-        controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);
-        controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true; // enable hand rendering
-        controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;
-
         //Debug.Log("Set Dominant Hand");
         if (!swapControllers)
         {
             mainController = controller0Info;
+            controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);
+            controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //hand rendering
             altController = controller1Info;
+            controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);                     //controller rendering
+            controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;
         }
         else
         {
             mainController = controller1Info;
+            controller1Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false);
+            controller1Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //hand rendering
             altController = controller0Info;
+            controller0Info.controller.gameObject.transform.GetChild(0).gameObject.SetActive(true);
+            controller0Info.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;   //controller rendering
         }
         //GameObject hand = GameObject.Find("Hand");
 
@@ -284,6 +302,7 @@ public class SliceNSwipeSelectionState : InteractionState
                 }
             }
         }
+        //sliceStatus = 0;
     }
 
     public override string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info)
@@ -550,7 +569,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         lastSeenObj.GetComponent<Renderer>().material = originalMaterial[lastSeenObj.name];
                     }
                     lastSeenObj = collidingMesh;
-                    Debug.Log("lastSeenObj is reassigned: " + collidingMesh.name);
+                    //Debug.Log("lastSeenObj is reassigned: " + collidingMesh.name);
                 }
 
                 //}
@@ -982,14 +1001,14 @@ public class SliceNSwipeSelectionState : InteractionState
                         if(!isExperiment &&  lastSeenObj != null && lastSeenObj.name == item.name)
                         {
                             materials[0] = GazeSelectedMaterial(baseMaterial);
-                            Debug.Log("removed first slice, should be purple");
+                            //Debug.Log("removed first slice, should be purple");
                         }
                         else
                         {
                             materials[0] = baseMaterial;         // Sets unselected as transparent
                             //Debug.Log("removed first slice, should be transparent");
                         }
-                        Debug.Log("materials assigned length " + materials.Length);
+                        //Debug.Log("materials assigned length " + materials.Length);
                     }
                 }
             }
@@ -1024,7 +1043,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
             //if (mesh.subMeshCount > 1)                see if this works in experiment w resized arrays. esp for removing first slice.
             //{
-                Debug.Log("materials used length " + materials.Length);
+                //Debug.Log("materials used length " + materials.Length);
                 item.GetComponent<Renderer>().materials = materials;
             //}
             //else
@@ -1036,10 +1055,10 @@ public class SliceNSwipeSelectionState : InteractionState
         }
         else if (item.gameObject.tag == "highlightmesh" ) //&& mode == "slice")
         {
-            if (item.name == "highlight0")
-            {
-                //Debug.Log(" At Color " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " selected Indices");
-            }
+            //if (item.name == "highlight0")
+            //{
+            //    //Debug.Log(" At Color " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " selected Indices");
+            //}
 
             mesh.subMeshCount = 1;
             mesh.SetTriangles(SelectionData.PreviousSelectedIndices[item.name], 0);

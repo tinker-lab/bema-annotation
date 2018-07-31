@@ -49,14 +49,14 @@ public class TransitionSceneScript : MonoBehaviour {
         for (int i = 1; i <sceneCount; i++)
         {
             sceneIndices.Add(i);
-            Debug.Log(i);
+            //Debug.Log(i);
         }
 
         for (int i = sceneCount-1; i > sceneCount-3; i--)
         {
             sceneIndices.Remove(i);
             trainingIndices.Add(i);
-            Debug.Log("training: " + i);
+            //Debug.Log("training: " + i);
         }
 
         ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
@@ -115,6 +115,19 @@ public class TransitionSceneScript : MonoBehaviour {
         if (Input.GetKeyUp(KeyCode.T))
         {
             training = !training;
+            if (!training)
+            {
+                Debug.Log("Training Off");
+                SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
+                SceneManager.sceneUnloaded += OnSceneUnloaded;
+            }
+            else
+            {
+                Debug.Log("Training On");
+                SceneManager.sceneUnloaded -= OnSceneUnloaded;
+                SceneManager.sceneUnloaded += OnSceneUnloadedTraining;
+            }
+
         }
 
 
@@ -178,13 +191,16 @@ public class TransitionSceneScript : MonoBehaviour {
                 if (training)
                 {
                     loadScene = trainingIndices[nextSceneIndex];
+                    Debug.Log("loading training scene");
                 }
                 else
                 {
                     loadScene = sceneIndices[nextSceneIndex];
+                    Debug.Log("loading experiment scene");
                 }
 
                 RunExperiment.SceneIndex = loadScene;       ///somehow save nextSceneIndex to recorder
+                RunExperiment.SceneOrder = nextSceneIndex;
                 RunExperiment.Recorder = this.recorder;
                 RunExperiment.StateIndex = selectionIndex;
                 RunExperiment.Transition = this;
@@ -217,7 +233,7 @@ public class TransitionSceneScript : MonoBehaviour {
             sceneIndices[n] = value;
             sceneOrder += value.ToString() + " ";
         }
-        Debug.Log(sceneOrder);
+        //Debug.Log(sceneOrder);
     }
 
     //listen for sceneUnload at nextSceneIndex. then increment nextSceneIndex and set timerStarted = false;
@@ -227,7 +243,14 @@ public class TransitionSceneScript : MonoBehaviour {
         recorder.WriteToFile();
         timerStarted = false;
         GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
-        Debug.Log("scene " + sceneIndices[nextSceneIndex] + " accuracy: " + recorder.GetSelectedPercentage().ToString());
+        //if (nextSceneIndex >= 0)
+        //{
+        //    Debug.Log("scene " + sceneIndices[nextSceneIndex] + " accuracy: " + recorder.GetSelectedPercentage().ToString());
+        //}
+        //else
+        //{
+        //    Debug.Log("scene " + 0 + " accuracy: " + recorder.GetSelectedPercentage().ToString());
+        //}
         nextSceneIndex++;
         if (nextSceneIndex >= sceneIndices.Count)
         {
@@ -244,12 +267,14 @@ public class TransitionSceneScript : MonoBehaviour {
         trainingSceneCount++;
 
         double percent = recorder.GetSelectedPercentage();
-        Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
+        //Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
         if (percent < 50f && percent > -50f && trainingSceneCount > 4)
         {
             training = false;
+            Debug.Log("Training OFF");
             SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
+            nextSceneIndex = 0;
             return;
         }
 
@@ -262,6 +287,10 @@ public class TransitionSceneScript : MonoBehaviour {
     public void ReloadScene()
     {
         nextSceneIndex--;
+        if (training)
+        {
+            trainingSceneCount--;
+        }
         UnityEngine.Object.DestroyImmediate(ExperimentController.GetComponent<RunExperiment>());
     }
 }

@@ -24,6 +24,8 @@ public class InteractionState
      */
     public virtual string HandleEvents(ControllerInfo controller0Info, ControllerInfo controller1Info) { return ""; }
 
+    public virtual bool CanTransition() { return true; }
+
 }
 
 public class ControllerInfo
