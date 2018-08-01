@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Diagnostics;
 
 public class RunExperiment : MonoBehaviour {
 
@@ -26,6 +27,7 @@ public class RunExperiment : MonoBehaviour {
 
     long startTrialTicks;
     long endTrialTicks;
+    Stopwatch stopwatch;
     string selectionEvent;
 
     bool setupControllers;
@@ -128,7 +130,7 @@ public class RunExperiment : MonoBehaviour {
         }
         if (sceneIsLoaded)
         {
-            if (endTrialTicks == 0L)
+            if (stopwatch.IsRunning())//endTrialTicks == 0L)
             {
                 controller0 = GameObject.Find("Controller (left)");
                 controller1 = GameObject.Find("Controller (right)");
@@ -150,7 +152,8 @@ public class RunExperiment : MonoBehaviour {
                 {
                     if(currentState.CanTransition()){
                         Debug.Log("timer stopped " + currentState.Desc);
-                        endTrialTicks = System.DateTime.Now.Ticks;
+                        //endTrialTicks = System.DateTime.Now.Ticks;
+                        stopwatch.Stop();
 
                         GameObject goalObj = testObjectParent.transform.GetChild(0).gameObject;
                         GameObject selectedObj = testObjectParent.transform.GetChild(1).gameObject;
@@ -169,7 +172,8 @@ public class RunExperiment : MonoBehaviour {
                             if (selectionArea == 0)
                             {
                                 Debug.Log("selected 0 area - Keep Going");
-                                endTrialTicks = 0L;
+                                //endTrialTicks = 0L;
+                                stopwatch.Start(); // restart the time to keep counting since you haven't finished yet.
                                 return;
                             }
 
@@ -200,7 +204,7 @@ public class RunExperiment : MonoBehaviour {
                             //    goalShowObject.GetComponent<MeshRenderer>().material = Resources.Load("BlueConrete") as Material;
                             //    return;
                             //}
-                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
+                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, stopwatch.ElapsedMilliseconds / 1000.0);//endTrialTicks - startTrialTicks);
                             Debug.Log(selectionArea + " - " + goalArea + " = " + selectedAreaDiff + ",  " + selectedPercentage + "%");
                             currentState.Deactivate();
                             LeaveTrialScene();
@@ -251,7 +255,8 @@ public class RunExperiment : MonoBehaviour {
 
         }
         recorder.SetTrialID(sceneIndex, sceneOrder, currentState);
-        startTrialTicks = System.DateTime.Now.Ticks;
+        //startTrialTicks = System.DateTime.Now.Ticks;
+        stopwatch = Stopwatch.StartNew();
 
         sceneIsLoaded = true;
     }
