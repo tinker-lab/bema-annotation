@@ -46,20 +46,33 @@ public class TransitionSceneScript : MonoBehaviour {
         sceneIndices = new List<int>();
         trainingIndices = new List<int>();
         int sceneCount = SceneManager.sceneCountInBuildSettings;
-        for (int i = 1; i <sceneCount; i++)
+        for (int i = 1; i <sceneCount-4; i++)
         {
             sceneIndices.Add(i);
             //Debug.Log(i);
         }
+        
 
-        for (int i = sceneCount-1; i > sceneCount-3; i--)
+        for (int i = sceneCount-2; i > sceneCount-1; i++)
         {
-            sceneIndices.Remove(i);
             trainingIndices.Add(i);
             //Debug.Log("training: " + i);
         }
 
-        ShuffleScenes();            // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
+        ShuffleScenes();                    // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
+        sceneIndices.Add(sceneCount - 3);   // real world example scene is always last
+
+        string s = "";
+        foreach(int i in sceneIndices)
+        {
+            s += i;
+        }
+        s += " Training: ";
+        foreach(int i in trainingIndices)
+        {
+            s += i;
+        }
+        Debug.Log(s);
 
         recorder = new RecordData(controller0Info, controller1Info, sceneCount);
 
@@ -268,7 +281,7 @@ public class TransitionSceneScript : MonoBehaviour {
 
         double percent = recorder.GetSelectedPercentage();
         //Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
-        if (percent < 50f && percent > -50f && trainingSceneCount > 4)
+        if (percent < 50f && percent > -50f && trainingSceneCount >= 4)
         {
             training = false;
             Debug.Log("Training OFF");

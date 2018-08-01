@@ -175,6 +175,31 @@ public class RunExperiment : MonoBehaviour {
 
                             double selectedAreaDiff = CalculateSelectedArea(goalArea, selectionArea);
                             double selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goalArea);
+                            //if (selectedPercentage >= 60.0)
+                            //{
+                            //    endTrialTicks = 0L;
+                            //    Debug.Log("large percent difference. Making example Objects");
+                            //    GameObject selectedShowObject = OutlineManager.CopyObject(selectedObj);
+                            //    selectedShowObject.GetComponent<MeshFilter>().mesh.SetTriangles(selection.GetTriangles(1), 0);
+                            //    List<Vector2> uvs = new List<Vector2>();
+                            //    selection.GetUVs(1, uvs);
+                            //    selectedShowObject.GetComponent<MeshFilter>().mesh.SetUVs(1, uvs);
+                            //    selectedShowObject.name = "Your Selection";
+                            //    selectedShowObject.transform.localPosition = new Vector3(1.32222f, 0.248f, -1.0819333f);
+                            //    selectedShowObject.transform.localRotation = new Quaternion(0, -3.084f, 0, 0);
+                            //    selectedShowObject.GetComponent<MeshRenderer>().material = Resources.Load("GrayConcrete") as Material;
+
+                            //    GameObject goalShowObject = OutlineManager.CopyObject(goalObj);
+                            //    goalShowObject.GetComponent<MeshFilter>().mesh.SetTriangles(goal.GetTriangles(1), 0);
+                            //    uvs.Clear();
+                            //    goal.GetUVs(1, uvs);
+                            //    goalShowObject.GetComponent<MeshFilter>().mesh.SetUVs(1, uvs);
+                            //    goalShowObject.name = "The Goal";
+                            //    goalShowObject.transform.localPosition = new Vector3(-0.34f, 0.248f, -1.39473f);
+                            //    goalShowObject.transform.localRotation = new Quaternion(0, -338.124f, 0, 0);
+                            //    goalShowObject.GetComponent<MeshRenderer>().material = Resources.Load("BlueConrete") as Material;
+                            //    return;
+                            //}
                             recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, endTrialTicks - startTrialTicks);
                             Debug.Log(selectionArea + " - " + goalArea + " = " + selectedAreaDiff + ",  " + selectedPercentage + "%");
                             currentState.Deactivate();
@@ -240,6 +265,7 @@ public class RunExperiment : MonoBehaviour {
     private double CalculateAreaPercentage (double areaDiff, double goalArea)
     {
         double percentArea = areaDiff / goalArea * 100;
+
         return percentArea;
     }
 
