@@ -46,16 +46,16 @@ public class TransitionSceneScript : MonoBehaviour {
         sceneIndices = new List<int>();
         trainingIndices = new List<int>();
         int sceneCount = SceneManager.sceneCountInBuildSettings;
-        for (int i = 1; i <sceneCount-4; i++)
+        for (int i = 1; i < sceneCount-3; i++)
         {
             sceneIndices.Add(i);
             //Debug.Log(i);
         }
         
 
-        for (int i = sceneCount-2; i > sceneCount-1; i++)
+        for (int j = sceneCount-2; j < sceneCount; j++)
         {
-            trainingIndices.Add(i);
+            trainingIndices.Add(j);
             //Debug.Log("training: " + i);
         }
 
