@@ -24,6 +24,7 @@ public class TransitionSceneScript : MonoBehaviour {
     bool zeroDominant = true;
     bool training = true;
     int trainingSceneCount = 0;
+    bool allowProgress = true;
 
     GameObject ExperimentController;
 
@@ -72,7 +73,7 @@ public class TransitionSceneScript : MonoBehaviour {
         {
             s += i;
         }
-        Debug.Log(s);
+        //Debug.Log(s);
 
         recorder = new RecordData(controller0Info, controller1Info, sceneCount);
 
@@ -130,17 +131,22 @@ public class TransitionSceneScript : MonoBehaviour {
             training = !training;
             if (!training)
             {
-                Debug.Log("Training Off");
+                Debug.Log("~~~~Training Off");
                 SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
                 SceneManager.sceneUnloaded += OnSceneUnloaded;
             }
             else
             {
-                Debug.Log("Training On");
+                Debug.Log("~~~~Training On");
                 SceneManager.sceneUnloaded -= OnSceneUnloaded;
                 SceneManager.sceneUnloaded += OnSceneUnloadedTraining;
             }
 
+        }
+
+        if(!allowProgress && Input.GetKeyUp(KeyCode.Space))
+        {
+            allowProgress = true;
         }
 
 
@@ -172,7 +178,7 @@ public class TransitionSceneScript : MonoBehaviour {
             }
         }
 
-        if (interfaceChosen && !timerStarted)
+        if (interfaceChosen && !timerStarted && allowProgress)
         {
             //Debug.Log("Interface has been chosen. Waiting for timer");
             if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
@@ -204,12 +210,12 @@ public class TransitionSceneScript : MonoBehaviour {
                 if (training)
                 {
                     loadScene = trainingIndices[nextSceneIndex];
-                    Debug.Log("loading training scene");
+                    //Debug.Log("loading training scene");
                 }
                 else
                 {
                     loadScene = sceneIndices[nextSceneIndex];
-                    Debug.Log("loading experiment scene");
+                    //Debug.Log("loading experiment scene");
                 }
 
                 RunExperiment.SceneIndex = loadScene;       ///somehow save nextSceneIndex to recorder
@@ -265,6 +271,11 @@ public class TransitionSceneScript : MonoBehaviour {
         //    Debug.Log("scene " + 0 + " accuracy: " + recorder.GetSelectedPercentage().ToString());
         //}
         nextSceneIndex++;
+
+        if(nextSceneIndex == sceneIndices.Count - 1)
+        {
+            allowProgress = false;
+        }
         if (nextSceneIndex >= sceneIndices.Count)
         {
             Debug.Break();
@@ -284,7 +295,8 @@ public class TransitionSceneScript : MonoBehaviour {
         if (percent < 50f && percent > -50f && trainingSceneCount >= 4)
         {
             training = false;
-            Debug.Log("Training OFF");
+            allowProgress = false;
+            Debug.Log("~~~~Training OFF");
             SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             nextSceneIndex = 0;

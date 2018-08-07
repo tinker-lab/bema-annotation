@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Diagnostics;
+
 
 public class RunExperiment : MonoBehaviour {
 
@@ -25,9 +25,9 @@ public class RunExperiment : MonoBehaviour {
     private SelectionData selectionData;
     public OutlineManager outlineManager;
 
-    long startTrialTicks;
-    long endTrialTicks;
-    Stopwatch stopwatch;
+    //long startTrialTicks;
+    //long endTrialTicks;
+    System.Diagnostics.Stopwatch stopwatch;
     string selectionEvent;
 
     bool setupControllers;
@@ -111,7 +111,7 @@ public class RunExperiment : MonoBehaviour {
         hmd = GameObject.Find("Camera (eye)");
 
         setupControllers = true;
-        Debug.Log("Starting ExperimentController. state index == " + stateIndex.ToString() + " scene index: " + sceneIndex.ToString());
+        Debug.Log("Starting ExperimentController " + sceneOrder.ToString());
 
         selectionEvent = "";
     }
@@ -130,7 +130,7 @@ public class RunExperiment : MonoBehaviour {
         }
         if (sceneIsLoaded)
         {
-            if (stopwatch.IsRunning())//endTrialTicks == 0L)
+            if (stopwatch.IsRunning)//endTrialTicks == 0L)
             {
                 controller0 = GameObject.Find("Controller (left)");
                 controller1 = GameObject.Find("Controller (right)");
@@ -204,7 +204,7 @@ public class RunExperiment : MonoBehaviour {
                             //    goalShowObject.GetComponent<MeshRenderer>().material = Resources.Load("BlueConrete") as Material;
                             //    return;
                             //}
-                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, stopwatch.ElapsedMilliseconds / 1000.0);//endTrialTicks - startTrialTicks);
+                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, stopwatch.ElapsedMilliseconds / 1000.0f);//endTrialTicks - startTrialTicks);
                             Debug.Log(selectionArea + " - " + goalArea + " = " + selectedAreaDiff + ",  " + selectedPercentage + "%");
                             currentState.Deactivate();
                             LeaveTrialScene();
@@ -256,7 +256,7 @@ public class RunExperiment : MonoBehaviour {
         }
         recorder.SetTrialID(sceneIndex, sceneOrder, currentState);
         //startTrialTicks = System.DateTime.Now.Ticks;
-        stopwatch = Stopwatch.StartNew();
+        stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         sceneIsLoaded = true;
     }

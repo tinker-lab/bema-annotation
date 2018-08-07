@@ -20,8 +20,8 @@ public class ExperimentData{
     // Would that even be useful, or is it better to keep them separate?
 
     [XmlElement]
-    public Trial[] trials;
     public int participant;
+    public Trial[] trials;
 
 
     public ExperimentData(){
@@ -155,13 +155,13 @@ public class RecordData : MonoBehaviour {
 
     public RecordData(ControllerInfo leftHand, ControllerInfo rightHand, int numTrials) {
         trialID = 0;
-        participantID = 0;
+        participantID = 5;
         controller1 = leftHand;
         controller2 = rightHand;
         //trialCount = numTrials;
 
         _FileLocation = "Assets/WrittenData";
-        _FileName = participantID.ToString() + System.DateTime.Now.ToString("yyyyMMddHHmmssfff") + "test";
+        _FileName = participantID.ToString() + "_" + System.DateTime.Now.ToString("yyyyMMddHHmmssfff") + "-test";
 
         trialData = new ExperimentData(numTrials, participantID);
         motion = new MotionData(numTrials, participantID);
@@ -247,7 +247,7 @@ public class RecordData : MonoBehaviour {
         CreateXML(_data, _FileName);
         CreateXML(_dataM, _FileName + "Motion");
 
-        //Debug.Log(_data);
+        Debug.Log("Files Written");
     }
 
     /* The following metods came from the referenced URL */
@@ -303,7 +303,7 @@ public class RecordData : MonoBehaviour {
         }
         writer.Write(dataset);
         writer.Close();
-        Debug.Log("File written. " + fileName);
+        //Debug.Log("File written. " + fileName);
     }
 
     //void LoadXML()

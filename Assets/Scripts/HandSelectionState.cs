@@ -349,7 +349,7 @@ public class HandSelectionState : InteractionState
             }
             else // NOT CLICKED 
             {
-                Debug.Log("deactivating and not clicked " + collidingObj.name);
+                //Debug.Log("deactivating and not clicked " + collidingObj.name);
 
                 // reset object to original state (before interaction)
                 if (collidingObj.tag != "highlightmesh")

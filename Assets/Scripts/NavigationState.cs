@@ -48,7 +48,7 @@ public class NavigationState : InteractionState {
         controller0 = controller0Info;
         controller1 = controller1Info;
 
-        Debug.Log("have controllers " + controller0.ToString() + " " + controller1.ToString());
+        //Debug.Log("have controllers " + controller0.ToString() + " " + controller1.ToString());
 
         handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, experiment);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
@@ -63,7 +63,7 @@ public class NavigationState : InteractionState {
         //UnityEngine.Object.DontDestroyOnLoad(centerCube);
 
 
-        Debug.Log("have planes " + leftPlane.ToString() + " " + rightPlane.ToString());
+        //Debug.Log("have planes " + leftPlane.ToString() + " " + rightPlane.ToString());
 
         cubeColliders = new HashSet<GameObject>();
 
@@ -184,8 +184,8 @@ public class NavigationState : InteractionState {
             controller0.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); // Deactiveate rendering of controllers
             controller1.controller.gameObject.transform.GetChild(0).gameObject.SetActive(false); //
 
-            controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
-            controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
+            //controller0.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    // Enable hand rendering
+            //controller1.controller.gameObject.transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;    //
 
             foreach (List<GameObject> activeHighlightList in OutlineManager.preSelectionOutlines.Values)
             {

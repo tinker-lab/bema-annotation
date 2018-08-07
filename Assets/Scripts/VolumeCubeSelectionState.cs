@@ -466,6 +466,7 @@ public class VolumeCubeSelectionState : InteractionState
             //GameObject.Find("UIController").GetComponent<UIController>().ChangeState(stateToReturnTo);
             if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown())
             {
+                eventString = "scaling";
                 changeCube = true;
             }
 
@@ -475,7 +476,7 @@ public class VolumeCubeSelectionState : InteractionState
             }
 
             Uncollide();
-            return "";
+            return eventString;
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
@@ -692,7 +693,7 @@ public class VolumeCubeSelectionState : InteractionState
 
                     for (int j = 0; j < removeOutlines.Count(); j++)
                     {
-                        Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
+                       // Debug.Log("Removing new outlines after their first process: " + removeOutlines[j].name);
                         SelectionData.SavedOutlines[currObjMesh.name].Remove(removeOutlines[j]);
                         UnityEngine.Object.Destroy(removeOutlines[j]);
                     }
