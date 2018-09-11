@@ -134,7 +134,7 @@ public class RayCastSelectionState : InteractionState
                 // There is already a previous selection
                 //TODO: We need to figure out how to handle this. The outline must stay within the previous, or else we need to use the previous selection edges as part of the cut
                 Debug.Log("TODO");
-                Debug.Break();
+                //Debug.Break();
                 //curMeshData = new MeshData(m.vertices, m.GetIndices(0));
             }
             else
@@ -188,6 +188,10 @@ public class RayCastSelectionState : InteractionState
                 UpdateOutline(outlinePoints);
 
                 ProcessMesh();
+            }
+            else
+            {
+                Debug.Log("endpoint not close enough to start");
             }
         }
         return "";
@@ -691,6 +695,7 @@ public class MeshData
         BuildDS(verts, uvs, indices);
     }
 
+    // Sets the mesh to match our current MeshData triangulation 
     public void UpdateMesh(Mesh mesh)
     {
         mesh.Clear();
@@ -746,6 +751,7 @@ public class MeshData
         mesh.RecalculateNormals();
     }
 
+    // Given a list of vertices and indices, this builds up the connected mesh datastructure using MeshVertex and MeshTriangles
     private void BuildDS(Vector3[] verts, Vector2[] uvs, int[] indices)
     {
         List<MeshVertex> vertsToSort = new List<MeshVertex>();
@@ -767,9 +773,24 @@ public class MeshData
             meshTriangles.Add(tri);
             int triIndex = meshTriangles.Count - 1;
 
-            meshVertices[vId0].triangleId = triIndex;
-            meshVertices[vId1].triangleId = triIndex;
-            meshVertices[vId2].triangleId = triIndex;
+            MeshVertex tmp = SetOrDuplicateVertexTriangleId(vId0, triIndex);
+            if (tmp != null)
+            {
+                tri.vId0 = tmp.index;
+                vertsToSort.Add(tmp);
+            }
+            tmp = SetOrDuplicateVertexTriangleId(vId1, triIndex);
+            if (tmp != null)
+            {
+                tri.vId1 = tmp.index;
+                vertsToSort.Add(tmp);
+            }
+            tmp = SetOrDuplicateVertexTriangleId(vId2, triIndex);
+            if (tmp != null)
+            {
+                tri.vId2 = tmp.index;
+                vertsToSort.Add(tmp);
+            }
         }
 
         FindSamePositions(ref vertsToSort);
@@ -788,6 +809,27 @@ public class MeshData
 
             //TODO: if needed, this could be sped up by also setting corresponding triangle adjacencies.
 
+        }
+        Debug.Log("Finished building mesh datastructure");
+    }
+
+    // sets the triangle index for the given triangle if it does not already have one associated
+    // Otherwise it creates a new meshVertex and returns it.
+    private MeshVertex SetOrDuplicateVertexTriangleId(int vertexId, int triIndex)
+    {
+        if (meshVertices[vertexId].triangleId == -1)
+        {
+            // no triangle yet associated, so let's update it
+            meshVertices[vertexId].triangleId = triIndex;
+            return null;
+        }
+        else
+        {
+            // a triangle is already associated with this vertex and we don't want that, so let's duplicate the vertex
+            MeshVertex v = new MeshVertex(meshVertices.Count, meshVertices[vertexId].point, meshVertices[vertexId].uv);
+            v.triangleId = triIndex;
+            meshVertices.Add(v);
+            return v;
         }
     }
 
@@ -822,6 +864,12 @@ public class MeshData
     /// <returns>A list of the new triangle ids</returns>
     public Dictionary<int, List<int>> SubDivideFace(int triId, Vector3 curPoint, int cutVertexIndex)
     {
+        if (triId < 0 || triId > meshTriangles.Count-1)
+        {
+            Debug.Log("Error: triId out of range in subdivideface");
+            Debug.Break();
+        }
+
         MeshTriangle orig = meshTriangles[triId];
         Vector3 baryCentric = Barycentric(orig, curPoint);
         Vector2 uv = meshVertices[orig.vId0].uv * baryCentric.x + meshVertices[orig.vId1].uv * baryCentric.y + meshVertices[orig.vId2].uv * baryCentric.z;
@@ -1165,6 +1213,7 @@ public class MeshData
 
     }
 
+    // Given two vertices making an edge in one triangle, this returns the triangle index of the neighboring triangle or -1 if there is no neighbor.
     private int FindAdjTri(MeshVertex v0, MeshVertex v1)
     {
         List<int> samePosV0 = v0.samePositions;
@@ -1191,6 +1240,7 @@ public class MeshData
         return -1;
     }
 
+    // For each MeshVertex in the parameter list, this finds and sets the indices for the duplicated vertices that are at the same spatial position in other triangles.
     // Side-effect, verts is sorted after calling!
     private void FindSamePositions(ref List<MeshVertex> verts)
     {
@@ -1239,6 +1289,12 @@ public class MeshData
             }
             samePoints.Add(verts[i].index);
         }
+
+        // Add in the last ones now
+        foreach (int j in samePoints)
+        {
+            meshVertices[j].samePositions = samePoints;
+        }
     }
 
 
@@ -1258,6 +1314,7 @@ public class MeshData
         return meshTriangles[triId];
     }
 
+    // Returns a list of the vertex positions for a specific triangle
     public List<Vector3> Points(int triId)
     {
         MeshTriangle tri = meshTriangles[triId];
@@ -1578,7 +1635,7 @@ public class MeshVertex
     public MeshVertex(int index, Vector3 point, Vector2 uv)
     {
         this.index = index;
-        this.triangleId = -1;
+        this.triangleId =  -1;
         this.point = point;
         this.uv = uv;
         samePositions = new List<int>();
