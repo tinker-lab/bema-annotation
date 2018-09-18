@@ -268,6 +268,7 @@ public class RayCastSelectionState : InteractionState
 
     private void ProcessMesh()
     {
+        /*
         //OutlineTriangles is continually updated as we subdivide and split faces.
         // but we still need to know when you cross an original triangle edge, so we make a copy here.
         List<int> origOutlineTriangles = new List<int>();
@@ -276,19 +277,25 @@ public class RayCastSelectionState : InteractionState
             origOutlineTriangles.Add(triId);
         }
 
-        int curTriId = outlineTriangles[0];
+        
+        */
 
         // subdivide the first face
         Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[0], outlinePoints[0], -1);
+        int prevTriId = outlineTriangles[0];
         UpdateTriangleIndices(children);
+        Vector3 prevPoint = outlinePoints[0];
+
 
         for (int i = 1; i < outlinePoints.Count; i++)
         {
             //Are we in the same triangle as the previous point or did we cross an edge?
-            if (origOutlineTriangles[i] == curTriId)
-            {
-                // subdivide face where the point is (likely could be in a new triangle)
-                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], curMeshData.VertexIndex(outlineTriangles[i], outlinePoints[i - 1]));
+            // We are in the same triangle if the last point is one of the vertices of the triangle that contains the next point.
+            if (curMeshData.IsTriangleVertex(outlineTriangles[i], prevPoint)) { 
+                // subdivide face where the point is
+                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], curMeshData.VertexIndex(outlineTriangles[i], prevPoint));
+                prevPoint = outlinePoints[i];
+                prevTriId = outlineTriangles[i];
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
@@ -297,52 +304,52 @@ public class RayCastSelectionState : InteractionState
             }
             else
             {
-                //new triangle.
-                curTriId = origOutlineTriangles[i];
 
-                // find edge intersection
-
-                List<Vector3> prevTriPoints = curMeshData.Points(outlineTriangles[i - 1]);
-                Vector3 prevNormal = Vector3.Cross(prevTriPoints[0] - prevTriPoints[1], prevTriPoints[2] - prevTriPoints[1]).normalized;
-                Vector3 projectionOfCurrentIntoPrevPlane = outlinePoints[i] + (prevNormal * (-(Vector3.Dot(prevNormal, outlinePoints[i]) - Vector3.Dot(prevNormal, outlinePoints[i - 1]))));
-                List<Vector3> sharedEdgeVerts = curMeshData.SharedEdge(outlineTriangles[i - 1], outlineTriangles[i]);
-                if (sharedEdgeVerts.Count != 2)
+                while (!curMeshData.IsTriangleVertex(outlineTriangles[i], prevPoint))
                 {
-                    //TODO! There is an assumption here that there are no other triangles in between the previous point and the current!
-                    Debug.Log("Broken assumption. Triangles in cut do not share an edge.");
-                    Debug.Break();
-                }
+                    // Find the next triangle from the start point towards the target point
 
-                Vector3 intersectPoint = FindIntersection(outlinePoints[i - 1], projectionOfCurrentIntoPrevPlane, sharedEdgeVerts[0], sharedEdgeVerts[1]);
+                    foreach (int child in children[prevTriId])
+                    {
+                        List<Vector3> prevTriPoints = curMeshData.Points(child);
+                        Vector3 prevNormal = Vector3.Cross(prevTriPoints[0] - prevTriPoints[1], prevTriPoints[2] - prevTriPoints[1]).normalized;
+                        Vector3 projectionOfCurrentIntoPrevPlane = outlinePoints[i] + (prevNormal * (-(Vector3.Dot(prevNormal, outlinePoints[i]) - Vector3.Dot(prevNormal, prevPoint))));
 
-                // split face on previous tri
-                MeshTriangle prev = curMeshData.Face(outlineTriangles[i - 1]);
-                MeshTriangle cur = curMeshData.Face(outlineTriangles[i]);
-                int faceIndex = curMeshData.FaceIndex(cur, prev);
-                children = curMeshData.SplitFace(outlineTriangles[i - 1], curMeshData.Vertex(prev, faceIndex).index, intersectPoint);
-                UpdateTriangleIndices(children);
-                if (i == outlinePoints.Count - 1)
-                {
-                    MarkEndToStartConnectionAsCut(children, intersectPoint);
+                        //We know that the previous point was used to split and becomes vid0 within the triangle, so test edge0 (vindex 1 and 2) for intersection.
+                        Vector3 intersectPoint = new Vector3();
+                        bool isIntersection = FindIntersection(ref intersectPoint, prevPoint, projectionOfCurrentIntoPrevPlane, prevTriPoints[1], prevTriPoints[2]);
+
+                        if (isIntersection)
+                        {
+
+                            // split face on previous tri (also splits current tri)
+                            children = curMeshData.SplitFace(child, 0, intersectPoint);
+
+                            // When we split there are two keys in children. We want the neighboring triangle
+                            Dictionary<int, List<int> >.KeyCollection keyColl = children.Keys;
+                            foreach (int key in keyColl)
+                            {
+                                if (key != child)
+                                {
+                                    prevTriId = key;
+                                    break;
+                                }
+                            }
+                            
+                            prevPoint = intersectPoint;
+                            UpdateTriangleIndices(children);
+                           break;
+                        }
+                    }
                 }
 
                 // subdivide current tri
-                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], -1);
+                children = curMeshData.SubDivideFace(outlineTriangles[i], outlinePoints[i], curMeshData.VertexIndex(outlineTriangles[i], prevPoint));
                 UpdateTriangleIndices(children);
+                prevPoint = outlinePoints[i];
                 if (i == outlinePoints.Count - 1)
                 {
                     MarkEndToStartConnectionAsCut(children, outlinePoints[i]);
-                }
-
-                // split face on appropriate tri
-                int neighborId = curMeshData.NeighborId(prev, faceIndex);
-                MeshTriangle newNeighbor = curMeshData.Neighbor(prev, faceIndex);
-                int newFaceIndex = curMeshData.FaceIndex(prev, newNeighbor);
-                children = curMeshData.SplitFace(neighborId, curMeshData.Vertex(newNeighbor, newFaceIndex).index, intersectPoint);
-                UpdateTriangleIndices(children);
-                if (i == outlinePoints.Count - 1)
-                {
-                    MarkEndToStartConnectionAsCut(children, intersectPoint);
                 }
             }
         }
@@ -397,6 +404,7 @@ public class RayCastSelectionState : InteractionState
     }
 
 
+    //TODO: what if they aren't in the same tri! fix this.
     private void MarkEndToStartConnectionAsCut(Dictionary<int, List<int>> newTris, Vector3 secondToLastPoint)
     {
         foreach(KeyValuePair<int, List<int>> entry in newTris)
@@ -429,6 +437,7 @@ public class RayCastSelectionState : InteractionState
                     else
                     {
                         Debug.Log("Error: can't find secondToLastPoint");
+                        Debug.Break();
                     }
                 }
 
@@ -444,7 +453,7 @@ public class RayCastSelectionState : InteractionState
     /// <param name="v2"></param>
     /// <param name="v3"></param>
     /// <returns></returns>
-    private Vector3 FindIntersection(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
+    private bool FindIntersection(ref Vector3 intersectionPoint, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
     {
         if (PlaneCollision.ApproximatelyEquals(v0, v2) ||
         (PlaneCollision.ApproximatelyEquals(v0, v3)))
@@ -481,10 +490,11 @@ public class RayCastSelectionState : InteractionState
         if (a < 0.0 || a > 1.0)
         {
             Debug.Log("lines intersect outside of the segment");
-            Debug.Break();
+                return false;
         }
 
-        return v0 + a * d0;
+        intersectionPoint =  v0 + a * d0;
+        return true;
     }
 
     private void UpdateTriangleIndices(Dictionary<int, List<int>> parentToChildren)
@@ -1455,6 +1465,7 @@ public class MeshData
         return FaceIndex(meshTriangles[testId], meshTriangles[triId]);
     }
 
+    // Returns the index for which adjacent triangle test is for tri or -1 if they aren't adjacent
     public int FaceIndex(MeshTriangle test, MeshTriangle tri)
     {
         if (tri.adjTriId0 != -1 && test.Equals(meshTriangles[tri.adjTriId0]))
@@ -1485,6 +1496,7 @@ public class MeshData
         return (i + 1) % 3;
     }
 
+    // Computers the edge index (0,1,2) given two vertex indices (0,1,2)
     public int EdgeIndex(int v0Index, int v1Index)
     {
         if (CCW(v0Index) == v1Index)
@@ -1502,7 +1514,30 @@ public class MeshData
             return -1;
         }
     }
-}
+
+    public List<Vector3> EdgePoints(int triId, int edgeId)
+    {
+        List<Vector3> edgePoints = new List<Vector3>();
+
+        MeshTriangle tri = meshTriangles[triId];
+        edgePoints.Add(Vertex(tri, CW(edgeId)).point);
+        edgePoints.Add(Vertex(tri, CCW(edgeId)).point);
+        return edgePoints;
+    }
+
+    // Tests whether the point is one of the vertices of the triangle indicted by triId
+    public bool IsTriangleVertex(int triId, Vector3 point)
+    {
+        MeshTriangle tri = meshTriangles[triId];
+        if (PlaneCollision.ApproximatelyEquals(meshVertices[tri.vId0].point, point) ||
+            PlaneCollision.ApproximatelyEquals(meshVertices[tri.vId1].point, point) ||
+            PlaneCollision.ApproximatelyEquals(meshVertices[tri.vId2].point, point))
+        {
+            return true;
+        }
+        return false;
+    }
+ }
 
 public class MeshTriangle
 {
