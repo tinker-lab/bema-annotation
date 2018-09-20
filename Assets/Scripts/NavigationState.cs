@@ -78,11 +78,11 @@ public class NavigationState : InteractionState {
 
         //laser =  Instantiate(Resources.Load<GameObject>("Prefabs/LaserPointer"));
         //laserTransform = laser.transform;
-        //laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
-        //laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
+        laser0 = GameObject.Find("LaserParent").transform.GetChild(0).gameObject;
+        laser1 = GameObject.Find("LaserParent").transform.GetChild(1).gameObject;
 
-        //reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
-        //teleportReticleTransform = reticle.transform;
+        reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
+        teleportReticleTransform = reticle.transform;
 
     }
 

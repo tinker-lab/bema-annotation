@@ -280,6 +280,15 @@ public class RayCastSelectionState : InteractionState
         
         */
 
+        List<Vector3> origOutlinePointsWorldSpace = new List<Vector3>();
+        for(int i=0; i < outlinePoints.Count; i++)
+        {
+            origOutlinePointsWorldSpace.Add(outlinePoints[i]);
+            outlinePoints[i] = collidingObject.transform.InverseTransformPoint(outlinePoints[i]);
+        }
+
+
+
         // subdivide the first face
         Dictionary<int, List<int>> children = curMeshData.SubDivideFace(outlineTriangles[0], outlinePoints[0], -1);
         int prevTriId = outlineTriangles[0];
@@ -458,12 +467,14 @@ public class RayCastSelectionState : InteractionState
         if (PlaneCollision.ApproximatelyEquals(v0, v2) ||
         (PlaneCollision.ApproximatelyEquals(v0, v3)))
         {
-            return v0;
+            intersectionPoint = v0;
+            return true;
         }
 
         if (PlaneCollision.ApproximatelyEquals(v1, v2))
         {
-            return v2;
+            intersectionPoint =  v2;
+            return true;
         }
 
         //L1 = v0 + a d0
