@@ -28,6 +28,7 @@ public class VolumeCubeSelectionState : InteractionState
     private bool isExperiment;
 
     SelectionData selectionData;
+    UndoManager undoManager;
      
     //private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     //private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
@@ -80,15 +81,18 @@ public class VolumeCubeSelectionState : InteractionState
     {
         get { return SelectionData.PreviousNumVertices; }
     }
+
     public static HashSet<string> ObjectsWithSelections
     {
         get { return SelectionData.ObjectsWithSelections; }
     }
+
     public static Dictionary<string, HashSet<GameObject>> SavedOutlines
     {
         get { return SelectionData.SavedOutlines; }
         set { SelectionData.SavedOutlines = value; }
     }
+
     public Dictionary<string, Dictionary<int, List<OutlinePoint>>> SavedOutlinePoints
     {
         get { return savedOutlinePoints; }
@@ -153,6 +157,7 @@ public class VolumeCubeSelectionState : InteractionState
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
 
         selectionData = sharedData;
+        undoManager = new UndoManager(controller0Info, controller1Info, selectionData);
 
         //objWithSelections = new HashSet<string>();
         //previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have
@@ -509,6 +514,8 @@ public class VolumeCubeSelectionState : InteractionState
             //    }
             //}
 
+            //SelectionData.OnlyOneSelection.Add(currObjMesh.name, currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum)); //would this replace the true value or make a new entry? What to replace submeshNum?
+
             ProcessMesh(currObjMesh, new List<int>());
         }
 
@@ -522,6 +529,19 @@ public class VolumeCubeSelectionState : InteractionState
             foreach (GameObject currObjMesh in collidingMeshes)
             {
                 //Debug.Log("Cube Selection: " + currObjMesh.name);
+
+
+                //Moving previous info to recent before updating, for undoing - NEW
+                SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
+                SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
+                SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
+                SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
+                SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
+
+                SelectionData.RecentlySelectedObj.Clear();
+                SelectionData.RecentlySelectedObjNames.Clear();
+                SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                SelectionData.RecentlySelectedObj.Add(currObjMesh);
 
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
@@ -545,6 +565,11 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                 }
 
+                if(submeshNum == 1){
+                    //How to do this?? - NEW ---> base it off of submeshes during the clicks
+                    SelectionData.OnlyOneSelection.Add(currObjMesh.name);
+                }
+
                 //updates original indices to store the the most recently selected portion
                 SelectionData.PreviousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
 
@@ -558,6 +583,8 @@ public class VolumeCubeSelectionState : InteractionState
                 }
 
                 SelectionData.ObjectsWithSelections.Add(currObjMesh.name);
+                //SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                //SelectionData.RecentlySelectedObj.Add(currObjMesh);
 
                 if (!isExperiment)
                 {
@@ -701,6 +728,16 @@ public class VolumeCubeSelectionState : InteractionState
                 }
             }
         }
+
+        //Call for actually undoing - NEW
+        //Make sure GetPress works
+        if (controller0.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPress(SteamVR_Controller.ButtonMask.Grip))
+        {
+            for (int i = 0; i < SelectionData.RecentlySelectedObj.Count; i++){
+                undoManager.UndoFunction(SelectionData.RecentlySelectedObjNames.ElementAt(i), SelectionData.RecentlySelectedObj.ElementAt(i)); //how to overcome this?
+            }
+        }
+
         return eventString;
     }
 
@@ -1041,6 +1078,7 @@ public class VolumeCubeSelectionState : InteractionState
             }
         }
 
+        //Use this part for undo function - NEW
         mesh.Clear();
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, UVs);
