@@ -292,7 +292,7 @@ public class TransitionSceneScript : MonoBehaviour {
 
         double percent = recorder.GetSelectedPercentage();
         //Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
-        if (percent < 50f && percent > -50f && trainingSceneCount >= 4)
+        if (percent < 50f && trainingSceneCount >= 4)
         {
             training = false;
             allowProgress = false;

@@ -31,6 +31,8 @@ public class UndoManager
     //pass in object as well for submeshes
     public void UndoFunction(string objectName, GameObject currObj){
 
+        Debug.Log(objectName.ToString() + " After Call");
+
         Mesh mesh = currObj.GetComponent<MeshFilter>().mesh;
 
         if(SelectionData.OnlyOneSelection.Contains(objectName)){

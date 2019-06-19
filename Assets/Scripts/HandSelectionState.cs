@@ -646,6 +646,7 @@ public class HandSelectionState : InteractionState
         int numVertices = SelectionData.PreviousNumVertices[item.name];
 
 
+
         // vertices.RemoveRange(numVertices, vertices.Count - numVertices);
         //UVs.RemoveRange(numVertices, UVs.Count - numVertices);
 
@@ -695,6 +696,23 @@ public class HandSelectionState : InteractionState
                 triangleIndex1 = indices[3 * i + 1];
                 triangleIndex2 = indices[3 * i + 2];
 
+
+                SelectionData.TriangleSelectionState currentTriangleState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+                if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                {
+                    Triangle tri = new Triangle(triangleIndex0, triangleIndex1, triangleIndex2);
+                    try
+                    {
+                        currentTriangleState = SelectionData.TriangleStates[tri];
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        Debug.Log("Error triangle does not exist in dictionary");
+                        Debug.Break();
+                    }
+                }
+
+
                 bool side0 = false;
                 bool side1 = false;
                 bool side2 = false;
@@ -711,10 +729,18 @@ public class HandSelectionState : InteractionState
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], currentPlane))
                     {
                         AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
+                        if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                        }
                     }
                     else
                     {
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
+                        if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                        }
                     }
                 }
                 //else if (side0 && side1 && side2)
@@ -757,12 +783,26 @@ public class HandSelectionState : InteractionState
                             AddNewIndices(unselectedIndices, triangleIndex0, intersectIndex0, intersectIndex1);
                             AddNewIndices(unselectedIndices, triangleIndex2, triangleIndex0, intersectIndex1);
 
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                            }
+
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex1, intersectIndex0, triangleIndex1);
                             AddNewIndices(selectedIndices, triangleIndex0, intersectIndex0, intersectIndex1);
                             AddNewIndices(selectedIndices, triangleIndex2, triangleIndex0, intersectIndex1);
+
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                            }
                         }
                     }
                     else if (side0 && side2)
@@ -786,12 +826,26 @@ public class HandSelectionState : InteractionState
                             AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(unselectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
                             AddNewIndices(unselectedIndices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                            }
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(selectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
                             AddNewIndices(selectedIndices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                            }
                         }
                     }
                     else if (side1 && side2)
@@ -815,12 +869,26 @@ public class HandSelectionState : InteractionState
                             AddNewIndices(selectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
                             AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                            }
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
                             AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                            if (!notExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                            }
                         }
                     }
                 }
@@ -879,6 +947,54 @@ public class HandSelectionState : InteractionState
         indices.Add(index0);
         indices.Add(index1);
         indices.Add(index2);
+    }
+
+    private void UpdateTriangleState(SelectionData.TriangleSelectionState currentState, int index0, int index1, int index2, bool isSelectedNow)
+    {
+        SelectionData.TriangleSelectionState newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && isSelectedNow)
+        {
+           newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+
+
+        Triangle tri = new Triangle(index0, index1, index2);
+        if (SelectionData.TriangleStates.ContainsKey(tri))
+        {
+            SelectionData.TriangleStates[tri] = newState;
+        }
+        else
+        {
+            SelectionData.TriangleStates.Add(tri, newState);
+        }
     }
 
     private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, GameObject plane) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge

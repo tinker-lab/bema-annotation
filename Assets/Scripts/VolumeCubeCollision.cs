@@ -45,7 +45,7 @@ public class VolumeCubeCollision : MonoBehaviour {
 
                 mesh.Clear();
                 mesh.subMeshCount = 1;
-                Debug.Log("cube exiting in volumeCube state");
+                //Debug.Log("cube exiting in volumeCube state");
                 Vector3[] verticesArray = VolumeCubeSelectionState.PreviousVertices[other.name];
                 Vector2[] UVsArray = VolumeCubeSelectionState.PreviousUVs[other.name];
 

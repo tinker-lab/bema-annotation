@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
 
 
 public class RunExperiment : MonoBehaviour {
@@ -134,7 +135,6 @@ public class RunExperiment : MonoBehaviour {
             {
                 controller0 = GameObject.Find("Controller (left)");
                 controller1 = GameObject.Find("Controller (right)");
-                testObjectParent = GameObject.Find("TestObj");
 
                 controller0Info = new ControllerInfo(controller0);
                 controller1Info = new ControllerInfo(controller1);
@@ -166,10 +166,10 @@ public class RunExperiment : MonoBehaviour {
                             {
                                 Debug.Log("SubMesh Count: " + selection.subMeshCount);
                             }
-                            double goalArea = (double)TriangleArea(goalObj, goal, goal.vertices);
-                            double selectionArea = (double)TriangleArea(selectedObj, selection, selection.vertices);
+                            Vector4 selectionAreaStats = TriangleArea(selectedObj, selection, selection.vertices);
 
-                            if (selectionArea == 0)
+                            //TruePositives + falsePositives (i.e. Did they select any area)
+                            if (selectionAreaStats.x + selectionAreaStats.y == 0)
                             {
                                 Debug.Log("selected 0 area - Keep Going");
                                 //endTrialTicks = 0L;
@@ -177,8 +177,8 @@ public class RunExperiment : MonoBehaviour {
                                 return;
                             }
 
-                            double selectedAreaDiff = CalculateSelectedArea(goalArea, selectionArea);
-                            double selectedPercentage = CalculateAreaPercentage(selectedAreaDiff, goalArea);
+                            double f1 = CalculateF1(selectionAreaStats);
+                            double mcc = CalculateMCC(selectionAreaStats);
                             //if (selectedPercentage >= 60.0)
                             //{
                             //    endTrialTicks = 0L;
@@ -204,8 +204,8 @@ public class RunExperiment : MonoBehaviour {
                             //    goalShowObject.GetComponent<MeshRenderer>().material = Resources.Load("BlueConrete") as Material;
                             //    return;
                             //}
-                            recorder.EndTrial(goalArea, selectionArea, selectedAreaDiff, selectedPercentage, stopwatch.ElapsedMilliseconds / 1000.0f);//endTrialTicks - startTrialTicks);
-                            Debug.Log(selectionArea + " - " + goalArea + " = " + selectedAreaDiff + ",  " + selectedPercentage + "%");
+                            recorder.EndTrial((double)selectionAreaStats.x, (double)selectionAreaStats.y, (double)selectionAreaStats.z, (double)selectionAreaStats.w, f1, mcc, stopwatch.ElapsedMilliseconds / 1000.0f);//endTrialTicks - startTrialTicks);
+                            Debug.Log("TP: " + selectionAreaStats.x + " FP: " + selectionAreaStats.y + " FN: " + selectionAreaStats.z + " TN: " + selectionAreaStats.w + " F1: "+f1+" mcc: "+mcc);
                             currentState.Deactivate();
                             LeaveTrialScene();
                         }
@@ -228,8 +228,33 @@ public class RunExperiment : MonoBehaviour {
 
     private void OnSceneLoaded(Scene current, LoadSceneMode mode){
         SceneManager.SetActiveScene(current);
+        testObjectParent = GameObject.Find("TestObj");
 
-        if (stateIndex == 1)
+        GameObject goalObj = testObjectParent.transform.GetChild(0).gameObject;
+        GameObject selectedObj = testObjectParent.transform.GetChild(1).gameObject;
+        Mesh goal = goalObj.GetComponent<MeshFilter>().mesh;
+        Mesh selection = selectedObj.GetComponent<MeshFilter>().mesh;
+        Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates = new Dictionary<Triangle, SelectionData.TriangleSelectionState>();
+        int[] goalIndices = goal.GetTriangles(1); // Get the indices for the target selection area (submesh 1)
+        int[] selectionIndices = selection.GetTriangles(0); // There should only be 1 submesh at the start
+        for (int i = 0; i < selectionIndices.Length / 3; i++)
+        {
+            Triangle tri = new Triangle(selectionIndices[3 * i], selectionIndices[3 * i + 1], selectionIndices[3 * i + 2]);
+            
+            // We know that the selection mesh starts out as the combined selected and then unselected indices (In that order!) from the goal mesh
+            // since that is how it was created in ObjectMaker.CombineSelectedAndUnselected().
+            if ((i*3) < goalIndices.Length)
+            {
+                triangleStates.Add(tri, SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow);
+            }
+            else
+            {
+                triangleStates.Add(tri, SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow);
+            }
+        }
+        SelectionData.TriangleStates = triangleStates;
+
+            if (stateIndex == 1)
         {
             Debug.Log("Init Yea-Big");
             currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); // the true here an optional boolean for whether or not we are running the experiment. it defaults false, but when true you cannot teleport and changing states uses the ChangeState method in this class rather than UIController
@@ -261,23 +286,41 @@ public class RunExperiment : MonoBehaviour {
         sceneIsLoaded = true;
     }
 
-    private double CalculateSelectedArea(double goal, double selection){
+    private double CalculateF1(Vector4 areaStats){
 
-            double area = selection - goal;
-            return area;
+        double TP = areaStats.x;
+        double FP = areaStats.y;
+        double FN = areaStats.z;
+        double TN = areaStats.w;
+        // P = TP / (TP + FP)
+        // R = TP / (TP + FN)
+        double precision = TP / (TP + FP);
+        double recall = TP / (TP + FN);
+        // F1 = 2 * (P * R) / (P + R)
+        return 2 * (precision * recall) / (precision + recall);
     }
 
-    private double CalculateAreaPercentage (double areaDiff, double goalArea)
+    private double CalculateMCC (Vector4 areaStats)
     {
-        double percentArea = areaDiff / goalArea * 100;
+        double TP = areaStats.x;
+        double FP = areaStats.y;
+        double FN = areaStats.z;
+        double TN = areaStats.w;
 
-        return percentArea;
+        return ((TP * TN) - (FP * FN)) / Math.Sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN));
     }
 
     /* code for area of triangles adapted from http://james-ramsden.com/area-of-a-triangle-in-3d-c-code/ */
-    private float TriangleArea(GameObject obj, Mesh mesh, Vector3[] verts){
-        float area = 0f;
-        int[] trianglePts = mesh.GetTriangles(1);
+    private Vector4 TriangleArea(GameObject obj, Mesh mesh, Vector3[] verts){
+        float truePositiveArea = 0f;
+        float falsePositiveArea = 0f;
+        float trueNegativeArea = 0f;
+        float falseNegativeArea = 0f;
+        int[] unselectedIndices = mesh.GetTriangles(0);
+        int[] selectedIndices = mesh.GetTriangles(1);
+        int[] combinedIndices = new int[unselectedIndices.Length + selectedIndices.Length];
+        selectedIndices.CopyTo(combinedIndices, 0);
+        unselectedIndices.CopyTo(combinedIndices, selectedIndices.Length);
         List<Vector3> transformedVertices = new List<Vector3>(verts.Length);
 
         for (int i = 0; i < verts.Length; i++)
@@ -285,19 +328,44 @@ public class RunExperiment : MonoBehaviour {
             transformedVertices.Add(obj.gameObject.transform.TransformPoint(verts[i]));
         }
 
-        for (int i = 0; i < trianglePts.Length; i += 3){
-            Vector3 pt0 = transformedVertices[trianglePts[i]];
-            Vector3 pt1 = transformedVertices[trianglePts[i + 1]];
-            Vector3 pt2 = transformedVertices[trianglePts[i + 2]];
+        for (int i = 0; i < combinedIndices.Length; i += 3){
+            Vector3 pt0 = transformedVertices[combinedIndices[i]];
+            Vector3 pt1 = transformedVertices[combinedIndices[i + 1]];
+            Vector3 pt2 = transformedVertices[combinedIndices[i + 2]];
 
             float sideA = Vector3.Distance(pt0, pt1);
             float sideB = Vector3.Distance(pt1, pt2);
             float sideC = Vector3.Distance(pt0, pt2);
 
             float s = (sideA + sideB + sideC) / 2;
-            area += Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+            float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+
+            try
+            {
+                Triangle tri = new Triangle(combinedIndices[i], combinedIndices[i + 1], combinedIndices[i + 2]);
+                switch (SelectionData.TriangleStates[tri])
+                {
+                    case SelectionData.TriangleSelectionState.SelectedOrigSelectedNow:
+                        truePositiveArea += area;
+                        break;
+                    case SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow:
+                        falseNegativeArea += area;
+                        break;
+                    case SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow:
+                        falsePositiveArea += area;
+                        break;
+                    case SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow:
+                        trueNegativeArea += area;
+                        break;
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+                Debug.Log("Can't find triangle key for state");
+            }
+            
         }
-        return area;
+        return new Vector4(truePositiveArea, falsePositiveArea, falseNegativeArea, trueNegativeArea);
     }
 
     void LeaveTrialScene()

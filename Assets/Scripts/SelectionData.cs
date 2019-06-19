@@ -135,4 +135,18 @@ public class SelectionData {
        // outlinePoints = new List<Vector3>();                                        // Do we need this?????????????????????????
 
     }
+
+    //----------------------------------------
+    //Used to run the experiment. Keeps track of a triangle's original selection state in the target and the final state that the user selected
+    public enum TriangleSelectionState
+    {
+        UnselectedOrigUnselectedNow,
+        UnselectedOrigSelectedNow,
+        SelectedOrigUnselectedNow,
+        SelectedOrigSelectedNow
+    }
+
+    public static Dictionary<Triangle, TriangleSelectionState> TriangleStates { get; set; }
+
+    //----------------------------------------
 }

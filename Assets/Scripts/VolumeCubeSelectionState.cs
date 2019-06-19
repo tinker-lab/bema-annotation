@@ -458,6 +458,19 @@ public class VolumeCubeSelectionState : InteractionState
         //Take input from cube about what it collides with
         cubeColliders = centerComponent.CollidedObjects;
 
+        //Call for actually undoing - NEW
+        //Make sure GetPress works
+        if (controller0.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || Input.GetButtonDown("ViveGrip"))
+        {
+            Debug.Log("undo button pressed");
+
+            for (int i = 0; i < SelectionData.RecentlySelectedObj.Count; i++)
+            {
+                Debug.Log(SelectionData.RecentlySelectedObjNames.ElementAt(i).ToString() + " Before Call");
+                undoManager.UndoFunction(SelectionData.RecentlySelectedObjNames.ElementAt(i), SelectionData.RecentlySelectedObj.ElementAt(i));
+            }
+        }
+
         //if there is an object inside the cube (must have at least one)
         //clear the meshes the cube was colliding with previously
         //and add the new meshes that are currently being colliding with to the list
@@ -531,17 +544,7 @@ public class VolumeCubeSelectionState : InteractionState
                 //Debug.Log("Cube Selection: " + currObjMesh.name);
 
 
-                //Moving previous info to recent before updating, for undoing - NEW
-                SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
-                SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
-                SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
-                SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
-                SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
-
-                SelectionData.RecentlySelectedObj.Clear();
-                SelectionData.RecentlySelectedObjNames.Clear();
-                SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
-                SelectionData.RecentlySelectedObj.Add(currObjMesh);
+              
 
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
@@ -585,6 +588,39 @@ public class VolumeCubeSelectionState : InteractionState
                 SelectionData.ObjectsWithSelections.Add(currObjMesh.name);
                 //SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
                 //SelectionData.RecentlySelectedObj.Add(currObjMesh);
+
+                //TODO: add if statement about whether currObjMesh.name is already in list or not, add if not
+                if (!SelectionData.RecentUVs.ContainsKey(currObjMesh.name))
+                {
+                    SelectionData.RecentUVs.Add(currObjMesh.name, SelectionData.PreviousUVs[currObjMesh.name]);
+                    SelectionData.RecentVertices.Add(currObjMesh.name, SelectionData.PreviousVertices[currObjMesh.name]);
+                    SelectionData.RecentNumVertices.Add(currObjMesh.name, SelectionData.PreviousNumVertices[currObjMesh.name]);
+                    SelectionData.RecentUnselectedIndices.Add(currObjMesh.name, SelectionData.PreviousUnselectedIndices[currObjMesh.name]);
+                    SelectionData.RecentSelectedIndices.Add(currObjMesh.name, SelectionData.PreviousSelectedIndices[currObjMesh.name]);
+
+                    SelectionData.RecentlySelectedObj.Clear();
+                    SelectionData.RecentlySelectedObjNames.Clear();
+                    SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                    SelectionData.RecentlySelectedObj.Add(currObjMesh);
+
+                    Debug.Log("This is working");
+                }
+                else
+                {
+                    //Moving previous info to recent before updating, for undoing - NEW
+                    SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
+                    SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
+                    SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
+                    SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
+                    SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
+
+                    SelectionData.RecentlySelectedObj.Clear();
+                    SelectionData.RecentlySelectedObjNames.Clear();
+                    SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                    SelectionData.RecentlySelectedObj.Add(currObjMesh);
+
+                    Debug.Log("This is working");
+                }
 
                 if (!isExperiment)
                 {
@@ -726,15 +762,6 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                         //Debug.Break();
                 }
-            }
-        }
-
-        //Call for actually undoing - NEW
-        //Make sure GetPress works
-        if (controller0.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPress(SteamVR_Controller.ButtonMask.Grip))
-        {
-            for (int i = 0; i < SelectionData.RecentlySelectedObj.Count; i++){
-                undoManager.UndoFunction(SelectionData.RecentlySelectedObjNames.ElementAt(i), SelectionData.RecentlySelectedObj.ElementAt(i)); //how to overcome this?
             }
         }
 
@@ -919,6 +946,21 @@ public class VolumeCubeSelectionState : InteractionState
                 triangleIndex1 = indices[3 * i + 1];
                 triangleIndex2 = indices[3 * i + 2];
 
+                SelectionData.TriangleSelectionState currentTriangleState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+                if (isExperiment && item.gameObject.tag != "highlightmesh")
+                {
+                    Triangle tri = new Triangle(triangleIndex0, triangleIndex1, triangleIndex2);
+                    try
+                    {
+                        currentTriangleState = SelectionData.TriangleStates[tri];
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        Debug.Log("Error triangle does not exist in dictionary");
+                        Debug.Break();
+                    }
+                }
+
                 bool side0 = false;
                 bool side1 = false;
                 bool side2 = false;
@@ -935,10 +977,18 @@ public class VolumeCubeSelectionState : InteractionState
                     if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                     {
                         AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                        }
                     }
                     else
                     {
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                        }
                     }
                 }
                 else
@@ -973,12 +1023,27 @@ public class VolumeCubeSelectionState : InteractionState
                             AddNewIndices(unselectedIndices, triangleIndex0, intersectIndex0, intersectIndex1);
                             AddNewIndices(unselectedIndices, triangleIndex2, triangleIndex0, intersectIndex1);
 
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                            }
+
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex1, intersectIndex0, triangleIndex1);
                             AddNewIndices(selectedIndices, triangleIndex0, intersectIndex0, intersectIndex1);
                             AddNewIndices(selectedIndices, triangleIndex2, triangleIndex0, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                            }
                         }
                     }
                     else if (side0 && side2)
@@ -1006,12 +1071,26 @@ public class VolumeCubeSelectionState : InteractionState
                             AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(unselectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
                             AddNewIndices(unselectedIndices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                            }
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(selectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
                             AddNewIndices(selectedIndices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                            }
                         }
                     }
                     else if (side1 && side2)
@@ -1039,12 +1118,26 @@ public class VolumeCubeSelectionState : InteractionState
                             AddNewIndices(selectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
                             AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                            }
                         }
                         else
                         {
                             AddNewIndices(unselectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
                             AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                                UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                                UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                            }
                         }
                     }
                 }
@@ -1123,6 +1216,54 @@ public class VolumeCubeSelectionState : InteractionState
         indices.Add(index0);
         indices.Add(index1);
         indices.Add(index2);
+    }
+
+    private void UpdateTriangleState(SelectionData.TriangleSelectionState currentState, int index0, int index1, int index2, bool isSelectedNow)
+    {
+        SelectionData.TriangleSelectionState newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+
+
+        Triangle tri = new Triangle(index0, index1, index2);
+        if (SelectionData.TriangleStates.ContainsKey(tri))
+        {
+            SelectionData.TriangleStates[tri] = newState;
+        }
+        else
+        {
+            SelectionData.TriangleStates.Add(tri, newState);
+        }
     }
 
     //use this method for each side of the cube instead of the plane, replace plane with side

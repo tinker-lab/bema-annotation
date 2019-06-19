@@ -80,10 +80,12 @@ public class Trial
     [XmlElement("id")]
     public int trialOrder;
     public string selectionInterface;
-    public double goalArea;
-    public double selectedArea;
-    public double selectedDifference;                  // total selected area -> updated to hold final amount
-    public double selectedPercentage;
+    public double tpArea;
+    public double fpArea;
+    public double fnArea;
+    public double tnArea;
+    public double f1;
+    public double mcc;
     public float timeElapsed;                   // total duration spent on a trial
    
     public List<EventRecord> events;     // Dictionary where key corresponds to a time stamp every time a button or swipe event takes place 
@@ -91,10 +93,12 @@ public class Trial
     public Trial(){
         trialOrder = 0;
         selectionInterface = "";                //should selectionInterface be saved here attached to every trial number or once in experimentData. would it ever be overwritten there?
-        goalArea = 0;
-        selectedArea = 0;
-        selectedDifference = 0;
-        selectedPercentage = 0;
+        tpArea = 0;
+        fpArea = 0;
+        fnArea = 0;
+        tnArea = 0;
+        f1 = 0;
+        mcc = 0;
         timeElapsed = 0f;
        
         events = new List<EventRecord>();
@@ -202,19 +206,23 @@ public class RecordData : MonoBehaviour {
         return lastState;
     }
 
-    public void EndTrial(double goal, double selection, double diffArea, double percent, float duration) {
-        trialData.trials[trialID].goalArea = goal;
-        trialData.trials[trialID].selectedArea = selection;
-        trialData.trials[trialID].selectedDifference = diffArea;
-        trialData.trials[trialID].selectedPercentage = percent;
+    public void EndTrial(double tpArea, double fpArea, double fnArea, double tnArea, double f1, double mcc, float duration) {
+        trialData.trials[trialID].tpArea = tpArea;
+        trialData.trials[trialID].fpArea = fpArea;
+        trialData.trials[trialID].fnArea = fnArea;
+        trialData.trials[trialID].tnArea = tnArea;
+        trialData.trials[trialID].f1 = f1;
+        trialData.trials[trialID].mcc = mcc;
         trialData.trials[trialID].timeElapsed = duration;
 
         //trialID++;
     }
 
+    // Returns the percentage accuractly selected
     public double GetSelectedPercentage()
     {
-        return trialData.trials[trialID].selectedPercentage;
+        // i.e. recall TP / (TP + FN)
+        return trialData.trials[trialID].tpArea / (trialData.trials[trialID].tpArea + trialData.trials[trialID].fnArea) * 100.0;
     }
 
     public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, Transform hmd, long timeStamp, string eventStr = "") {

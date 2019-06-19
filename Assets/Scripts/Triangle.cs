@@ -4,65 +4,29 @@ using UnityEngine;
 using System;
 
 public class Triangle {
-    private EdgeInfo edge0;
-    private EdgeInfo edge1;
-    private EdgeInfo edge2;
-    private HashSet<EdgeInfo> orderedEdges;
-
-    public EdgeInfo Edge0
-    {
-        get { return edge0; }
-    }
-
-    public EdgeInfo Edge1
-    {
-        get { return edge1; }
-    }
-
-    public EdgeInfo Edge2
-    {
-        get { return edge2; }
-    }
-
-    public HashSet<EdgeInfo> OrderedEdges
-    {
-        get { return orderedEdges; }
-    }
     
+    private int Index0 { get; set; }
+    private int Index1 { get; set; }
+    private int Index2 { get; set; }
+
     public Triangle(int index0, int index1, int index2)
     {
-        //edge0 = new EdgeInfo(index0, index1, this);
-        //edge1 = new EdgeInfo( index0, index2, this) ;
-        //edge2 = new EdgeInfo (index1, index2, this);
-        //orderedEdges.Add(orderedTuple(edge0));
-        //orderedEdges.Add(orderedTuple(edge1));
-        //orderedEdges.Add(orderedTuple(edge2));
+        Index0 = index0;
+        Index1 = index1;
+        Index2 = index2;
     }
 
-    //public static List<int> orderedTuple(List<int> edge)
-    //{
-    //    if (edge[1] < edge[0])
-    //    {
-    //        return new List<int> { edge[1], edge[0] };
-    //    }
-    //    else
-    //    {
-    //        return edge;
-    //    }
-    //}
+    public override bool Equals(object obj)
+    {
+        Triangle otherObj = (Triangle)obj;
 
-    //public bool isAdjacent(Triangle t)
-    //{
-    //    foreach (List<int> edge in orderedEdges)
-    //    {
-    //        if (t.OrderedEdges.Contains(edge))
-    //        {
-    //            return true;
-    //        }
-    //    }
-    //    return false;
-    //}
+        return (otherObj.Index0 == this.Index0 && otherObj.Index1 == this.Index1 && otherObj.Index2 == this.Index2);
+    }
 
+    public override int GetHashCode()
+    {
+        return Index0.GetHashCode() + Index1.GetHashCode()+ Index2.GetHashCode();
+    }
 
 
 

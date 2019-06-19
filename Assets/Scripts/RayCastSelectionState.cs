@@ -308,7 +308,7 @@ public class RayCastSelectionState : InteractionState
                 UpdateTriangleIndices(children);
                 if (i == outlinePoints.Count - 1)
                 {
-                    MarkEndToStartConnectionAsCut(children, outlinePoints[i]);
+                    MarkEndToStartConnectionAsCut(children, outlinePoints[i], outlineTriangles[i]);
                 }
             }
             else
@@ -358,7 +358,7 @@ public class RayCastSelectionState : InteractionState
                 prevPoint = outlinePoints[i];
                 if (i == outlinePoints.Count - 1)
                 {
-                    MarkEndToStartConnectionAsCut(children, outlinePoints[i]);
+                    MarkEndToStartConnectionAsCut(children, outlinePoints[i], outlineTriangles[i]);
                 }
             }
         }
@@ -414,42 +414,108 @@ public class RayCastSelectionState : InteractionState
 
 
     //TODO: what if they aren't in the same tri! fix this.
-    private void MarkEndToStartConnectionAsCut(Dictionary<int, List<int>> newTris, Vector3 secondToLastPoint)
+    private void MarkEndToStartConnectionAsCut(Dictionary<int, List<int>> newTris, Vector3 secondToLastPoint, int secondToLastPointTriangleId)
     {
-        foreach(KeyValuePair<int, List<int>> entry in newTris)
+        int startPointTriId = -1;
+        int endIndex = -1;
+        foreach (KeyValuePair<int, List<int>> entry in newTris)
         {
             List<int> children = entry.Value;
-            foreach(int id  in children)
+            foreach (int id in children)
             {
-                // Does this triangle we just created have the outline start point as a vertex? Is so, one of it's edges should be cut.
-                int endIndex = curMeshData.VertexIndex(id, outlinePoints[0]);
+                // Does this triangle we just created have the outline start point as a vertex? If so, one of its edges should be cut.
+                endIndex = curMeshData.VertexIndex(id, outlinePoints[0]);
                 if (endIndex != -1)
                 {
-                    int startIndex = curMeshData.VertexIndex(id, secondToLastPoint);
-                    if (startIndex != -1)
+                    startPointTriId = id;
+                    break;
+                }
+            }
+        }
+
+        if (startPointTriId == -1)
+        {
+            Debug.Log("Cannot find triangle for start point of outline!");
+            Debug.Break();
+        }
+
+        int startIndex = curMeshData.VertexIndex(startPointTriId, secondToLastPoint);
+        if (startIndex != -1)
+        {
+            // Start and second to last point are in the same triangle, so just find the appropriate edge to mark as cut.
+            MeshTriangle tri = curMeshData.Face(startPointTriId);
+            int edgeIndex = curMeshData.EdgeIndex(startIndex, endIndex);
+            switch (edgeIndex)
+            {
+                case 0:
+                    tri.edge0IsCut = true;
+                    break;
+                case 1:
+                    tri.edge1IsCut = true;
+                    break;
+                case 2:
+                    tri.edge2IsCut = true;
+                    break;
+            }
+        }
+        else
+        {
+            // Start and second to last point are not in the same triangle, so we need to find and split triangles between them.
+            Debug.Log("Error: can't find secondToLastPoint in the start point's triangle");
+
+            int prevTriId = secondToLastPointTriangleId;
+            Vector3 prevPoint = secondToLastPoint;
+
+            while (!curMeshData.IsTriangleVertex(startPointTriId, prevPoint))
+            {
+                foreach (int child in newTris[prevTriId])
+                {
+                    List<Vector3> prevTriPoints = curMeshData.Points(child);
+                    Vector3 prevNormal = Vector3.Cross(prevTriPoints[0] - prevTriPoints[1], prevTriPoints[2] - prevTriPoints[1]).normalized;
+                    Vector3 projectionOfCurrentIntoPrevPlane = outlinePoints[0] + (prevNormal * (-(Vector3.Dot(prevNormal, outlinePoints[0]) - Vector3.Dot(prevNormal, prevPoint))));
+
+                    //We know that the previous point was used to split and becomes vid0 within the triangle, so test edge0 (vindex 1 and 2) for intersection.
+                    Vector3 intersectPoint = new Vector3();
+                    bool isIntersection = FindIntersection(ref intersectPoint, prevPoint, projectionOfCurrentIntoPrevPlane, prevTriPoints[1], prevTriPoints[2]);
+
+                    if (isIntersection)
                     {
-                        MeshTriangle tri = curMeshData.Face(id);
-                        int edgeIndex = curMeshData.EdgeIndex(startIndex, endIndex);
-                        switch (edgeIndex)
+
+                        // split face on previous tri (also splits current tri)
+                        newTris = curMeshData.SplitFace(child, 0, intersectPoint);
+
+                        // When we split there are two keys in children. We want the neighboring triangle
+                        Dictionary<int, List<int>>.KeyCollection keyColl = newTris.Keys;
+                        foreach (int key in keyColl)
                         {
-                            case 0:
-                                tri.edge0IsCut = true;
+                            if (key != child)
+                            {
+                                prevTriId = key;
                                 break;
-                            case 1:
-                                tri.edge1IsCut = true;
-                                break;
-                            case 2:
-                                tri.edge2IsCut = true;
-                                break;
+                            }
                         }
-                    }
-                    else
-                    {
-                        Debug.Log("Error: can't find secondToLastPoint");
-                        Debug.Break();
+
+                        prevPoint = intersectPoint;
+                        UpdateTriangleIndices(newTris);
+                        break;
                     }
                 }
-
+            }
+            // Start and second to last intersection point are now in the same triangle, so just find the appropriate edge to mark as cut.
+            MeshTriangle tri = curMeshData.Face(prevTriId);
+            startIndex = curMeshData.VertexIndex(prevTriId, prevPoint);
+            int edgeIndex = curMeshData.EdgeIndex(startIndex, endIndex);
+            switch (edgeIndex)
+            {
+                case 0:
+                    tri.edge0IsCut = true;
+                    break;
+                case 1:
+                    tri.edge1IsCut = true;
+                    break;
+                case 2:
+                    tri.edge2IsCut = true;
+                    break;
             }
         }
     }
@@ -1072,12 +1138,16 @@ public class MeshData
     /// <param name="vertexId"></param>
     /// <param name="splitPoint"></param>
     /// <returns>A dictionary of the child triangles created. </returns>
-    public Dictionary<int, List<int>> SplitFace(int triId, int vertexId, Vector3 splitPoint)
+    public Dictionary<int, List<int>> SplitFace(int triId, int splitVertIndexInTri, Vector3 splitPoint)
     {
         MeshTriangle splitTri = meshTriangles[triId];
 
-        int splitVertIndexInTri = VertexIndex(vertexId, splitTri);
-        Debug.Assert(splitVertIndexInTri != -1);
+        int vertexId = VertexID(splitTri, splitVertIndexInTri);
+        Debug.Assert(vertexId != -1);
+        if (vertexId == -1)
+        {
+            Debug.Break();
+        }
 
         Vector3 splitEdgeDir = (Vertex(splitTri, CW(splitVertIndexInTri)).point - Vertex(splitTri, CCW(splitVertIndexInTri)).point);
         float alpha = (splitPoint - Vertex(splitTri, CCW(splitVertIndexInTri)).point).magnitude / splitEdgeDir.magnitude;
@@ -1102,8 +1172,16 @@ public class MeshData
 
 
         MeshTriangle neighbor = Neighbor(splitTri, splitVertIndexInTri);
+        if (neighbor == null)
+        {
+            Debug.Break();
+        }
         int neighborSplitIndex = FaceIndex(splitTri, neighbor);
         MeshVertex neighborSplitVertex = Vertex(neighbor, neighborSplitIndex);
+        if (neighborSplitVertex == null)
+        {
+            Debug.Break();
+        }
         int neighborId = NeighborId(splitTri, splitVertIndexInTri);
 
 
@@ -1214,6 +1292,13 @@ public class MeshData
         {
             meshTriangles[adj].UpdateAdjTri(neighborId, tri2Id);
         }
+
+        meshVertices.Add(split0);
+        meshVertices.Add(split1);
+        meshVertices.Add(split2);
+        meshVertices.Add(split3);
+        meshVertices.Add(newSplitVertex);
+        meshVertices.Add(newNeighborSplitVertex);
 
         meshTriangles.Add(tri0);
         meshTriangles.Add(tri1);
@@ -1338,7 +1423,15 @@ public class MeshData
     // Returns a list of the vertex positions for a specific triangle
     public List<Vector3> Points(int triId)
     {
+        if (triId < 0 || triId >= meshTriangles.Count)
+        {
+            Debug.Break();
+        }
         MeshTriangle tri = meshTriangles[triId];
+        if (tri.vId0 >= meshVertices.Count || tri.vId1 >= meshVertices.Count || tri.vId2 >= meshVertices.Count)
+        {
+            Debug.Break();
+        }
         return new List<Vector3>() { meshVertices[tri.vId0].point, meshVertices[tri.vId1].point, meshVertices[tri.vId2].point };
     }
 
@@ -1403,6 +1496,7 @@ public class MeshData
         }
     }
 
+    // Returns the vertex number for the point or -1 if the point is not approx equal to any verticves in triID
     public int VertexIndex(int triId, Vector3 point)
     {
         MeshTriangle tri = meshTriangles[triId];
@@ -1423,6 +1517,23 @@ public class MeshData
             Debug.Log("Cannot find a vertex with that point in this tri");
             //Debug.Break();
             return -1;
+        }
+    }
+
+    public int VertexID(MeshTriangle tri, int vertexIndex)
+    {
+        Debug.Assert(vertexIndex >= 0 && vertexIndex < 3);
+        switch (vertexIndex)
+        {
+            case 0:
+                return tri.vId0;
+            case 1:
+                return tri.vId1;
+            case 2:
+                return tri.vId2;
+            default:
+                Debug.Log("ERROR in VertexId call. Tried to access with index not within range [0-2]");
+                return -1;
         }
     }
 

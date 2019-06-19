@@ -12,6 +12,7 @@
  * Press play on unity, and a new object and mesh will be made.
  * In order to save this new object, you must rename the object and the mesh before hitting play again, or else it will be replaced with the new cut.
  * Only one object can be made per time play is hit.
+ * Press 'm' to make the object.
  * The only exception to this is that you can make circles as well by hitting the key 'c' after pressing play once.
  * Additional planes will show up to do this, so delete the other planes for the circle to be successful.
  * The center of the circle will be the origin on the unity scene, so make sure the object is placed at the origin.
@@ -52,7 +53,7 @@ public class ObjectMaker : MonoBehaviour
         previousUVs = UVList;
         previousNumVertices = baseObject.GetComponent<MeshFilter>().mesh.vertices.Length;
 
-        MakeObject();
+        //MakeObject();
     }
 
     void Update()
@@ -62,6 +63,16 @@ public class ObjectMaker : MonoBehaviour
             MakeCircle circle = new MakeCircle();
             circle.GeneratePlaneCircle();
             MakeObject();
+        }
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            MakeObject();
+        }
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            Debug.Log("Creating Combined");
+            GameObject combinedObj = CombineSelectedAndUnselected();
+            SaveObject(combinedObj);
         }
     }
 
@@ -77,17 +88,17 @@ public class ObjectMaker : MonoBehaviour
             previousNumVertices = baseObject.GetComponent<MeshFilter>().mesh.vertices.Length;
 
             ColorMesh();
-            Debug.Break();
         }
 
-        SaveObject();
+        SaveObject(baseObject);
     }
 
 
     /* The code in SaveObject() and CreateNew() come from the Unity manual at https://docs.unity3d.com/ScriptReference/PrefabUtility.html */
-    private void SaveObject(){
+    static void SaveObject(GameObject obj){
         //Set the path as within the Assets folder, and name it as the GameObject's name with the .prefab format
-        string localPath = "Assets/" + baseObject.name + ".prefab";
+        string localPath = "Assets/" + obj.name + ".prefab";
+        Debug.Log("Saving to " + localPath);
 
         //Check if the Prefab and/or name already exists at the path
         if (AssetDatabase.LoadAssetAtPath(localPath, typeof(GameObject)))
@@ -99,14 +110,14 @@ public class ObjectMaker : MonoBehaviour
                     "No"))
             //If the user presses the yes button, create the Prefab
             {
-                CreateNew(baseObject, localPath);
+                CreateNew(obj, localPath);
             }
         }
         //If the name doesn't exist, create the new Prefab
         else
         {
-            Debug.Log(baseObject.name + " is not a prefab, will convert");
-            CreateNew(baseObject, localPath);
+            Debug.Log(obj.name + " is not a prefab, will convert");
+            CreateNew(obj, localPath);
         }
     }
 
@@ -114,13 +125,34 @@ public class ObjectMaker : MonoBehaviour
     static void CreateNew(GameObject obj, string localPath)
     {
         Mesh changedMesh = obj.GetComponent<MeshFilter>().mesh;
-        AssetDatabase.CreateAsset(changedMesh, localPath.Substring(0,localPath.Length-7) + " mesh.asset");
+
+        AssetDatabase.CreateAsset(changedMesh, localPath.Substring(0, localPath.Length - 7) + " mesh.asset");
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
         //Create a new prefab at the path given
         Object prefab = PrefabUtility.CreatePrefab(localPath, obj);
         PrefabUtility.ReplacePrefab(obj, prefab, ReplacePrefabOptions.ConnectToPrefab);
+    }
+
+    private GameObject CombineSelectedAndUnselected()
+    {
+        GameObject combined = Object.Instantiate(baseObject);
+        combined.name = baseObject.name + " Combined";
+        Mesh mesh = combined.GetComponent<MeshFilter>().mesh;
+        Material[] materials = new Material[1];
+        mesh.subMeshCount = 1;
+        //Debug.Log(item.name + " s: " + SelectionData.PreviousSelectedIndices[item.name].Count().ToString() + " u: " + SelectionData.PreviousUnselectedIndices[item.name].Count().ToString());
+        int[] combinedIndicies = new int[previousSelectedIndices.Length + previousUnselectedIndices.Length];
+        previousSelectedIndices.CopyTo(combinedIndicies, 0);
+        previousUnselectedIndices.CopyTo(combinedIndicies, previousSelectedIndices.Length);
+        mesh.SetTriangles(combinedIndicies, 0);
+
+        materials[0] = Resources.Load("GrayConcrete") as Material;
+
+        combined.GetComponent<Renderer>().materials = materials;
+        mesh.RecalculateNormals();
+        return combined;
     }
 
     private void ColorMesh(){

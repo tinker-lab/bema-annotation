@@ -18,7 +18,13 @@ public class SliceNSwipeSelectionState : InteractionState
     bool swapControllers;
     //bool canTransition;
 
-    private static int sliceStatus = 0;    //0 if you haven't just made a slice, 1 if you have and you need to select.
+    private enum SliceStatusState
+    {
+        ReadyToSlice = 0,
+        SliceActiveReadyToSwipe
+    }
+
+    private static SliceStatusState sliceStatus = SliceStatusState.ReadyToSlice;    //0 if you haven't just made a slice, 1 if you have and you need to select.
     //private ControllerInfo controller0;
     //private ControllerInfo controller1;
     private ControllerInfo mainController;
@@ -52,6 +58,10 @@ public class SliceNSwipeSelectionState : InteractionState
 
     private static Dictionary<string, int[]> sliced0Indices;
     private static Dictionary<string, int[]> sliced1Indices;
+
+    // We use these to keep track of the two possible alternatives when you swipe. After a slice, we reset the approprate (depending on swipe direction) one to SelectionData.TriangleStates.
+    public Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates0;
+    public Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates1;
 
     private List<OutlinePoint> unsortedOutlinePoints;    // Pairs of two connected points to be used in drawing an outline mesh
 
@@ -163,7 +173,7 @@ public class SliceNSwipeSelectionState : InteractionState
     public override bool CanTransition()
     {
         bool allowed;
-        if(sliceStatus == 1)
+        if(sliceStatus == SliceStatusState.SliceActiveReadyToSwipe)
         {
             allowed = false;
         }
@@ -269,7 +279,7 @@ public class SliceNSwipeSelectionState : InteractionState
             mesh.subMeshCount = 2;
             indices = SelectionData.PreviousSelectedIndices[collidingMesh.name].ToList(); // the indices of last selection
 
-            if (sliceStatus == 1)
+            if (sliceStatus == SliceStatusState.SliceActiveReadyToSwipe)
             {
                 sliced0Indices.Remove(collidingMesh.name);
                 sliced1Indices.Remove(collidingMesh.name);
@@ -324,7 +334,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
         List<Vector2> UVList = new List<Vector2>();
 
-        if (sliceStatus == 0)
+        if (sliceStatus == SliceStatusState.ReadyToSlice)
         {
             if (!isExperiment)
             {
@@ -333,7 +343,7 @@ public class SliceNSwipeSelectionState : InteractionState
         }
         if (collidingMesh != null)
         { 
-            if (sliceStatus == 0 && Vector3.Distance(lastPos, currentPos) <= motionThreshold) //small movement and you haven't made a slice
+            if (sliceStatus == SliceStatusState.ReadyToSlice && Vector3.Distance(lastPos, currentPos) <= motionThreshold) //small movement and you haven't made a slice
             {
                 UpdatePlane(lastPos - currentPos);
 
@@ -345,7 +355,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
                 // Debug.Log("not slice: " + dist.ToString());
             }
-            else if (sliceStatus == 0 && !mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold ) // you just made a big slicing movement
+            else if (sliceStatus == SliceStatusState.ReadyToSlice && !mainController.device.GetHairTrigger() && Vector3.Distance(lastPos, currentPos) > motionThreshold ) // you just made a big slicing movement
             {
                 eventString = "slice for selection " + selectionCount.ToString();
                 //string debugString = "";
@@ -375,15 +385,15 @@ public class SliceNSwipeSelectionState : InteractionState
                 }
                 //Debug.Log("SLICE: " + debugString);
 
-                sliceStatus = 1;
+                sliceStatus = SliceStatusState.SliceActiveReadyToSwipe;
             }
-            else if (sliceStatus == 1)
+            else if (sliceStatus == SliceStatusState.SliceActiveReadyToSwipe)
             {
                 if (altController.device.GetHairTrigger())          //remove last swipe
                 {
                     eventString = "swipe selection " + selectionCount.ToString();
                     selectionCount++;
-                    sliceStatus = 0;
+                    sliceStatus = SliceStatusState.ReadyToSlice;
 
                     sliced0Indices.Remove(collidingMesh.name);
                     sliced1Indices.Remove(collidingMesh.name);
@@ -427,27 +437,25 @@ public class SliceNSwipeSelectionState : InteractionState
                      * make discarded indeces transparent and delete slicing plane.
                      */
 
-                    Vector3 heading = (lastPos - currentPos).normalized;
+                    Vector3 heading = (currentPos - lastPos).normalized;
 
                     if (SelectionData.PreviousNumVertices.ContainsKey(collidingMesh.name) && collidingMesh.gameObject.tag != "highlightmesh")
                     {
-                        if (NormalSwipe(heading, slicePlane))
+                        if (isSwipeTowardsNormalSideOfPlane(heading, slicePlane))
                         {
                             //Debug.Log("swipe " + collidingMesh.name);
                             SelectionData.PreviousUnselectedIndices[collidingMesh.name] = SelectionData.PreviousUnselectedIndices[collidingMesh.name].Concat(sliced0Indices[collidingMesh.name]).ToArray();
                             SelectionData.PreviousSelectedIndices[collidingMesh.name] = sliced1Indices[collidingMesh.name];
+                            SelectionData.TriangleStates = triangleStates1;
                         }
-                        else if (!NormalSwipe(heading, slicePlane))
+                        else
                         {
 
                             //Debug.Log("swipe " + collidingMesh.name);
                             SelectionData.PreviousSelectedIndices[collidingMesh.name] = sliced0Indices[collidingMesh.name];
                             SelectionData.PreviousUnselectedIndices[collidingMesh.name] = SelectionData.PreviousUnselectedIndices[collidingMesh.name].Concat(sliced1Indices[collidingMesh.name]).ToArray();
+                            SelectionData.TriangleStates = triangleStates0;
                         }
-                        //else
-                        //{
-                        //    Debug.Log("Swipe not to a normal or !normal side of plane???");
-                        //}
                     }
                     SelectionData.PreviousNumVertices[collidingMesh.name] = collidingMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
                     SelectionData.PreviousVertices[collidingMesh.name] = collidingMesh.GetComponent<MeshFilter>().mesh.vertices;
@@ -488,7 +496,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             }
 
                             SplitMesh(outline);
-                            if (NormalSwipe(heading, slicePlane))
+                            if (isSwipeTowardsNormalSideOfPlane(heading, slicePlane))
                             {
                                 SelectionData.PreviousSelectedIndices[outline.name] = sliced1Indices[outline.name];
                             }
@@ -532,7 +540,7 @@ public class SliceNSwipeSelectionState : InteractionState
 
                     //Debug.Log(debugStr);
 
-                    sliceStatus = 0;
+                    sliceStatus = SliceStatusState.ReadyToSlice;
                 }
             }
         }
@@ -680,9 +688,9 @@ public class SliceNSwipeSelectionState : InteractionState
         return Vector3.Dot(plane.transform.up, pt) >= Vector3.Dot(plane.transform.up, plane.transform.position);
     }
 
-    private bool NormalSwipe(Vector3 swipeDirection, GameObject slicePlane)
+    private bool isSwipeTowardsNormalSideOfPlane(Vector3 swipeDirection, GameObject slicePlane)
     {
-        return Vector3.Dot(swipeDirection, slicePlane.transform.up) <= 0;
+        return Vector3.Dot(swipeDirection, slicePlane.transform.up) >= 0;
     }
 
     private void SplitMesh(GameObject item)
@@ -731,12 +739,30 @@ public class SliceNSwipeSelectionState : InteractionState
         int intersectIndex1;
         int intersectIndex2;
 
+        triangleStates0 = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
+        triangleStates1 = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
+
 
         for (int i = 0; i < indices.Length / 3; i++)
         {
             triangleIndex0 = indices[3 * i];
             triangleIndex1 = indices[3 * i + 1];
             triangleIndex2 = indices[3 * i + 2];
+
+            SelectionData.TriangleSelectionState currentTriangleState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+            if (isExperiment && item.gameObject.tag != "highlightmesh")
+            {
+                Triangle tri = new Triangle(triangleIndex0, triangleIndex1, triangleIndex2);
+                try
+                {
+                    currentTriangleState = SelectionData.TriangleStates[tri];
+                }
+                catch (KeyNotFoundException)
+                {
+                    Debug.Log("Error triangle does not exist in dictionary");
+                    Debug.Break();
+                }
+            }
 
             bool side0 = false;
             bool side1 = false;
@@ -754,10 +780,20 @@ public class SliceNSwipeSelectionState : InteractionState
                 if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                 {
                     AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                    if (isExperiment && item.gameObject.tag != "highlightmesh")
+                    {
+                        UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                        UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                    }
                 }
                 else
                 {
                     AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                    if (isExperiment && item.gameObject.tag != "highlightmesh")
+                    {
+                        UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                        UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                    }
                 }
             }
             //else if (side0 && side1 && side2)
@@ -800,12 +836,34 @@ public class SliceNSwipeSelectionState : InteractionState
                         AddNewIndices(selected1Indices, triangleIndex0, intersectIndex0, intersectIndex1);
                         AddNewIndices(selected1Indices, triangleIndex2, triangleIndex0, intersectIndex1);
 
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                        }
+
                     }
                     else
                     {
                         AddNewIndices(selected1Indices, intersectIndex1, intersectIndex0, triangleIndex1);
                         AddNewIndices(selected0Indices, triangleIndex0, intersectIndex0, intersectIndex1);
                         AddNewIndices(selected0Indices, triangleIndex2, triangleIndex0, intersectIndex1);
+
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                        }
                     }
                 }
                 else if (side0 && side2)
@@ -829,12 +887,34 @@ public class SliceNSwipeSelectionState : InteractionState
                         AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex0);
                         AddNewIndices(selected1Indices, triangleIndex2, intersectIndex2, intersectIndex0);
                         AddNewIndices(selected1Indices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                        }
                     }
                     else
                     {
                         AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex0);
                         AddNewIndices(selected0Indices, triangleIndex2, intersectIndex2, intersectIndex0);
                         AddNewIndices(selected0Indices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                        }
                     }
                 }
                 else if (side1 && side2)
@@ -858,12 +938,34 @@ public class SliceNSwipeSelectionState : InteractionState
                         AddNewIndices(selected0Indices, intersectIndex1, triangleIndex2, intersectIndex2);
                         AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex1);
                         AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                        }
                     }
                     else
                     {
                         AddNewIndices(selected1Indices, intersectIndex1, triangleIndex2, intersectIndex2);
                         AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex1);
                         AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        {
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                        }
                     }
                 }
             }
@@ -885,6 +987,54 @@ public class SliceNSwipeSelectionState : InteractionState
 
         unsortedOutlinePoints.Clear();
 
+    }
+
+    private void UpdateTriangleState(Dictionary<Triangle, SelectionData.TriangleSelectionState> dictionary, SelectionData.TriangleSelectionState currentState, int index0, int index1, int index2, bool isSelectedNow)
+    {
+        SelectionData.TriangleSelectionState newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow;
+        }
+        else if (currentState == SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow && !isSelectedNow)
+        {
+            newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
+        }
+
+
+        Triangle tri = new Triangle(index0, index1, index2);
+        if (dictionary.ContainsKey(tri))
+        {
+           dictionary[tri] = newState;
+        }
+        else
+        {
+            dictionary.Add(tri, newState);
+        }
     }
 
     private bool BoundingCircleIntersectsWithPlane(GameObject plane, Vector3 a, Vector3 b, Vector3 c)

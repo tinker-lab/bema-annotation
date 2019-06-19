@@ -19,6 +19,9 @@ public class InteractionState
      */
     public virtual void Deactivate() { }
 
+    /* Called by UIController right before setting the state to be the current state. Can be used to reactivate widgets or user input. */
+    public virtual void ActivateState() { }
+
     /*
      * Called every frame from the UIController update method if this interaction state is currently active. This should interpret the events and update any visual feedback.
      */
@@ -34,6 +37,7 @@ public class ControllerInfo
     public bool isLeft;
     public SteamVR_Controller.Device device;
     public SteamVR_TrackedObject trackedObj;
+    public SteamVR_TrackedController trackedController;
 
     public ControllerInfo (GameObject controller)
     {
@@ -41,6 +45,7 @@ public class ControllerInfo
         isLeft = false;
         trackedObj = controller.GetComponent<SteamVR_TrackedObject>();
         device = SteamVR_Controller.Input((int)trackedObj.index);
+        trackedController = controller.GetComponent<SteamVR_TrackedController>();
     }
 }
 
@@ -94,7 +99,8 @@ public class UIController : MonoBehaviour {
 
         //currentState = new PickResourceState(controller0Info);
         //currentState = new NavigationState(controller0Info, controller1Info);
-        currentState = handSelectionState;
+        currentState = rayCastSelectionState; //handSelectionState;
+        currentState.ActivateState();
     }
 
     // Update is called once per frame
@@ -116,7 +122,7 @@ public class UIController : MonoBehaviour {
         if(Input.GetKeyDown("1"))
         {
             //ChangeState(new NavigationState(controller0Info, controller1Info));
-            //ChangeState(handSelectionState);
+            ChangeState(handSelectionState);
         }
         else if(Input.GetKeyDown("2"))
         {
@@ -160,6 +166,7 @@ public class UIController : MonoBehaviour {
     {
         currentState.Deactivate();
         currentState = newState;
+        currentState.ActivateState();
     }
 
     void determineLeftRightControllers()
