@@ -811,160 +811,308 @@ public class SliceNSwipeSelectionState : InteractionState
                // for side with 2, add vertices, add 2 triangles
                 if (side0 && side1) // 2 intersections
                 {
-                    intersectIndex0 = numVertices++;
-                    intersectIndex1 = numVertices++;
 
-                    vertices.Add(intersectPoint0);
-                    vertices.Add(intersectPoint1);
-
-
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
-                    UVs.Add(intersectUV0);
-                    UVs.Add(intersectUV1);
-
-
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                    if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint1))
                     {
-
-                        // Add the indices for various triangles to selected and unselected
-
-                        AddNewIndices(selected0Indices, intersectIndex1, intersectIndex0, triangleIndex1);
-                        AddNewIndices(selected1Indices, triangleIndex0, intersectIndex0, intersectIndex1);
-                        AddNewIndices(selected1Indices, triangleIndex2, triangleIndex0, intersectIndex1);
-
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
-
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
                         }
-
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
+                        }
                     }
                     else
                     {
-                        AddNewIndices(selected1Indices, intersectIndex1, intersectIndex0, triangleIndex1);
-                        AddNewIndices(selected0Indices, triangleIndex0, intersectIndex0, intersectIndex1);
-                        AddNewIndices(selected0Indices, triangleIndex2, triangleIndex0, intersectIndex1);
+                        intersectIndex0 = numVertices++;
+                        intersectIndex1 = numVertices++;
 
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        vertices.Add(intersectPoint0);
+                        vertices.Add(intersectPoint1);
+
+
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
+                        UVs.Add(intersectUV0);
+                        UVs.Add(intersectUV1);
+
+
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
 
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                            // Add the indices for various triangles to selected and unselected
+
+                            AddNewIndices(selected0Indices, intersectIndex1, intersectIndex0, triangleIndex1);
+                            AddNewIndices(selected1Indices, triangleIndex0, intersectIndex0, intersectIndex1);
+                            AddNewIndices(selected1Indices, triangleIndex2, triangleIndex0, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                            }
+
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, intersectIndex1, intersectIndex0, triangleIndex1);
+                            AddNewIndices(selected0Indices, triangleIndex0, intersectIndex0, intersectIndex1);
+                            AddNewIndices(selected0Indices, triangleIndex2, triangleIndex0, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                            }
                         }
                     }
                 }
                 else if (side0 && side2)
                 {
-                    intersectIndex0 = numVertices++;
-                    intersectIndex2 = numVertices++;
-
-                    vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                    vertices.Add(intersectPoint2);
-
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
-                    UVs.Add(intersectUV0);
-                    UVs.Add(intersectUV2);
-
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                    if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint2))
                     {
-                        AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex0);
-                        AddNewIndices(selected1Indices, triangleIndex2, intersectIndex2, intersectIndex0);
-                        AddNewIndices(selected1Indices, triangleIndex1, triangleIndex2, intersectIndex0);
-
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
-
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
                         }
                     }
                     else
                     {
-                        AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex0);
-                        AddNewIndices(selected0Indices, triangleIndex2, intersectIndex2, intersectIndex0);
-                        AddNewIndices(selected0Indices, triangleIndex1, triangleIndex2, intersectIndex0);
 
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        intersectIndex0 = numVertices++;
+                        intersectIndex2 = numVertices++;
+
+                        vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                        vertices.Add(intersectPoint2);
+
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
+                        UVs.Add(intersectUV0);
+                        UVs.Add(intersectUV2);
+
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                            AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex0);
+                            AddNewIndices(selected1Indices, triangleIndex2, intersectIndex2, intersectIndex0);
+                            AddNewIndices(selected1Indices, triangleIndex1, triangleIndex2, intersectIndex0);
 
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex0);
+                            AddNewIndices(selected0Indices, triangleIndex2, intersectIndex2, intersectIndex0);
+                            AddNewIndices(selected0Indices, triangleIndex1, triangleIndex2, intersectIndex0);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                            }
                         }
                     }
                 }
                 else if (side1 && side2)
                 {
-                    intersectIndex1 = numVertices++;
-                    intersectIndex2 = numVertices++;
 
-                    vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
-                    vertices.Add(intersectPoint2);
-
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
-                    transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
-                    UVs.Add(intersectUV1);
-                    UVs.Add(intersectUV2);
-
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
-                    unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
-
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
+                    if (PlaneCollision.ApproximatelyEquals(intersectPoint1, intersectPoint2))
                     {
-                        AddNewIndices(selected0Indices, intersectIndex1, triangleIndex2, intersectIndex2);
-                        AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex1);
-                        AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, intersectIndex1);
-
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
-
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
                         }
                     }
                     else
                     {
-                        AddNewIndices(selected1Indices, intersectIndex1, triangleIndex2, intersectIndex2);
-                        AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex1);
-                        AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, intersectIndex1);
+                        intersectIndex1 = numVertices++;
+                        intersectIndex2 = numVertices++;
 
-                        if (isExperiment && item.gameObject.tag != "highlightmesh")
+                        vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
+                        vertices.Add(intersectPoint2);
+
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
+                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
+                        UVs.Add(intersectUV1);
+                        UVs.Add(intersectUV2);
+
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
+                        unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
+
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
                         {
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
-                            UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                            AddNewIndices(selected0Indices, intersectIndex1, triangleIndex2, intersectIndex2);
+                            AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex1);
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, intersectIndex1);
 
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
-                            UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, intersectIndex1, triangleIndex2, intersectIndex2);
+                            AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex1);
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, intersectIndex1);
+
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // We really shouldn't get here, but do seem to occasionally
+                    if (side0)
+                    {
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
+                        {
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
+                        }
+                    }
+                    else if (side1)
+                    {
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                        {
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
+                        }
+                    }
+                    else if (side2)
+                    {
+                        // plane intersects a triangle vertex
+                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                        {
+                            AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            }
+                        }
+                        else
+                        {
+                            AddNewIndices(selected1Indices, triangleIndex0, triangleIndex1, triangleIndex2);
+                            if (isExperiment && item.gameObject.tag != "highlightmesh")
+                            {
+                                UpdateTriangleState(triangleStates0, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                UpdateTriangleState(triangleStates1, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            }
                         }
                     }
                 }
@@ -1342,11 +1490,11 @@ public class SliceNSwipeSelectionState : InteractionState
         float dot = Vector3.Dot(plane.transform.up, lineVertexWorld1 - lineVertexWorld0);
         Vector3 w = plane.transform.position - lineVertexWorld0;
 
-        float epsilon = 0.001f;
+        float epsilon = 0.00001f;
         if (Mathf.Abs(dot) > epsilon)
         {
             float factor = Vector3.Dot(plane.transform.up, w) / dot;
-            if (factor >= 0f && factor <= 1f)
+            if ((factor > 0f && factor < 1f) || Math.Abs(factor) <= epsilon || Math.Abs(factor - 1f) <= epsilon)
             {
                 lineSegmentLocal = factor * lineSegmentLocal;
                 intersectPoint = lineVertexLocal0 + lineSegmentLocal;

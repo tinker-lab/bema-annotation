@@ -11,7 +11,7 @@ public class MakeCircle : MonoBehaviour
     public MakeCircle()
     {
         numSections = 36; //How many planes, the bigger the circle the more planes are needed
-        radius = 0.75f; //size of the circle
+        radius = 0.5f; //size of the circle
         centerPoint = new Vector3(0, 0, 0);
     }
 
@@ -36,6 +36,7 @@ public class MakeCircle : MonoBehaviour
             point = centerPoint + right * Mathf.Sin(theta) + up * Mathf.Cos(theta);
             normal = (-(point - centerPoint)).normalized;
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            plane.name = "plane " + i;
             plane.transform.parent = GameObject.Find("planeParent").transform;
             plane.transform.position = point;
             plane.transform.rotation = Quaternion.AngleAxis(90, Vector3.forward) * Quaternion.LookRotation(normal, Vector3.up);

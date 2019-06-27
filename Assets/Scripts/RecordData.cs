@@ -1,4 +1,5 @@
-﻿using UnityEngine; 
+﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic; 
 using System.Xml; 
 using System.Xml.Serialization; 
@@ -80,6 +81,7 @@ public class Trial
     [XmlElement("id")]
     public int trialOrder;
     public string selectionInterface;
+    public string sceneName;
     public double tpArea;
     public double fpArea;
     public double fnArea;
@@ -196,6 +198,7 @@ public class RecordData : MonoBehaviour {
         trialData.trials[trialID] = new Trial();
         trialData.trials[trialID].trialOrder = order;
         trialData.trials[trialID].selectionInterface = state.Desc;
+        trialData.trials[trialID].sceneName = SceneManager.GetSceneByBuildIndex(id).name;
 
         motion.trials[trialID] = new TrialMotion();
         lastState = state;

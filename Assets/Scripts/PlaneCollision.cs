@@ -126,7 +126,7 @@ public class PlaneCollision : MonoBehaviour
 
     public static bool ApproximatelyEquals(Vector3 vector0, Vector3 vector1)
     {
-        float epsilon = 0.001f; //Could be 0.001f
+        float epsilon = 0.00001f; //Could be 0.001f
 
         return (Mathf.Abs(vector0.x - vector1.x) < epsilon && Mathf.Abs(vector0.y - vector1.y) < epsilon && Mathf.Abs(vector0.z- vector1.z) < epsilon);
     }

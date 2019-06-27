@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.12731749, g: 0.13414757, b: 0.1210787, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -113,6 +113,77 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1001 &332177672
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 428279928}
+    m_Modifications:
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: -1.007
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: 0.174
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: -0.626
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: -0.13363302
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: -0.7342625
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0.6481372
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: -0.15139036
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalScale.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalScale.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalScale.z
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 97.13
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -23.3
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 100100000, guid: 715f406cb70684a478dc50be64b1e179, type: 2}
+  m_IsPrefabParent: 0
+--- !u!4 &332177673 stripped
+Transform:
+  m_PrefabParentObject: {fileID: 4109099584645142, guid: 715f406cb70684a478dc50be64b1e179,
+    type: 2}
+  m_PrefabInternal: {fileID: 332177672}
 --- !u!1 &428279927
 GameObject:
   m_ObjectHideFlags: 0
@@ -139,6 +210,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1547047226}
+  - {fileID: 332177673}
   - {fileID: 443303895}
   - {fileID: 777510957}
   m_Father: {fileID: 0}
@@ -173,7 +245,7 @@ Transform:
   m_LocalScale: {x: 0.0995, y: 0.03711, z: 0.1037}
   m_Children: []
   m_Father: {fileID: 428279928}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: -6.2, y: -100.1, z: -96.4}
 --- !u!64 &443303896
 MeshCollider:
@@ -260,7 +332,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 428279928}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 6.338, y: -10.798, z: -6.219}
 --- !u!64 &777510958
 MeshCollider:

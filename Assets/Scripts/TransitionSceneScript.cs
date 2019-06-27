@@ -228,7 +228,7 @@ public class TransitionSceneScript : MonoBehaviour {
                 //currTrial.controller0 = controller0;
                 //currTrial.controller1 = controller1;
 
-                Debug.Log("Loading scene " + loadScene.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString());
+                Debug.Log("Loading scene " + loadScene.ToString() + " out of " + SceneManager.sceneCountInBuildSettings.ToString()+ " " + SceneManager.GetSceneByBuildIndex(loadScene).name);
             }
         }
         

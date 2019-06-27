@@ -168,6 +168,11 @@ public class RunExperiment : MonoBehaviour {
                             }
                             Vector4 selectionAreaStats = TriangleArea(selectedObj, selection, selection.vertices);
 
+                            Vector2 selectionAreaGeneral = TriangleSubmeshAreas(selectedObj, selection, selection.vertices);
+                            Vector2 goalAreaGeneral = TriangleSubmeshAreas(goalObj, goal, goal.vertices);
+                            Debug.Log("Selection mesh --- Selection Area: " + selectionAreaGeneral.x + " Unselected Area: " + selectionAreaGeneral.y);
+                            Debug.Log("Goal mesh --- Selection Area: " + goalAreaGeneral.x + " Unselected Area: " + goalAreaGeneral.y);
+
                             //TruePositives + falsePositives (i.e. Did they select any area)
                             if (selectionAreaStats.x + selectionAreaStats.y == 0)
                             {
@@ -235,26 +240,32 @@ public class RunExperiment : MonoBehaviour {
         Mesh goal = goalObj.GetComponent<MeshFilter>().mesh;
         Mesh selection = selectedObj.GetComponent<MeshFilter>().mesh;
         Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates = new Dictionary<Triangle, SelectionData.TriangleSelectionState>();
-        int[] goalIndices = goal.GetTriangles(1); // Get the indices for the target selection area (submesh 1)
-        int[] selectionIndices = selection.GetTriangles(0); // There should only be 1 submesh at the start
-        for (int i = 0; i < selectionIndices.Length / 3; i++)
+        int[] goalSelectionIndices = goal.GetTriangles(1); // Get the indices for the target selection area (submesh 1)
+        int[] goalUnselectionIndices = goal.GetTriangles(0);
+
+        // There should only be 1 submesh at the start
+        // We know that the selection mesh starts out as the combined selected and then unselected indices (In that order!) from the goal mesh
+        // since that is how it was created in ObjectMaker.CombineSelectedAndUnselected().
+        int[] selectionObjectIndices = selection.GetTriangles(0);
+        for (int i = 0; i < goalSelectionIndices.Length; i += 3)
         {
-            Triangle tri = new Triangle(selectionIndices[3 * i], selectionIndices[3 * i + 1], selectionIndices[3 * i + 2]);
-            
-            // We know that the selection mesh starts out as the combined selected and then unselected indices (In that order!) from the goal mesh
-            // since that is how it was created in ObjectMaker.CombineSelectedAndUnselected().
-            if ((i*3) < goalIndices.Length)
-            {
-                triangleStates.Add(tri, SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow);
-            }
-            else
-            {
-                triangleStates.Add(tri, SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow);
-            }
+            Triangle tri = new Triangle(goalSelectionIndices[i], goalSelectionIndices[i + 1], goalSelectionIndices[i + 2]);
+            triangleStates.Add(tri, SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow);
+        }
+        for (int i = 0; i < goalUnselectionIndices.Length; i += 3)
+        {
+            Triangle tri = new Triangle(goalUnselectionIndices[i], goalUnselectionIndices[i + 1], goalUnselectionIndices[i + 2]);
+            triangleStates.Add(tri, SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow);
         }
         SelectionData.TriangleStates = triangleStates;
 
-            if (stateIndex == 1)
+        Vector4 selectionAreaStats = TriangleArea(selectedObj, selection, selection.vertices);
+        double f1 = CalculateF1(selectionAreaStats);
+        double mcc = CalculateMCC(selectionAreaStats);
+        Debug.Log("On Load: TP: " + selectionAreaStats.x + " FP: " + selectionAreaStats.y + " FN: " + selectionAreaStats.z + " TN: " + selectionAreaStats.w + " F1: " + f1 + " mcc: " + mcc);
+
+
+        if (stateIndex == 1)
         {
             Debug.Log("Init Yea-Big");
             currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); // the true here an optional boolean for whether or not we are running the experiment. it defaults false, but when true you cannot teleport and changing states uses the ChangeState method in this class rather than UIController
@@ -317,16 +328,29 @@ public class RunExperiment : MonoBehaviour {
         float trueNegativeArea = 0f;
         float falseNegativeArea = 0f;
         int[] unselectedIndices = mesh.GetTriangles(0);
-        int[] selectedIndices = mesh.GetTriangles(1);
-        int[] combinedIndices = new int[unselectedIndices.Length + selectedIndices.Length];
-        selectedIndices.CopyTo(combinedIndices, 0);
-        unselectedIndices.CopyTo(combinedIndices, selectedIndices.Length);
-        List<Vector3> transformedVertices = new List<Vector3>(verts.Length);
 
+        List<Vector3> transformedVertices = new List<Vector3>(verts.Length);
         for (int i = 0; i < verts.Length; i++)
         {
             transformedVertices.Add(obj.gameObject.transform.TransformPoint(verts[i]));
         }
+
+        /*
+        int[] combinedIndices;
+        if (mesh.subMeshCount > 1)
+        {
+            int[] selectedIndices = mesh.GetTriangles(1);
+            combinedIndices = new int[unselectedIndices.Length + selectedIndices.Length];
+            selectedIndices.CopyTo(combinedIndices, 0);
+            unselectedIndices.CopyTo(combinedIndices, selectedIndices.Length);
+        }
+        else
+        {
+            combinedIndices = unselectedIndices;
+        }
+        
+
+        
 
         for (int i = 0; i < combinedIndices.Length; i += 3){
             Vector3 pt0 = transformedVertices[combinedIndices[i]];
@@ -337,7 +361,7 @@ public class RunExperiment : MonoBehaviour {
             float sideB = Vector3.Distance(pt1, pt2);
             float sideC = Vector3.Distance(pt0, pt2);
 
-            float s = (sideA + sideB + sideC) / 2;
+            float s = (sideA + sideB + sideC) / 2f;
             float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
 
             try
@@ -363,9 +387,131 @@ public class RunExperiment : MonoBehaviour {
             {
                 Debug.Log("Can't find triangle key for state");
             }
-            
         }
+        */
+
+        for (int i = 0; i < unselectedIndices.Length; i += 3)
+        {
+            Vector3 pt0 = transformedVertices[unselectedIndices[i]];
+            Vector3 pt1 = transformedVertices[unselectedIndices[i + 1]];
+            Vector3 pt2 = transformedVertices[unselectedIndices[i + 2]];
+
+            float sideA = Vector3.Distance(pt0, pt1);
+            float sideB = Vector3.Distance(pt1, pt2);
+            float sideC = Vector3.Distance(pt0, pt2);
+
+            float s = (sideA + sideB + sideC) / 2f;
+            float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+
+            try
+            {
+                Triangle tri = new Triangle(unselectedIndices[i], unselectedIndices[i + 1], unselectedIndices[i + 2]);
+                switch (SelectionData.TriangleStates[tri])
+                {
+                    case SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow:
+                        falseNegativeArea += area;
+                        break;
+                    case SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow:
+                        trueNegativeArea += area;
+                        break;
+                    default:
+                        Debug.Log("Shouldn't get here");
+                        break;
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+                Debug.Log("Can't find triangle key for state");
+            }
+        }
+
+        if (mesh.subMeshCount > 1)
+        {
+            int[] selectedIndices = mesh.GetTriangles(1);
+            for (int i = 0; i < selectedIndices.Length; i += 3)
+            {
+                Vector3 pt0 = transformedVertices[selectedIndices[i]];
+                Vector3 pt1 = transformedVertices[selectedIndices[i + 1]];
+                Vector3 pt2 = transformedVertices[selectedIndices[i + 2]];
+
+                float sideA = Vector3.Distance(pt0, pt1);
+                float sideB = Vector3.Distance(pt1, pt2);
+                float sideC = Vector3.Distance(pt0, pt2);
+
+                float s = (sideA + sideB + sideC) / 2f;
+                float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+
+                try
+                {
+                    Triangle tri = new Triangle(selectedIndices[i], selectedIndices[i + 1], selectedIndices[i + 2]);
+                    switch (SelectionData.TriangleStates[tri])
+                    {
+                        case SelectionData.TriangleSelectionState.SelectedOrigSelectedNow:
+                            truePositiveArea += area;
+                            break;
+                        case SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow:
+                            falsePositiveArea += area;
+                            break;
+                        default:
+                            Debug.Log("Shouldn't get here 2");
+                            break;
+                    }
+                }
+                catch (KeyNotFoundException)
+                {
+                    Debug.Log("Can't find triangle key for state");
+                }
+            }
+        }
+
+
         return new Vector4(truePositiveArea, falsePositiveArea, falseNegativeArea, trueNegativeArea);
+    }
+
+    /* code for area of triangles adapted from http://james-ramsden.com/area-of-a-triangle-in-3d-c-code/ */
+    private Vector2 TriangleSubmeshAreas(GameObject obj, Mesh mesh, Vector3[] verts)
+    {
+        float selectedArea = 0f;
+        float unselectedArea = 0f;
+        int[] unselectedIndices = mesh.GetTriangles(0);
+        int[] selectedIndices = mesh.GetTriangles(1);
+        List<Vector3> transformedVertices = new List<Vector3>(verts.Length);
+
+        for (int i = 0; i < verts.Length; i++)
+        {
+            transformedVertices.Add(obj.gameObject.transform.TransformPoint(verts[i]));
+        }
+
+        for (int i = 0; i < selectedIndices.Length; i += 3)
+        {
+            Vector3 pt0 = transformedVertices[selectedIndices[i]];
+            Vector3 pt1 = transformedVertices[selectedIndices[i + 1]];
+            Vector3 pt2 = transformedVertices[selectedIndices[i + 2]];
+
+            float sideA = Vector3.Distance(pt0, pt1);
+            float sideB = Vector3.Distance(pt1, pt2);
+            float sideC = Vector3.Distance(pt0, pt2);
+
+            float s = (sideA + sideB + sideC) / 2f;
+            float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+            selectedArea += area;
+        }
+        for (int i = 0; i < unselectedIndices.Length; i += 3)
+        {
+            Vector3 pt0 = transformedVertices[unselectedIndices[i]];
+            Vector3 pt1 = transformedVertices[unselectedIndices[i + 1]];
+            Vector3 pt2 = transformedVertices[unselectedIndices[i + 2]];
+
+            float sideA = Vector3.Distance(pt0, pt1);
+            float sideB = Vector3.Distance(pt1, pt2);
+            float sideC = Vector3.Distance(pt0, pt2);
+
+            float s = (sideA + sideB + sideC) / 2f;
+            float area = Mathf.Sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+            unselectedArea += area;
+        }
+
+        return new Vector2(selectedArea, unselectedArea);
     }
 
     void LeaveTrialScene()
