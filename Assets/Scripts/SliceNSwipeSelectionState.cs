@@ -13,7 +13,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private GameObject reticle;
 
     private const bool debug = false;
-    private const float motionThreshold = 0.04f;
+    private const float motionThreshold = 0.03f;
     bool isExperiment;
     bool swapControllers;
     //bool canTransition;
@@ -45,6 +45,7 @@ public class SliceNSwipeSelectionState : InteractionState
     private GameObject collidingMesh;                   // The currently colliding object.
 
     SelectionData selectionData;
+    UndoManager undoManager;
 
     //private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     //private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
@@ -111,7 +112,7 @@ public class SliceNSwipeSelectionState : InteractionState
     /// </summary>
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
-    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false, bool zeroDominant = true)
+    public SliceNSwipeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, UndoManager undoMgr, bool experiment = false, bool zeroDominant = true)
     {
 
         //Debug.Log("Constructing Slice State");
@@ -140,6 +141,7 @@ public class SliceNSwipeSelectionState : InteractionState
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
 
         selectionData = sharedData;
+        undoManager = undoMgr;
 
         //objWithSelections = new HashSet<string>();
         //previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
@@ -336,6 +338,13 @@ public class SliceNSwipeSelectionState : InteractionState
 
         if (sliceStatus == SliceStatusState.ReadyToSlice)
         {
+            if (mainController.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip) || altController.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip))// || Input.GetButtonDown("ViveGrip"))
+            {
+                Debug.Log("undo button pressed");
+                undoManager.Undo();
+
+            }
+
             if (!isExperiment)
             {
                 GazeSelection();
@@ -439,6 +448,45 @@ public class SliceNSwipeSelectionState : InteractionState
 
                     Vector3 heading = (currentPos - lastPos).normalized;
 
+                    SelectionData.RecentlySelectedObj.Clear();
+                    SelectionData.RecentlySelectedObjNames.Clear();
+
+                    if (SelectionData.NumberOfSelections.ContainsKey(collidingMesh.name))
+                    {
+                        SelectionData.NumberOfSelections[collidingMesh.name] = SelectionData.NumberOfSelections[collidingMesh.name] + 1;
+                    }
+                    else
+                    {
+                        SelectionData.NumberOfSelections.Add(collidingMesh.name, 1);
+                    }
+
+                    if (SelectionData.NumberOfSelections[collidingMesh.name] == 1)
+                    {
+                        SelectionData.RecentUVs.Add(collidingMesh.name, SelectionData.PreviousUVs[collidingMesh.name]);
+                        SelectionData.RecentVertices.Add(collidingMesh.name, SelectionData.PreviousVertices[collidingMesh.name]);
+                        SelectionData.RecentNumVertices.Add(collidingMesh.name, SelectionData.PreviousNumVertices[collidingMesh.name]);
+                        SelectionData.RecentSelectedIndices.Add(collidingMesh.name, SelectionData.PreviousSelectedIndices[collidingMesh.name]);
+                    }
+                    else
+                    {
+                        //Moving previous info to recent before updating, for undoing - NEW
+                        SelectionData.RecentUVs[collidingMesh.name] = SelectionData.PreviousUVs[collidingMesh.name];
+                        SelectionData.RecentVertices[collidingMesh.name] = SelectionData.PreviousVertices[collidingMesh.name];
+                        SelectionData.RecentNumVertices[collidingMesh.name] = SelectionData.PreviousNumVertices[collidingMesh.name];
+                        if (SelectionData.RecentUnselectedIndices.ContainsKey(collidingMesh.name))
+                        {
+                            SelectionData.RecentUnselectedIndices[collidingMesh.name] = SelectionData.PreviousUnselectedIndices[collidingMesh.name];
+                        }
+                        else
+                        {
+                            //On the first selection everything is stored as selected.
+                            SelectionData.RecentUnselectedIndices.Add(collidingMesh.name, SelectionData.PreviousUnselectedIndices[collidingMesh.name]);
+                        }
+                        SelectionData.RecentSelectedIndices[collidingMesh.name] = SelectionData.PreviousSelectedIndices[collidingMesh.name];
+                    }
+                    SelectionData.RecentlySelectedObjNames.Add(collidingMesh.name);
+                    SelectionData.RecentlySelectedObj.Add(collidingMesh);
+
                     if (SelectionData.PreviousNumVertices.ContainsKey(collidingMesh.name) && collidingMesh.gameObject.tag != "highlightmesh")
                     {
                         if (isSwipeTowardsNormalSideOfPlane(heading, slicePlane))
@@ -446,6 +494,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             //Debug.Log("swipe " + collidingMesh.name);
                             SelectionData.PreviousUnselectedIndices[collidingMesh.name] = SelectionData.PreviousUnselectedIndices[collidingMesh.name].Concat(sliced0Indices[collidingMesh.name]).ToArray();
                             SelectionData.PreviousSelectedIndices[collidingMesh.name] = sliced1Indices[collidingMesh.name];
+                            SelectionData.RecentTriangleStates = SelectionData.TriangleStates;
                             SelectionData.TriangleStates = triangleStates1;
                         }
                         else
@@ -454,6 +503,7 @@ public class SliceNSwipeSelectionState : InteractionState
                             //Debug.Log("swipe " + collidingMesh.name);
                             SelectionData.PreviousSelectedIndices[collidingMesh.name] = sliced0Indices[collidingMesh.name];
                             SelectionData.PreviousUnselectedIndices[collidingMesh.name] = SelectionData.PreviousUnselectedIndices[collidingMesh.name].Concat(sliced1Indices[collidingMesh.name]).ToArray();
+                            SelectionData.RecentTriangleStates = SelectionData.TriangleStates;
                             SelectionData.TriangleStates = triangleStates0;
                         }
                     }
@@ -704,8 +754,6 @@ public class SliceNSwipeSelectionState : InteractionState
 
         List<Vector2> UVs = SelectionData.PreviousUVs[item.name].ToList();
         int numVertices = SelectionData.PreviousNumVertices[item.name];
-
-
 
         // vertices.RemoveRange(numVertices, vertices.Count - numVertices);
         //UVs.RemoveRange(numVertices, UVs.Count - numVertices);

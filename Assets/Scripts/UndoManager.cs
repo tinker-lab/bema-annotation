@@ -28,20 +28,37 @@ public class UndoManager
         selectionData = sharedData;
     }
 
-    //pass in object as well for submeshes
-    public void UndoFunction(string objectName, GameObject currObj){
+    public void Undo()
+    {
+        for (int i = 0; i < SelectionData.RecentlySelectedObj.Count; i++)
+        {
+            Debug.Log(SelectionData.RecentlySelectedObjNames.ElementAt(i).ToString() + " Before Call");
+            UndoFunction(SelectionData.RecentlySelectedObjNames.ElementAt(i), SelectionData.RecentlySelectedObj.ElementAt(i));
+        }
 
-        Debug.Log(objectName.ToString() + " After Call");
+        if (SelectionData.RecentlySelectedObj.Count == 0)
+        {
+            Debug.Log("User must make a selection before undoing");
+        }
+
+        SelectionData.RecentlySelectedObj.Clear();
+        SelectionData.RecentlySelectedObjNames.Clear();
+    }
+
+    //pass in object as well for submeshes
+    private void UndoFunction(string objectName, GameObject currObj){
 
         Mesh mesh = currObj.GetComponent<MeshFilter>().mesh;
 
-        if(SelectionData.OnlyOneSelection.Contains(objectName)){
+        Debug.Assert(SelectionData.NumberOfSelections.ContainsKey(objectName)); //It better have at least one if we are undoing it
+
+        if(SelectionData.NumberOfSelections[objectName] > 1){
             //import the most recent indices for this object and 2 submeshes
-            SelectionData.PreviousUVs = SelectionData.RecentUVs;
-            SelectionData.PreviousVertices = SelectionData.RecentVertices;
-            SelectionData.PreviousNumVertices = SelectionData.RecentNumVertices;
-            SelectionData.PreviousUnselectedIndices = SelectionData.RecentUnselectedIndices;
-            SelectionData.PreviousSelectedIndices = SelectionData.RecentSelectedIndices;
+            SelectionData.PreviousUVs[objectName] = SelectionData.RecentUVs[objectName];
+            SelectionData.PreviousVertices[objectName] = SelectionData.RecentVertices[objectName];
+            SelectionData.PreviousNumVertices[objectName] = SelectionData.RecentNumVertices[objectName];
+            SelectionData.PreviousUnselectedIndices[objectName] = SelectionData.RecentUnselectedIndices[objectName];
+            SelectionData.PreviousSelectedIndices[objectName] = SelectionData.RecentSelectedIndices[objectName];
 
             mesh.Clear();
             mesh.SetVertices(SelectionData.PreviousVertices[objectName].ToList());
@@ -52,10 +69,15 @@ public class UndoManager
             mesh.SetTriangles(SelectionData.PreviousSelectedIndices[objectName].ToList(), 1);
 
             mesh.RecalculateNormals();
-        }
 
+            SelectionData.NumberOfSelections[objectName] = SelectionData.NumberOfSelections[objectName] - 1;
+
+            Debug.Log(objectName.ToString() + " After Call - more than one selection");
+        }
         else{
             //back to one mesh and no info
+            Material material = currObj.GetComponent<Renderer>().materials[0]; //materials[0] corresponds to unselected
+            Material m2 = currObj.GetComponent<Renderer>().materials[1]; 
             SelectionData.ObjectsWithSelections.Remove(objectName);
             SelectionData.PreviousUVs.Remove(objectName);
             SelectionData.PreviousVertices.Remove(objectName);
@@ -64,13 +86,30 @@ public class UndoManager
             SelectionData.PreviousUnselectedIndices.Remove(objectName);
 
             mesh.Clear();
-            mesh.SetVertices(SelectionData.PreviousVertices[objectName].ToList());
-            mesh.SetUVs(0, SelectionData.PreviousUVs[objectName].ToList());
-
             mesh.subMeshCount = 1;
-            mesh.SetTriangles(SelectionData.PreviousSelectedIndices[objectName].ToList(), 0);
+            mesh.SetVertices(SelectionData.RecentVertices[objectName].ToList());
+            mesh.SetUVs(0, SelectionData.RecentUVs[objectName].ToList());
+
+            
+            mesh.SetTriangles(SelectionData.RecentSelectedIndices[objectName].ToList(), 0);
+
+            
+            Debug.Log(objectName.ToString() + " After Call -- only one selection");
+
+            SelectionData.NumberOfSelections.Remove(objectName);
+
+            Material[] materials = new Material[1];
+            materials[0] = material;                          
+            currObj.GetComponent<Renderer>().materials = materials;
 
             mesh.RecalculateNormals();
+
+            SelectionData.RecentUVs.Remove(objectName);
+            SelectionData.RecentVertices.Remove(objectName);
+            SelectionData.RecentNumVertices.Remove(objectName);
+            SelectionData.RecentSelectedIndices.Remove(objectName);
         }
+
+        SelectionData.TriangleStates = SelectionData.RecentTriangleStates;
     } 
 }

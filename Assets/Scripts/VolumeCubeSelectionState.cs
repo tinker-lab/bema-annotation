@@ -114,7 +114,7 @@ public class VolumeCubeSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false) 
+    public VolumeCubeSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, UndoManager undoMgr, bool experiment = false) 
     {
         //NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "VolumeCubeSelectionState";
@@ -157,7 +157,7 @@ public class VolumeCubeSelectionState : InteractionState
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here
 
         selectionData = sharedData;
-        undoManager = new UndoManager(controller0Info, controller1Info, selectionData);
+        undoManager = undoMgr;
 
         //objWithSelections = new HashSet<string>();
         //previousNumVertices = new Dictionary<string, int>();              //Keeps track of how many vertices a mesh should have
@@ -460,15 +460,11 @@ public class VolumeCubeSelectionState : InteractionState
 
         //Call for actually undoing - NEW
         //Make sure GetPress works
-        if (controller0.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPress(SteamVR_Controller.ButtonMask.Grip) || Input.GetButtonDown("ViveGrip"))
+        if (controller0.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip))// || Input.GetButtonDown("ViveGrip"))
         {
             Debug.Log("undo button pressed");
-
-            for (int i = 0; i < SelectionData.RecentlySelectedObj.Count; i++)
-            {
-                Debug.Log(SelectionData.RecentlySelectedObjNames.ElementAt(i).ToString() + " Before Call");
-                undoManager.UndoFunction(SelectionData.RecentlySelectedObjNames.ElementAt(i), SelectionData.RecentlySelectedObj.ElementAt(i));
-            }
+            undoManager.Undo();
+           
         }
 
         //if there is an object inside the cube (must have at least one)
@@ -539,16 +535,52 @@ public class VolumeCubeSelectionState : InteractionState
         {
             selectionCount++;
             eventString = "selection " + selectionCount.ToString();
+
+            SelectionData.RecentlySelectedObj.Clear();
+            SelectionData.RecentlySelectedObjNames.Clear();
+
             foreach (GameObject currObjMesh in collidingMeshes)
             {
-                //Debug.Log("Cube Selection: " + currObjMesh.name);
-
-
-              
-
                 currObjMesh.GetComponent<MeshFilter>().mesh.UploadMeshData(false);
                 //GameObject savedLeftOutline = CopyObject(leftOutlines[currObjMesh.name]); //save the highlights at the point of selection
                 //GameObject savedRightOutline = CopyObject(rightOutlines[currObjMesh.name]);
+
+                if (SelectionData.NumberOfSelections.ContainsKey(currObjMesh.name))
+                {
+                    SelectionData.NumberOfSelections[currObjMesh.name] = SelectionData.NumberOfSelections[currObjMesh.name] + 1;
+                }
+                else
+                {
+                    SelectionData.NumberOfSelections.Add(currObjMesh.name, 1);
+                }
+
+                if (SelectionData.NumberOfSelections[currObjMesh.name] == 1)
+                {
+                    SelectionData.RecentUVs.Add(currObjMesh.name, SelectionData.PreviousUVs[currObjMesh.name]);
+                    SelectionData.RecentVertices.Add(currObjMesh.name, SelectionData.PreviousVertices[currObjMesh.name]);
+                    SelectionData.RecentNumVertices.Add(currObjMesh.name, SelectionData.PreviousNumVertices[currObjMesh.name]);
+                    SelectionData.RecentSelectedIndices.Add(currObjMesh.name, SelectionData.PreviousSelectedIndices[currObjMesh.name]);
+                }
+                else
+                {
+                    //Moving previous info to recent before updating, for undoing - NEW
+                    SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
+                    SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
+                    SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
+                    if (SelectionData.RecentUnselectedIndices.ContainsKey(currObjMesh.name))
+                    {
+                        SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
+                    }
+                    else
+                    {
+                        //On the first selection everything is stored as selected.
+                        SelectionData.RecentUnselectedIndices.Add(currObjMesh.name, SelectionData.PreviousUnselectedIndices[currObjMesh.name]);
+                    }
+                    SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
+                }
+                SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                SelectionData.RecentlySelectedObj.Add(currObjMesh);
+
 
                 SelectionData.PreviousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
                 SelectionData.PreviousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
@@ -568,11 +600,6 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                 }
 
-                if(submeshNum == 1){
-                    //How to do this?? - NEW ---> base it off of submeshes during the clicks
-                    SelectionData.OnlyOneSelection.Add(currObjMesh.name);
-                }
-
                 //updates original indices to store the the most recently selected portion
                 SelectionData.PreviousSelectedIndices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.GetIndices(submeshNum);
 
@@ -586,41 +613,6 @@ public class VolumeCubeSelectionState : InteractionState
                 }
 
                 SelectionData.ObjectsWithSelections.Add(currObjMesh.name);
-                //SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
-                //SelectionData.RecentlySelectedObj.Add(currObjMesh);
-
-                //TODO: add if statement about whether currObjMesh.name is already in list or not, add if not
-                if (!SelectionData.RecentUVs.ContainsKey(currObjMesh.name))
-                {
-                    SelectionData.RecentUVs.Add(currObjMesh.name, SelectionData.PreviousUVs[currObjMesh.name]);
-                    SelectionData.RecentVertices.Add(currObjMesh.name, SelectionData.PreviousVertices[currObjMesh.name]);
-                    SelectionData.RecentNumVertices.Add(currObjMesh.name, SelectionData.PreviousNumVertices[currObjMesh.name]);
-                    SelectionData.RecentUnselectedIndices.Add(currObjMesh.name, SelectionData.PreviousUnselectedIndices[currObjMesh.name]);
-                    SelectionData.RecentSelectedIndices.Add(currObjMesh.name, SelectionData.PreviousSelectedIndices[currObjMesh.name]);
-
-                    SelectionData.RecentlySelectedObj.Clear();
-                    SelectionData.RecentlySelectedObjNames.Clear();
-                    SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
-                    SelectionData.RecentlySelectedObj.Add(currObjMesh);
-
-                    Debug.Log("This is working");
-                }
-                else
-                {
-                    //Moving previous info to recent before updating, for undoing - NEW
-                    SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
-                    SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
-                    SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
-                    SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
-                    SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
-
-                    SelectionData.RecentlySelectedObj.Clear();
-                    SelectionData.RecentlySelectedObjNames.Clear();
-                    SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
-                    SelectionData.RecentlySelectedObj.Add(currObjMesh);
-
-                    Debug.Log("This is working");
-                }
 
                 if (!isExperiment)
                 {
@@ -859,6 +851,13 @@ public class VolumeCubeSelectionState : InteractionState
 
         List<Vector2> UVs = SelectionData.PreviousUVs[item.name].ToList();
         int numVertices = SelectionData.PreviousNumVertices[item.name];
+
+        if (isExperiment && item.gameObject.tag != "highlightmesh")
+        {
+            // Save the current triangle states before splitting so that we can undo if needed
+            Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
+            SelectionData.RecentTriangleStates = triangleStates;
+        }
 
         List<Vector3> transformedVertices = new List<Vector3>(vertices.Count);
 

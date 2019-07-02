@@ -41,8 +41,10 @@ public class NavigationState : InteractionState {
 
     private HashSet<GameObject> cubeColliders;
 
+    private UndoManager undoManager;
 
-    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, bool experiment = false)
+
+    public NavigationState(ControllerInfo controller0Info, ControllerInfo controller1Info, SelectionData sharedData, UndoManager undoMgr, bool experiment = false)
     {
         desc = "NavigationState";
         controller0 = controller0Info;
@@ -50,7 +52,7 @@ public class NavigationState : InteractionState {
 
         //Debug.Log("have controllers " + controller0.ToString() + " " + controller1.ToString());
 
-        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, experiment);
+        handSelectionState = new HandSelectionState(controller0, controller1, this, sharedData, undoMgr, experiment);
         leftPlane = GameObject.Find("handSelectionLeftPlane");
         rightPlane = GameObject.Find("handSelectionRightPlane");
         centerCube = GameObject.Find("handSelectionCenterCube");
@@ -83,6 +85,8 @@ public class NavigationState : InteractionState {
 
         reticle = GameObject.Find("ReticleParent").transform.GetChild(0).gameObject; //Instantiate(Resources.Load<GameObject>("Prefabs/Reticle"));
         teleportReticleTransform = reticle.transform;
+
+        undoManager = undoMgr;
 
     }
 
@@ -175,6 +179,13 @@ public class NavigationState : InteractionState {
         cubeColliders = centerComponent.CollidedObjects;
         //HashSet<Collider> leftColliders = leftComponent.CollidedObjects;
         //HashSet<Collider> rightColliders = rightComponent.CollidedObjects;
+
+        if (controller0.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip))// || Input.GetButtonDown("ViveGrip"))
+        {
+            Debug.Log("undo button pressed");
+            undoManager.Undo();
+
+        }
 
         // If both handplanes are colliding with something, just deal with all the meshes that hand planes are both colliding with.
         if (cubeColliders.Count > 0)

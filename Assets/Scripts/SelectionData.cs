@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class SelectionData {
 
+    // These hold data about the state of a mesh before an interaction starts to happen.
+    // E.g. When you start to hand select, we need to know the previous state in case you
+    // pull your hands out of the mesh before making a selection (because we need to reset it to that prior state
+    // if a selection happens then these are set to the new state.
     private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
     private static Dictionary<string, int[]> previousUnselectedIndices;                // Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
@@ -12,9 +16,11 @@ public class SelectionData {
     private static HashSet<string> objWithSelections;                           // Collection of the the names of all the meshes that have had pieces selected from them.
     private static Dictionary<string, HashSet<GameObject>> savedOutlines;       // Key = name of object in model, Value = all the SAVED outline game objects attached to it
 
+    // These keep track of the mesh state but lag one selection behind the previous versions.
+    // They are used to undo the most recent selection.
     private static List<GameObject> recentlySelectedObj;
     private static List<string> recentlySelectedObjNames;
-    private static List<string> onlyOneSelection;
+    private static Dictionary<string, int> numberOfSelections;
     private static Dictionary<string, Vector3[]> recentVertices;                //Set of vertices, uvs, indices for the most recent selection that isn't the current selection
     private static Dictionary<string, int> recentNumVertices;
     private static Dictionary<string, Vector2[]> recentUVs;                     //recent = for undo function
@@ -77,10 +83,10 @@ public class SelectionData {
         set { recentlySelectedObjNames = value; }
     }
 
-    public static List<string> OnlyOneSelection
+    public static Dictionary<string, int> NumberOfSelections
     {
-        get { return onlyOneSelection;  }
-        set { onlyOneSelection = value; }
+        get { return numberOfSelections;  }
+        set { numberOfSelections = value; }
     }
 
     public static Dictionary<string, Vector3[]> RecentVertices
@@ -125,7 +131,7 @@ public class SelectionData {
         //recent = info for undo function
         recentlySelectedObj = new List<GameObject>();
         recentlySelectedObjNames = new List<string>();
-        onlyOneSelection = new List<string>();
+        numberOfSelections = new Dictionary<string, int>();
         recentVertices = new Dictionary<string, Vector3[]>();
         recentNumVertices = new Dictionary<string, int>();
         recentUVs = new Dictionary<string, Vector2[]>();
@@ -147,6 +153,7 @@ public class SelectionData {
     }
 
     public static Dictionary<Triangle, TriangleSelectionState> TriangleStates { get; set; }
+    public static Dictionary<Triangle, TriangleSelectionState> RecentTriangleStates { get; set; } // Used to undo the last selection
 
     //----------------------------------------
 }

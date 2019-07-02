@@ -30,6 +30,7 @@ public class HandSelectionState : InteractionState
     CubeCollision centerComponent;                  // Script on cube that we get the list of colliders from
 
     SelectionData selectionData;
+    UndoManager undoManager;
 
     //private static Dictionary<string, Vector3[]> previousVertices;              // Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     //private static Dictionary<string, Vector2[]> previousUVs;                   // Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
@@ -100,7 +101,7 @@ public class HandSelectionState : InteractionState
     /// <param name="controller0Info"></param>
     /// <param name="controller1Info"></param>
     /// <param name="stateToReturnTo"></param>
-    public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo, SelectionData sharedData, bool experiment)
+    public HandSelectionState(ControllerInfo controller0Info, ControllerInfo controller1Info, InteractionState stateToReturnTo, SelectionData sharedData, UndoManager undoMgr, bool experiment)
     {
         // NOTE: Selecting more than one mesh will result in highlights appearing in the wrong place
         desc = "HandSelectionState";
@@ -141,6 +142,7 @@ public class HandSelectionState : InteractionState
         //TODO: should these persist between states? Yes so only make one instance of the state. Should use the Singleton pattern here//TODO
 
         selectionData = sharedData;
+        undoManager = undoMgr;
 
         //objWithSelections = new HashSet<string>();
         //previousNumVertices = new Dictionary<string, int>();              // Keeps track of how many vertices a mesh should have
@@ -425,6 +427,13 @@ public class HandSelectionState : InteractionState
             }
         }
 
+        if (controller0.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip) || controller1.device.GetPressDown(SteamVR_Controller.ButtonMask.Grip))// || Input.GetButtonDown("ViveGrip"))
+        {
+            Debug.Log("undo button pressed");
+            undoManager.Undo();
+
+        }
+
         foreach (GameObject currObjMesh in collidingMeshes)
         {
             if (!SelectionData.PreviousNumVertices.ContainsKey(currObjMesh.name)) // if the original vertices are not stored already, store them (first time seeing object)
@@ -498,6 +507,9 @@ public class HandSelectionState : InteractionState
         if (controller0.device.GetHairTriggerDown() || controller1.device.GetHairTriggerDown()) // Clicked: a selection has been made
         {
             // Debug.Log("Hand. OnTriggerDown " + collidingMeshes.Count().ToString());
+            SelectionData.RecentlySelectedObj.Clear();
+            SelectionData.RecentlySelectedObjNames.Clear();
+
             selectionCount++;
             eventString = "selection " + selectionCount.ToString();
             foreach (GameObject currObjMesh in collidingMeshes)
@@ -530,6 +542,42 @@ public class HandSelectionState : InteractionState
                 //{
                 //    Debug.Log("old: " + previousSelectedIndices[currObjMesh.name].Length.ToString() + ". for " + currObjMesh.name);
                 //}
+
+                if (SelectionData.NumberOfSelections.ContainsKey(currObjMesh.name))
+                {
+                    SelectionData.NumberOfSelections[currObjMesh.name] = SelectionData.NumberOfSelections[currObjMesh.name] + 1;
+                }
+                else
+                {
+                    SelectionData.NumberOfSelections.Add(currObjMesh.name, 1);
+                }
+
+                if (SelectionData.NumberOfSelections[currObjMesh.name] == 1)
+                {
+                    SelectionData.RecentUVs.Add(currObjMesh.name, SelectionData.PreviousUVs[currObjMesh.name]);
+                    SelectionData.RecentVertices.Add(currObjMesh.name, SelectionData.PreviousVertices[currObjMesh.name]);
+                    SelectionData.RecentNumVertices.Add(currObjMesh.name, SelectionData.PreviousNumVertices[currObjMesh.name]);
+                    SelectionData.RecentSelectedIndices.Add(currObjMesh.name, SelectionData.PreviousSelectedIndices[currObjMesh.name]);
+                }
+                else
+                {
+                    //Moving previous info to recent before updating, for undoing - NEW
+                    SelectionData.RecentUVs[currObjMesh.name] = SelectionData.PreviousUVs[currObjMesh.name];
+                    SelectionData.RecentVertices[currObjMesh.name] = SelectionData.PreviousVertices[currObjMesh.name];
+                    SelectionData.RecentNumVertices[currObjMesh.name] = SelectionData.PreviousNumVertices[currObjMesh.name];
+                    if (SelectionData.RecentUnselectedIndices.ContainsKey(currObjMesh.name))
+                    {
+                        SelectionData.RecentUnselectedIndices[currObjMesh.name] = SelectionData.PreviousUnselectedIndices[currObjMesh.name];
+                    }
+                    else
+                    {
+                        //On the first selection everything is stored as selected.
+                        SelectionData.RecentUnselectedIndices.Add(currObjMesh.name, SelectionData.PreviousUnselectedIndices[currObjMesh.name]);
+                    }
+                    SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
+                }
+                SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
+                SelectionData.RecentlySelectedObj.Add(currObjMesh);
 
                 SelectionData.PreviousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
                 SelectionData.PreviousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
@@ -646,6 +694,12 @@ public class HandSelectionState : InteractionState
         int numVertices = SelectionData.PreviousNumVertices[item.name];
 
 
+        if (!notExperiment && item.gameObject.tag != "highlightmesh")
+        {
+            // Save the current triangle states before splitting so that we can undo if needed
+            Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
+            SelectionData.RecentTriangleStates = triangleStates;
+        }
 
         // vertices.RemoveRange(numVertices, vertices.Count - numVertices);
         //UVs.RemoveRange(numVertices, UVs.Count - numVertices);

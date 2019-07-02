@@ -264,21 +264,22 @@ public class RunExperiment : MonoBehaviour {
         double mcc = CalculateMCC(selectionAreaStats);
         Debug.Log("On Load: TP: " + selectionAreaStats.x + " FP: " + selectionAreaStats.y + " FN: " + selectionAreaStats.z + " TN: " + selectionAreaStats.w + " F1: " + f1 + " mcc: " + mcc);
 
+        UndoManager undoMgr = new UndoManager(controller0Info, controller1Info, selectionData);
 
         if (stateIndex == 1)
         {
             Debug.Log("Init Yea-Big");
-            currentState = new NavigationState(controller0Info, controller1Info, selectionData, true); // the true here an optional boolean for whether or not we are running the experiment. it defaults false, but when true you cannot teleport and changing states uses the ChangeState method in this class rather than UIController
+            currentState = new NavigationState(controller0Info, controller1Info, selectionData, undoMgr, true); // the true here an optional boolean for whether or not we are running the experiment. it defaults false, but when true you cannot teleport and changing states uses the ChangeState method in this class rather than UIController
         }
         else if (stateIndex == 2)
         {
             Debug.Log("Init Volume Cube");
-            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData, true); 
+            currentState = new VolumeCubeSelectionState(controller0Info, controller1Info, selectionData, undoMgr, true); 
         }
         else if (stateIndex == 3)
         {
             Debug.Log("Init SliceNSwipe");
-            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData, true, zeroDominant); // zeroDominant is a boolean that refers to whether controller0 is in the participant's dominant hand in TransitionScene.
+            currentState = new SliceNSwipeSelectionState(controller0Info, controller1Info, selectionData, undoMgr, true, zeroDominant); // zeroDominant is a boolean that refers to whether controller0 is in the participant's dominant hand in TransitionScene.
         }
         else if (stateIndex == 4)
         {
