@@ -26,6 +26,8 @@ public class TransitionSceneScript : MonoBehaviour {
     int trainingSceneCount = 0;
     bool allowProgress = true;
 
+    const int NUMTRAININGSCENES = 3;
+
     GameObject ExperimentController;
 
     // Use this for initialization
@@ -47,21 +49,21 @@ public class TransitionSceneScript : MonoBehaviour {
         sceneIndices = new List<int>();
         trainingIndices = new List<int>();
         int sceneCount = SceneManager.sceneCountInBuildSettings;
-        for (int i = 1; i < sceneCount-3; i++)
+        for (int i = 1; i < sceneCount-(NUMTRAININGSCENES + 1); i++)
         {
             sceneIndices.Add(i);
             //Debug.Log(i);
         }
         
 
-        for (int j = sceneCount-2; j < sceneCount; j++)
+        for (int j = sceneCount - NUMTRAININGSCENES; j < sceneCount; j++)
         {
             trainingIndices.Add(j);
             //Debug.Log("training: " + i);
         }
 
         ShuffleScenes();                    // scenesIndices is a list of ints that correspond to the indices of each scene in Unity Build Settings. They're shuffled up.
-        sceneIndices.Add(sceneCount - 3);   // real world example scene is always last
+        sceneIndices.Add(sceneCount - (NUMTRAININGSCENES + 1));   // real world example scene is always last among trails in build settings
 
         string s = "";
         foreach(int i in sceneIndices)
@@ -147,6 +149,7 @@ public class TransitionSceneScript : MonoBehaviour {
         if(!allowProgress && Input.GetKeyUp(KeyCode.Space))
         {
             allowProgress = true;
+            Debug.Log("Allowing progress now");
         }
 
 
@@ -290,21 +293,23 @@ public class TransitionSceneScript : MonoBehaviour {
         GameObject.Find("Sphere").GetComponent<MeshRenderer>().enabled = true;  //turn on orb
         trainingSceneCount++;
 
-        double percent = recorder.GetSelectedPercentage();
-        //Debug.Log("training " + trainingSceneCount + " accuracy: " + percent.ToString());
-        if (percent < 50f && trainingSceneCount >= 4)
+        double recall = recorder.GetRecallPercentage();
+        double precision = recorder.GetPrecisionPercentage();
+        Debug.Log("----- training " + trainingSceneCount + " recall: " + recall.ToString() + " precision: " + precision.ToString());
+        if (precision < 85f || recall < 85f)
         {
-            training = false;
-            allowProgress = false;
-            Debug.Log("~~~~Training OFF");
-            SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
-            SceneManager.sceneUnloaded += OnSceneUnloaded;
-            nextSceneIndex = 0;
-            return;
+            Debug.Log("Reloading same training scene. Accuracy not good enough");
+            nextSceneIndex--;
+            trainingSceneCount--;
         }
 
         if (nextSceneIndex >= trainingIndices.Count)
         {
+            training = false;
+            allowProgress = false;
+            Debug.Log("~~~~Training DONE");
+            SceneManager.sceneUnloaded -= OnSceneUnloadedTraining;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
             nextSceneIndex = 0;
         }
     }

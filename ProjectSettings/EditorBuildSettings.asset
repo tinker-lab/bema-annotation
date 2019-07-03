@@ -9,9 +9,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Experiment Scenes/Basic Scene.unity
     guid: b7d985849e66f2d4898cfeed43895d82
   - enabled: 0
-    path: Assets/Scenes/Experiment Scenes/Cylinder test.unity
-    guid: 6a9dab84921f05e4898774c10aa10ac2
-  - enabled: 0
     path: Assets/Scenes/Experiment Scenes/transition scene.unity
     guid: 105b98ced3808a1479ee7f9621b9d6fb
   - enabled: 1
@@ -59,4 +56,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Experiment Scenes/Training Cube.unity
     guid: 6b3e0082cddcd44b78f5a28f0f9ea9da
+  - enabled: 1
+    path: Assets/Scenes/Experiment Scenes/Training Figure8.unity
+    guid: 6c13e4d8fe195784bbbdf8e05da6b2cb
   m_configObjects: {}

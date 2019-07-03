@@ -376,7 +376,7 @@ public class OutlineManager {
         int numSections = 6;
 
         //Assert.IsTrue(points.Count % 2 == 0);
-        int expectedNumVerts = (numSections + 1) * points.Count;
+        //int expectedNumVerts = (numSections + 1) * points.Count;
 
 
         //TODO: should we remove duplicates here?

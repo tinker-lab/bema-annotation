@@ -221,8 +221,14 @@ public class RecordData : MonoBehaviour {
         //trialID++;
     }
 
+    public double GetPrecisionPercentage()
+    {
+        // precision = TP / (TP + FP);
+        return trialData.trials[trialID].tpArea / (trialData.trials[trialID].tpArea + trialData.trials[trialID].fpArea) * 100.0;
+    }
+
     // Returns the percentage accuractly selected
-    public double GetSelectedPercentage()
+    public double GetRecallPercentage()
     {
         // i.e. recall TP / (TP + FN)
         return trialData.trials[trialID].tpArea / (trialData.trials[trialID].tpArea + trialData.trials[trialID].fnArea) * 100.0;

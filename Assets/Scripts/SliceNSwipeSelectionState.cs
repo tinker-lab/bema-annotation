@@ -274,12 +274,10 @@ public class SliceNSwipeSelectionState : InteractionState
     {
         swordLine.gameObject.transform.GetComponent<MeshRenderer>().enabled = false;    // Disable line rendering
 
-        List<int> indices;
         if (collidingMesh != null)
         {
             Mesh mesh = collidingMesh.GetComponent<MeshFilter>().mesh;
             mesh.subMeshCount = 2;
-            indices = SelectionData.PreviousSelectedIndices[collidingMesh.name].ToList(); // the indices of last selection
 
             if (sliceStatus == SliceStatusState.SliceActiveReadyToSwipe)
             {
@@ -764,12 +762,6 @@ public class SliceNSwipeSelectionState : InteractionState
         //    Debug.Log(item.GetComponent<MeshFilter>().mesh.vertices.Length.ToString() + ", " + previousNumVertices[item.name] + " " + item.name + " is negative!!!");
         //}
 
-        List<Vector3> transformedVertices = new List<Vector3>(vertices.Count);
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            transformedVertices.Add(item.gameObject.transform.TransformPoint(vertices[i]));
-        }
 
         Vector3 intersectPoint0 = new Vector3();
         Vector3 intersectPoint1 = new Vector3();
@@ -790,6 +782,10 @@ public class SliceNSwipeSelectionState : InteractionState
         triangleStates0 = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
         triangleStates1 = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
 
+
+        Vector3 planeNormalInLocalSpace = item.gameObject.transform.InverseTransformDirection(slicePlane.transform.up);
+        Vector3 planePointInLocalSpace = item.gameObject.transform.InverseTransformPoint(slicePlane.transform.position);
+        float dotPlaneNormalPoint = Vector3.Dot(planeNormalInLocalSpace, planePointInLocalSpace);
 
         for (int i = 0; i < indices.Length / 3; i++)
         {
@@ -816,16 +812,24 @@ public class SliceNSwipeSelectionState : InteractionState
             bool side1 = false;
             bool side2 = false;
 
-            if (BoundingCircleIntersectsWithPlane(slicePlane, transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], transformedVertices[triangleIndex2]))
+            float dotTriangleIndex0Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex0]);
+            float dotTriangleIndex1Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex1]);
+            float dotTriangleIndex2Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex2]);
+
+            //Test for intersection if all the points are not on the same side of the plane
+            bool testIntersection = !((dotTriangleIndex0Plane >= dotPlaneNormalPoint && dotTriangleIndex1Plane >= dotPlaneNormalPoint && dotTriangleIndex2Plane >= dotPlaneNormalPoint) || (dotTriangleIndex0Plane < dotPlaneNormalPoint && dotTriangleIndex1Plane < dotPlaneNormalPoint && dotTriangleIndex2Plane < dotPlaneNormalPoint));
+            //BoundingCircleIntersectsWithPlane(planeNormalInLocalSpace, planePointInLocalSpace, dotPlaneNormalPoint, vertices[triangleIndex0], vertices[triangleIndex1], vertices[triangleIndex2]);
+
+            if (testIntersection)
             {
-                side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], slicePlane);
-                side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], slicePlane);
-                side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], slicePlane);
+                side0 = IntersectsWithPlane(ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], planeNormalInLocalSpace, planePointInLocalSpace);
+                side1 = IntersectsWithPlane(ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], planeNormalInLocalSpace, planePointInLocalSpace);
+                side2 = IntersectsWithPlane(ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], planeNormalInLocalSpace, planePointInLocalSpace);
             }
 
             if (!side0 && !side1 && !side2) // 0 intersections
             {
-                if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                 {
                     AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                     if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -863,7 +867,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint1))
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                        if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -890,9 +894,6 @@ public class SliceNSwipeSelectionState : InteractionState
                         vertices.Add(intersectPoint0);
                         vertices.Add(intersectPoint1);
 
-
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV1);
 
@@ -900,7 +901,7 @@ public class SliceNSwipeSelectionState : InteractionState
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                        if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
 
                             // Add the indices for various triangles to selected and unselected
@@ -945,7 +946,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint2))
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                        if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -973,15 +974,13 @@ public class SliceNSwipeSelectionState : InteractionState
                         vertices.Add(intersectPoint0);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
                         vertices.Add(intersectPoint2);
 
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
                         UVs.Add(intersectUV0);
                         UVs.Add(intersectUV2);
 
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                        if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                         {
                             AddNewIndices(selected0Indices, intersectIndex2, triangleIndex0, intersectIndex0);
                             AddNewIndices(selected1Indices, triangleIndex2, intersectIndex2, intersectIndex0);
@@ -1023,7 +1022,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     if (PlaneCollision.ApproximatelyEquals(intersectPoint1, intersectPoint2))
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                        if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -1050,15 +1049,13 @@ public class SliceNSwipeSelectionState : InteractionState
                         vertices.Add(intersectPoint1);   // Add intersection points (IN LOCAL SPACE) to vertex list, keep track of which indices they've been placed at
                         vertices.Add(intersectPoint2);
 
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
-                        transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
                         UVs.Add(intersectUV1);
                         UVs.Add(intersectUV2);
 
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count + 1));
                         unsortedOutlinePoints.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePoints.Count, unsortedOutlinePoints.Count - 1));
 
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
+                        if (dotTriangleIndex2Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
                         {
                             AddNewIndices(selected0Indices, intersectIndex1, triangleIndex2, intersectIndex2);
                             AddNewIndices(selected1Indices, intersectIndex2, triangleIndex0, intersectIndex1);
@@ -1100,7 +1097,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     if (side0)
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
+                        if (dotTriangleIndex2Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex2], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -1122,7 +1119,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     else if (side1)
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
+                        if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -1144,7 +1141,7 @@ public class SliceNSwipeSelectionState : InteractionState
                     else if (side2)
                     {
                         // plane intersects a triangle vertex
-                        if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
+                        if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], slicePlane))
                         {
                             AddNewIndices(selected0Indices, triangleIndex0, triangleIndex1, triangleIndex2);
                             if (isExperiment && item.gameObject.tag != "highlightmesh")
@@ -1532,16 +1529,16 @@ public class SliceNSwipeSelectionState : InteractionState
         indices.Add(index2);
     }
 
-    private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, GameObject plane) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
+    private bool IntersectsWithPlane(ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, Vector3 planeNormalInLocalSpace, Vector3 planePointInLocalSpace) // checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     {
         Vector3 lineSegmentLocal = lineVertexLocal1 - lineVertexLocal0;
-        float dot = Vector3.Dot(plane.transform.up, lineVertexWorld1 - lineVertexWorld0);
-        Vector3 w = plane.transform.position - lineVertexWorld0;
+        float dot = Vector3.Dot(planeNormalInLocalSpace, lineSegmentLocal);
+        Vector3 w = planePointInLocalSpace - lineVertexLocal0;
 
         float epsilon = 0.00001f;
         if (Mathf.Abs(dot) > epsilon)
         {
-            float factor = Vector3.Dot(plane.transform.up, w) / dot;
+            float factor = Vector3.Dot(planeNormalInLocalSpace, w) / dot;
             if ((factor > 0f && factor < 1f) || Math.Abs(factor) <= epsilon || Math.Abs(factor - 1f) <= epsilon)
             {
                 lineSegmentLocal = factor * lineSegmentLocal;
@@ -1576,7 +1573,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //{
     //    alreadyVisited.Add(pt);
     //    orderedPoints.Add(pt);
-        
+
     //    foreach (Vector3 otherIndex in connectedEdges[pt])
     //    {
     //        if (!alreadyVisited.Contains(otherIndex))
@@ -1584,7 +1581,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //            DFSVisit(otherIndex, connectedEdges, ref alreadyVisited, ref orderedPoints);
     //        }
     //    }
-        
+
     //}
 
     //// Takes two connected points and adds or updates entries in the list of actual points and the graph of their connections
@@ -1641,7 +1638,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //    {
     //        bool firstTwoEqual = PlaneCollision.ApproximatelyEquals(points[i-1], points[i]);
     //        bool secondTwoEqual = PlaneCollision.ApproximatelyEquals(points[i], points[i + 1]);
-            
+
     //        if (firstTwoEqual && secondTwoEqual)
     //        {
     //            output.Add(points[i - 1]);
@@ -1654,7 +1651,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //            output.Add(points[i + 1]);
     //            i += 3;
     //        }
-            
+
     //        else  // All are distinct
     //        {
     //            output.Add(points[i - 1]);      // Add first two
@@ -1665,7 +1662,7 @@ public class SliceNSwipeSelectionState : InteractionState
     //    */
     //    return output;
     //}
-    
+
     /// <summary>
     /// Given a material, returns a transparent version if it's not already transparent
     /// </summary>

@@ -147,7 +147,7 @@ public class NavigationState : InteractionState {
         zAxis = (zAxis - (Vector3.Dot(zAxis, xAxis) * xAxis)).normalized;
         Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
 
-        Vector3 groundY = new Vector3(0, 1);
+        //Vector3 groundY = new Vector3(0, 1);
 
         //float controllerToGroundY = Vector3.Angle(yAxis, groundY);
         nPlane.transform.rotation = Quaternion.LookRotation(zAxis, yAxis);

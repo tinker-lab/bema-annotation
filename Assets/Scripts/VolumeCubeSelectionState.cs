@@ -29,7 +29,9 @@ public class VolumeCubeSelectionState : InteractionState
 
     SelectionData selectionData;
     UndoManager undoManager;
-     
+
+    public Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStatesBeforeSelection;
+
     //private static Dictionary<string, Vector3[]> previousVertices;              //Key = name of obj with mesh, Value = all vertices of the mesh at the time of last click
     //private static Dictionary<string, Vector2[]> previousUVs;                   //Key = name of obj with mesh, Value = all UVs of the mesh at the time of last click
     //private Dictionary<string, int[]> previousUnselectedIndices;                //Key = name of object with mesh, Value = all indices that have not been selected (updated when user clicks)
@@ -578,10 +580,13 @@ public class VolumeCubeSelectionState : InteractionState
                     }
                     SelectionData.RecentSelectedIndices[currObjMesh.name] = SelectionData.PreviousSelectedIndices[currObjMesh.name];
                 }
+                SelectionData.RecentTriangleStates = SelectionData.TriangleStates;
+    
+
                 SelectionData.RecentlySelectedObjNames.Add(currObjMesh.name);
                 SelectionData.RecentlySelectedObj.Add(currObjMesh);
 
-
+                SelectionData.TriangleStates = triangleStatesBeforeSelection;
                 SelectionData.PreviousNumVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices.Length;
                 SelectionData.PreviousVertices[currObjMesh.name] = currObjMesh.GetComponent<MeshFilter>().mesh.vertices;
 
@@ -687,8 +692,6 @@ public class VolumeCubeSelectionState : InteractionState
                             //outlineObject.name = outlineObject.name + outlineObjectCount;
                             //outlineObjectCount++;
                           
-                            Mesh outlineMesh = OutlineManager.CreateOutlineMesh(sortedPoints[chainIndex], rotationVectors[i], outlineObject);
-
                             SelectionData.SavedOutlines[currObjMesh.name].Add(outlineObject);
                            
 
@@ -852,19 +855,7 @@ public class VolumeCubeSelectionState : InteractionState
         List<Vector2> UVs = SelectionData.PreviousUVs[item.name].ToList();
         int numVertices = SelectionData.PreviousNumVertices[item.name];
 
-        if (isExperiment && item.gameObject.tag != "highlightmesh")
-        {
-            // Save the current triangle states before splitting so that we can undo if needed
-            Dictionary<Triangle, SelectionData.TriangleSelectionState> triangleStates = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
-            SelectionData.RecentTriangleStates = triangleStates;
-        }
-
-        List<Vector3> transformedVertices = new List<Vector3>(vertices.Count);
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            transformedVertices.Add(item.gameObject.transform.TransformPoint(vertices[i]));
-        }
+        triangleStatesBeforeSelection = new Dictionary<Triangle, SelectionData.TriangleSelectionState>(SelectionData.TriangleStates);
 
         Vector3 intersectPoint0 = new Vector3();
         Vector3 intersectPoint1 = new Vector3();
@@ -939,6 +930,10 @@ public class VolumeCubeSelectionState : InteractionState
                 planePoint = controller0.controller.transform.position;
             }
 
+            Vector3 planeNormalInLocalSpace = item.gameObject.transform.InverseTransformDirection(rotationVectors[planePass]);
+            Vector3 planePointInLocalSpace = item.gameObject.transform.InverseTransformPoint(planePoint);
+            float dotPlaneNormalPoint = Vector3.Dot(planeNormalInLocalSpace, planePointInLocalSpace);
+
             for (int i = 0; i < indices.Length / 3 ; i++)
             {
                 triangleIndex0 = indices[3 * i];
@@ -951,7 +946,7 @@ public class VolumeCubeSelectionState : InteractionState
                     Triangle tri = new Triangle(triangleIndex0, triangleIndex1, triangleIndex2);
                     try
                     {
-                        currentTriangleState = SelectionData.TriangleStates[tri];
+                        currentTriangleState = triangleStatesBeforeSelection[tri];
                     }
                     catch (KeyNotFoundException)
                     {
@@ -964,21 +959,29 @@ public class VolumeCubeSelectionState : InteractionState
                 bool side1 = false;
                 bool side2 = false;
 
-                if (BoundingCircleIntersectsWithPlane(rotationVectors[planePass], planePoint, transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], transformedVertices[triangleIndex2]))
+                float dotTriangleIndex0Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex0]);
+                float dotTriangleIndex1Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex1]);
+                float dotTriangleIndex2Plane = Vector3.Dot(planeNormalInLocalSpace, vertices[triangleIndex2]);
+
+                //Test for intersection if all the points are not on the same side of the plane
+                bool testIntersection = !((dotTriangleIndex0Plane >= dotPlaneNormalPoint && dotTriangleIndex1Plane >= dotPlaneNormalPoint && dotTriangleIndex2Plane >= dotPlaneNormalPoint) || (dotTriangleIndex0Plane < dotPlaneNormalPoint && dotTriangleIndex1Plane < dotPlaneNormalPoint && dotTriangleIndex2Plane < dotPlaneNormalPoint));
+                //BoundingCircleIntersectsWithPlane(planeNormalInLocalSpace, planePointInLocalSpace, dotPlaneNormalPoint, vertices[triangleIndex0], vertices[triangleIndex1], vertices[triangleIndex2]);
+
+                if (testIntersection)
                 {
-                    side0 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex1], ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], rotationVectors[planePass], planePoint);
-                    side1 = IntersectsWithPlane(transformedVertices[triangleIndex1], transformedVertices[triangleIndex2], ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
-                    side2 = IntersectsWithPlane(transformedVertices[triangleIndex0], transformedVertices[triangleIndex2], ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], rotationVectors[planePass], planePoint);
+                    side0 = IntersectsWithPlane(ref intersectPoint0, ref intersectUV0, UVs[triangleIndex0], UVs[triangleIndex1], vertices[triangleIndex0], vertices[triangleIndex1], planeNormalInLocalSpace, planePointInLocalSpace);
+                    side1 = IntersectsWithPlane(ref intersectPoint1, ref intersectUV1, UVs[triangleIndex1], UVs[triangleIndex2], vertices[triangleIndex1], vertices[triangleIndex2], planeNormalInLocalSpace, planePointInLocalSpace);
+                    side2 = IntersectsWithPlane(ref intersectPoint2, ref intersectUV2, UVs[triangleIndex0], UVs[triangleIndex2], vertices[triangleIndex0], vertices[triangleIndex2], planeNormalInLocalSpace, planePointInLocalSpace);
                 }
 
                 if (!side0 && !side1 && !side2) //0 intersections
                 {
-                    if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
+                    if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//(OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                     {
                         AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                         if (isExperiment && item.gameObject.tag != "highlightmesh")
                         {
-                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                            UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                         }
                     }
                     else
@@ -986,7 +989,7 @@ public class VolumeCubeSelectionState : InteractionState
                         AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                         if (isExperiment && item.gameObject.tag != "highlightmesh")
                         {
-                            UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                            UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                         }
                     }
                 }
@@ -1000,12 +1003,12 @@ public class VolumeCubeSelectionState : InteractionState
                         if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint1))
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1013,7 +1016,7 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
@@ -1026,8 +1029,6 @@ public class VolumeCubeSelectionState : InteractionState
                             vertices.Add(intersectPoint0);
                             vertices.Add(intersectPoint1);
 
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
                             UVs.Add(intersectUV0);
                             UVs.Add(intersectUV1);
 
@@ -1038,7 +1039,7 @@ public class VolumeCubeSelectionState : InteractionState
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
                             {
                                 //Add the indices for various triangles to selected and unselected
                                 AddNewIndices(selectedIndices, intersectIndex1, intersectIndex0, triangleIndex1);
@@ -1048,9 +1049,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, false);
                                 }
 
                             }
@@ -1062,9 +1063,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex1, intersectIndex0, triangleIndex1, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, intersectIndex0, intersectIndex1, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex2, triangleIndex0, intersectIndex1, true);
                                 }
                             }
                         }
@@ -1074,12 +1075,12 @@ public class VolumeCubeSelectionState : InteractionState
                         if (PlaneCollision.ApproximatelyEquals(intersectPoint0, intersectPoint2))
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1087,7 +1088,7 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
@@ -1101,8 +1102,6 @@ public class VolumeCubeSelectionState : InteractionState
                             vertices.Add(intersectPoint0);
                             vertices.Add(intersectPoint2);
 
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint0));
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
                             UVs.Add(intersectUV0);
                             UVs.Add(intersectUV2);
 
@@ -1112,7 +1111,7 @@ public class VolumeCubeSelectionState : InteractionState
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint0), unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, intersectIndex2, triangleIndex0, intersectIndex0);
                                 AddNewIndices(unselectedIndices, triangleIndex2, intersectIndex2, intersectIndex0);
@@ -1120,9 +1119,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, false);
                                 }
                             }
                             else
@@ -1133,9 +1132,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex0, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex2, intersectIndex2, intersectIndex0, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex1, triangleIndex2, intersectIndex0, true);
                                 }
                             }
                         }
@@ -1145,12 +1144,12 @@ public class VolumeCubeSelectionState : InteractionState
                         if (PlaneCollision.ApproximatelyEquals(intersectPoint1, intersectPoint2))
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1158,7 +1157,7 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
@@ -1172,8 +1171,6 @@ public class VolumeCubeSelectionState : InteractionState
                             vertices.Add(intersectPoint1);
                             vertices.Add(intersectPoint2);
 
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint1));
-                            transformedVertices.Add(item.gameObject.transform.TransformPoint(intersectPoint2));
                             UVs.Add(intersectUV1);
                             UVs.Add(intersectUV2);
 
@@ -1183,7 +1180,7 @@ public class VolumeCubeSelectionState : InteractionState
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint1), unsortedOutlinePts.Count, unsortedOutlinePts.Count + 1));
                             unsortedOutlinePts.Add(new OutlinePoint(item.gameObject.transform.TransformPoint(intersectPoint2), unsortedOutlinePts.Count, unsortedOutlinePts.Count - 1));
 
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex2Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, intersectIndex1, triangleIndex2, intersectIndex2);
                                 AddNewIndices(unselectedIndices, intersectIndex2, triangleIndex0, intersectIndex1);
@@ -1191,9 +1188,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
-                                    UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, false);
                                 }
                             }
                             else
@@ -1204,9 +1201,9 @@ public class VolumeCubeSelectionState : InteractionState
 
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
-                                    UpdateTriangleState(currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex1, triangleIndex2, intersectIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, intersectIndex2, triangleIndex0, intersectIndex1, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, intersectIndex1, true);
                                 }
                             }
                         }
@@ -1218,12 +1215,12 @@ public class VolumeCubeSelectionState : InteractionState
                         if (side0)
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex2Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex2], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1231,19 +1228,19 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
                         else if (side1)
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex0Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex0], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1251,19 +1248,19 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
                         else if (side2)
                         {
                             // plane intersects a triangle vertex
-                            if (OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
+                            if (dotTriangleIndex1Plane >= dotPlaneNormalPoint)//OnNormalSideOfPlane(transformedVertices[triangleIndex1], rotationVectors[planePass], planePoint))
                             {
                                 AddNewIndices(selectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, true);
                                 }
                             }
                             else
@@ -1271,7 +1268,7 @@ public class VolumeCubeSelectionState : InteractionState
                                 AddNewIndices(unselectedIndices, triangleIndex0, triangleIndex1, triangleIndex2);
                                 if (isExperiment && item.gameObject.tag != "highlightmesh")
                                 {
-                                    UpdateTriangleState(currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
+                                    UpdateTriangleState(triangleStatesBeforeSelection, currentTriangleState, triangleIndex0, triangleIndex1, triangleIndex2, false);
                                 }
                             }
                         }
@@ -1354,7 +1351,7 @@ public class VolumeCubeSelectionState : InteractionState
         indices.Add(index2);
     }
 
-    private void UpdateTriangleState(SelectionData.TriangleSelectionState currentState, int index0, int index1, int index2, bool isSelectedNow)
+    private void UpdateTriangleState(Dictionary<Triangle, SelectionData.TriangleSelectionState> dictionary, SelectionData.TriangleSelectionState currentState, int index0, int index1, int index2, bool isSelectedNow)
     {
         SelectionData.TriangleSelectionState newState = SelectionData.TriangleSelectionState.UnselectedOrigUnselectedNow;
         if (currentState == SelectionData.TriangleSelectionState.SelectedOrigSelectedNow && isSelectedNow)
@@ -1392,23 +1389,23 @@ public class VolumeCubeSelectionState : InteractionState
 
 
         Triangle tri = new Triangle(index0, index1, index2);
-        if (SelectionData.TriangleStates.ContainsKey(tri))
+        if (dictionary.ContainsKey(tri))
         {
-            SelectionData.TriangleStates[tri] = newState;
+            dictionary[tri] = newState;
         }
         else
         {
-            SelectionData.TriangleStates.Add(tri, newState);
+            dictionary.Add(tri, newState);
         }
     }
 
     //use this method for each side of the cube instead of the plane, replace plane with side
     //instead of plane, pass in normal vector and point (corner of cube that is on that side)
-    private bool IntersectsWithPlane(Vector3 lineVertexWorld0, Vector3 lineVertexWorld1, ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, Vector3 normalVector, Vector3 planePoint) //checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
+    private bool IntersectsWithPlane(ref Vector3 intersectPoint, ref Vector2 intersectUV, Vector2 vertex0UV, Vector2 vertex1UV, Vector3 lineVertexLocal0, Vector3 lineVertexLocal1, Vector3 normalVector, Vector3 planePoint) //checks if a particular edge intersects with the plane, if true, returns point of intersection along edge
     {
         Vector3 lineSegmentLocal = lineVertexLocal1 - lineVertexLocal0;
-        float dot = Vector3.Dot(normalVector, lineVertexWorld1 - lineVertexWorld0);
-        Vector3 w = planePoint - lineVertexWorld0;
+        float dot = Vector3.Dot(normalVector,lineSegmentLocal);
+        Vector3 w = planePoint - lineVertexLocal0;
 
         float epsilon = 0.00001f;
         if (Mathf.Abs(dot) > epsilon)

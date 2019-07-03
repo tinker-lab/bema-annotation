@@ -374,6 +374,7 @@ public class PlaneCollision : MonoBehaviour
             Vector3 direction;
             if (i == points.Count - 1)
             {
+                /*
                 try
                 {
                     Vector3 I = points.ElementAt(i);
@@ -384,6 +385,7 @@ public class PlaneCollision : MonoBehaviour
                     UnityEngine.Debug.LogError("Argument out of range.");
                     UnityEngine.Debug.LogError("Length of point list: " + points.Count + " i= " + i + ", " + (i - 1));
                 }
+                */
 
                 direction = points.ElementAt(i) - points.ElementAt(i - 1);  //NOTE: Threw exception when I made the curve incredibly small
             }

@@ -112,7 +112,7 @@ public class RunExperiment : MonoBehaviour {
         hmd = GameObject.Find("Camera (eye)");
 
         setupControllers = true;
-        Debug.Log("Starting ExperimentController " + sceneOrder.ToString());
+        Debug.Log("Starting Experiment Scene " + sceneOrder.ToString());
 
         selectionEvent = "";
     }
@@ -145,7 +145,14 @@ public class RunExperiment : MonoBehaviour {
 
                 if (Input.GetKeyUp(KeyCode.L))      //reLoad scene
                 {
-                    Reset();
+                    if (currentState.CanTransition())
+                    {
+                        Reset();
+                    }
+                    else
+                    {
+                        Debug.Log("Cannot reset state if colliding with objects or currently selecting");
+                    }
                 }
 
                 if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))     //finish trial
@@ -246,7 +253,7 @@ public class RunExperiment : MonoBehaviour {
         // There should only be 1 submesh at the start
         // We know that the selection mesh starts out as the combined selected and then unselected indices (In that order!) from the goal mesh
         // since that is how it was created in ObjectMaker.CombineSelectedAndUnselected().
-        int[] selectionObjectIndices = selection.GetTriangles(0);
+        //int[] selectionObjectIndices = selection.GetTriangles(0);
         for (int i = 0; i < goalSelectionIndices.Length; i += 3)
         {
             Triangle tri = new Triangle(goalSelectionIndices[i], goalSelectionIndices[i + 1], goalSelectionIndices[i + 2]);
@@ -259,10 +266,10 @@ public class RunExperiment : MonoBehaviour {
         }
         SelectionData.TriangleStates = triangleStates;
 
-        Vector4 selectionAreaStats = TriangleArea(selectedObj, selection, selection.vertices);
-        double f1 = CalculateF1(selectionAreaStats);
-        double mcc = CalculateMCC(selectionAreaStats);
-        Debug.Log("On Load: TP: " + selectionAreaStats.x + " FP: " + selectionAreaStats.y + " FN: " + selectionAreaStats.z + " TN: " + selectionAreaStats.w + " F1: " + f1 + " mcc: " + mcc);
+        //Vector4 selectionAreaStats = TriangleArea(selectedObj, selection, selection.vertices);
+        //double f1 = CalculateF1(selectionAreaStats);
+       // double mcc = CalculateMCC(selectionAreaStats);
+       // Debug.Log("On Load: TP: " + selectionAreaStats.x + " FP: " + selectionAreaStats.y + " FN: " + selectionAreaStats.z + " TN: " + selectionAreaStats.w + " F1: " + f1 + " mcc: " + mcc);
 
         UndoManager undoMgr = new UndoManager(controller0Info, controller1Info, selectionData);
 
@@ -303,7 +310,7 @@ public class RunExperiment : MonoBehaviour {
         double TP = areaStats.x;
         double FP = areaStats.y;
         double FN = areaStats.z;
-        double TN = areaStats.w;
+        //double TN = areaStats.w;
         // P = TP / (TP + FP)
         // R = TP / (TP + FN)
         double precision = TP / (TP + FP);
@@ -416,7 +423,7 @@ public class RunExperiment : MonoBehaviour {
                         trueNegativeArea += area;
                         break;
                     default:
-                        Debug.Log("Shouldn't get here");
+                        Debug.Log("Shouldn't get here. Case number " + SelectionData.TriangleStates[tri].ToString());
                         break;
                 }
             }
@@ -454,7 +461,7 @@ public class RunExperiment : MonoBehaviour {
                             falsePositiveArea += area;
                             break;
                         default:
-                            Debug.Log("Shouldn't get here 2");
+                            Debug.Log("Shouldn't get here 2. Case number "+SelectionData.TriangleStates[tri].ToString());
                             break;
                     }
                 }

@@ -1724,6 +1724,11 @@ public class MeshTriangle
         return adjTriId0 == other.adjTriId0 && adjTriId1 == other.adjTriId1 && adjTriId2 == other.adjTriId2 && vId0 == other.vId0 && vId1 == other.vId1 && vId2 == other.vId2;
     }
 
+    public override int GetHashCode()
+    {
+        return adjTriId0.GetHashCode() + adjTriId1.GetHashCode()+ adjTriId2.GetHashCode();
+    }
+
     /// <summary>
     /// replaces the value for an adj tri
     /// </summary>
@@ -1802,6 +1807,11 @@ public class MeshVertex
     {
         MeshVertex other = (MeshVertex)obj;
         return triangleId == other.triangleId && PlaneCollision.ApproximatelyEquals(this.point, other.point);
+    }
+
+    public override int GetHashCode()
+    {
+        return index.GetHashCode();
     }
 
 }

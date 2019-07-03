@@ -192,7 +192,7 @@ public class EdgeSelectionState : InteractionState {
         gray.GaussianBlur(new Size(7, 7), 0);
 
         // Opening morph to remove small points
-        int morph_size = 1;
+        //int morph_size = 1;
 
         //element = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(2 * morph_size + 1, 2 * morph_size + 1));
         width = gray.Size().Width;

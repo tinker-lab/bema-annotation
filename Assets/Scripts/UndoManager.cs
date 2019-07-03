@@ -77,7 +77,6 @@ public class UndoManager
         else{
             //back to one mesh and no info
             Material material = currObj.GetComponent<Renderer>().materials[0]; //materials[0] corresponds to unselected
-            Material m2 = currObj.GetComponent<Renderer>().materials[1]; 
             SelectionData.ObjectsWithSelections.Remove(objectName);
             SelectionData.PreviousUVs.Remove(objectName);
             SelectionData.PreviousVertices.Remove(objectName);
