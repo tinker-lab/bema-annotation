@@ -141,7 +141,11 @@ public class RunExperiment : MonoBehaviour {
 
                 DetermineLeftRightControllers();
                 selectionEvent = currentState.HandleEvents(controller0Info, controller1Info);   //modified all HandleEvents methods to return "" or the name of an event to be recorded
-                recorder.UpdateLists(controller0Info, controller1Info, hmd.gameObject.transform, System.DateTime.Now.Ticks, selectionEvent);                // ticks are 100 nanoseconds
+                long ticks = stopwatch.ElapsedTicks;
+                long frequency = System.Diagnostics.Stopwatch.Frequency;
+                long nanosecPerTick = (1000L * 1000L * 1000L) / frequency;
+                long elapsedNanoSec = ticks * nanosecPerTick;
+                recorder.UpdateLists(controller0Info, controller1Info, hmd.gameObject.transform, stopwatch.ElapsedTicks, elapsedNanoSec, selectionEvent);                // ticks are 100 nanoseconds
 
                 if (Input.GetKeyUp(KeyCode.L))      //reLoad scene
                 {
@@ -380,7 +384,7 @@ public class RunExperiment : MonoBehaviour {
                     case SelectionData.TriangleSelectionState.SelectedOrigSelectedNow:
                         truePositiveArea += area;
                         break;
-                    case SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow:
+                    case SelectionData.TriangleSelectionState.SelectedOrigUnselectedNow:3
                         falseNegativeArea += area;
                         break;
                     case SelectionData.TriangleSelectionState.UnselectedOrigSelectedNow:
@@ -429,7 +433,7 @@ public class RunExperiment : MonoBehaviour {
             }
             catch (KeyNotFoundException)
             {
-                Debug.Log("Can't find triangle key for state");
+                Debug.Log("Can't find triangle key for state (unselected). i="+ i+ " indices: " + unselectedIndices[i]+", "+ unselectedIndices[i + 1]+", "+ unselectedIndices[i + 2]);
             }
         }
 
@@ -467,7 +471,7 @@ public class RunExperiment : MonoBehaviour {
                 }
                 catch (KeyNotFoundException)
                 {
-                    Debug.Log("Can't find triangle key for state");
+                    Debug.Log("Can't find triangle key for state (selected). i=" + i + " indices: " + selectedIndices[i] + ", " + selectedIndices[i + 1] + ", " + selectedIndices[i + 2]);
                 }
             }
         }

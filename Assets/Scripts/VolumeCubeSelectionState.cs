@@ -466,7 +466,7 @@ public class VolumeCubeSelectionState : InteractionState
         {
             Debug.Log("undo button pressed");
             undoManager.Undo();
-           
+            return "Undo last selection";
         }
 
         //if there is an object inside the cube (must have at least one)

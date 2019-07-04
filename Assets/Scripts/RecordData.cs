@@ -125,17 +125,20 @@ public class ObjectPose
 
 public class EventRecord
 {
-    public long timeStamp;
+    public long ticksTimestamp;
+    public long elapsedNanoSeconds;
     public string eventName;
 
     public EventRecord()
     {
-        timeStamp = (long)0;
+        elapsedNanoSeconds = (long)0;
+        ticksTimestamp = (long)0;
         eventName = "";
     }
 
-    public void Add(long time, string name){
-        timeStamp = time;
+    public void Add(long ticks, long nanosec, string name){
+        ticksTimestamp = ticks;
+        elapsedNanoSeconds = nanosec;
         eventName = name;
     }
 }
@@ -234,8 +237,8 @@ public class RecordData : MonoBehaviour {
         return trialData.trials[trialID].tpArea / (trialData.trials[trialID].tpArea + trialData.trials[trialID].fnArea) * 100.0;
     }
 
-    public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, Transform hmd, long timeStamp, string eventStr = "") {
-        motion.trials[trialID].timeStamps.Add(timeStamp);
+    public void UpdateLists(ControllerInfo controller1, ControllerInfo controller2, Transform hmd, long ticks, long elapsedNanoSec, string eventStr = "") {
+        motion.trials[trialID].timeStamps.Add(elapsedNanoSec);
         ObjectPose pose1 = new ObjectPose();
         pose1.Add(controller1.trackedObj.transform.position, controller1.trackedObj.transform.rotation);
         motion.trials[trialID].controller1Locations.Add(pose1);
@@ -250,7 +253,7 @@ public class RecordData : MonoBehaviour {
 
         if (!eventStr.Equals("")) {
             EventRecord eventRecord = new EventRecord();
-            eventRecord.Add(timeStamp, eventStr);
+            eventRecord.Add(ticks, elapsedNanoSec, eventStr);
             trialData.trials[trialID].events.Add(eventRecord);
         }
     }

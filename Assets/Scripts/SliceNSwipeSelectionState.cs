@@ -340,7 +340,7 @@ public class SliceNSwipeSelectionState : InteractionState
             {
                 Debug.Log("undo button pressed");
                 undoManager.Undo();
-
+                return "Undo last selection";
             }
 
             if (!isExperiment)
@@ -662,7 +662,7 @@ public class SliceNSwipeSelectionState : InteractionState
         SelectionData.PreviousNumVertices.Add(gObject.name, gObject.GetComponent<MeshFilter>().mesh.vertices.Length);
         gObject.GetComponent<MeshFilter>().mesh.MarkDynamic();
         SelectionData.PreviousSelectedIndices.Add(gObject.name, gObject.GetComponent<MeshFilter>().mesh.GetIndices(0));
-        SelectionData.PreviousUnselectedIndices.Add(gObject.name, new int[gObject.GetComponent<MeshFilter>().mesh.GetIndices(0).Length]);
+        SelectionData.PreviousUnselectedIndices.Add(gObject.name, new int[0]);
         SelectionData.PreviousVertices.Add(gObject.name, gObject.GetComponent<MeshFilter>().mesh.vertices);
 
         UVList = new List<Vector2>();

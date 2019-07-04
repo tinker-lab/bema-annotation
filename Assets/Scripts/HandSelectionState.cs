@@ -394,12 +394,8 @@ public class HandSelectionState : InteractionState
 
         List<Vector2> UVList = new List<Vector2>();
 
-        if (controller0Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad) || controller1Info.device.GetPressUp(SteamVR_Controller.ButtonMask.Touchpad))
-        {
-            Debug.Break();
-        }
 
-            UpdatePlanes();
+        UpdatePlanes();
 
         //Debug.Log("Hand Motion " + Vector3.Distance(lastPos,currentPos).ToString());
 
@@ -435,7 +431,7 @@ public class HandSelectionState : InteractionState
         {
             Debug.Log("undo button pressed");
             undoManager.Undo();
-
+            return "Undo last selection";
         }
 
         foreach (GameObject currObjMesh in collidingMeshes)
